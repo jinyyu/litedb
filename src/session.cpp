@@ -1,5 +1,6 @@
 #include <thread>
 #include <litesql/session.h>
+#include <litesql/mcxt.h>
 
 namespace db {
 
@@ -13,8 +14,19 @@ Session::~Session() {
   close(fd);
 }
 
-void Session::start() {
+void Session::Start() {
+
+  MemoryContext::Init();
+
+  ProcessStartupPacket();
+
   this->sessionCloseCallback();
+}
+
+void Session::ProcessStartupPacket() {
+  u32 len;
+  u32 version;
+
 }
 
 }

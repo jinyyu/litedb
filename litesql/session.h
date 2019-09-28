@@ -11,7 +11,9 @@ namespace db {
 struct Session {
   explicit Session(int fd, const char* peerAddr, u16 peerPort);
   ~Session();
-  void start();
+
+  void Start();
+  void ProcessStartupPacket();
 
   int fd;                       // the docker
   u16 port;                     // peer port

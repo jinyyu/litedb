@@ -1,6 +1,8 @@
 
 
 set(SRC
+    mcxt.cpp
+    pq.cpp
     session.cpp)
 
 add_library(litesql ${SRC})
