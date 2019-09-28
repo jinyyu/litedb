@@ -20,6 +20,7 @@ struct MemoryContext {
 
   ~MemoryContext();
   static void Init();
+  static void Release();
   static MemoryContext* Create(MemoryContext* parent, const char* name);
   static MemoryContext* SwitchTo(MemoryContext* ctx);
 

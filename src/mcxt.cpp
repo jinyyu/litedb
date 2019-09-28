@@ -39,6 +39,14 @@ void MemoryContext::Init() {
   CurTransactionContext = TopMemoryContext;
 }
 
+void MemoryContext::Release() {
+  if (TopMemoryContext) {
+    delete (TopMemoryContext);
+    TopMemoryContext = nullptr;
+    CurTransactionContext = nullptr;
+  }
+}
+
 MemoryContext* MemoryContext::Create(MemoryContext* parent, const char* name) {
   assert(parent);
   MemoryContext* ctx = new MemoryContext(name);

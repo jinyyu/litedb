@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <litesql/int.h>
 #include <functional>
+#include <unordered_map>
 
 namespace db {
 
@@ -19,6 +20,7 @@ struct Session {
   u16 port;                     // peer port
   char peer[INET_ADDRSTRLEN];   //peer ip
   std::function<void()> sessionCloseCallback;
+  std::unordered_map<std::string, std::string> startupParameters;
 };
 
 } // db
