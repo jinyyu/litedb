@@ -88,7 +88,7 @@ void logStart(int level, const char* filename, int lineno) {
 
 void logFinish(const char* fmt, ...) {
   int level = errorData.level;
-  MemoryContext* old = MemoryContext::SwitchTo(errorData.ctx);
+  MemoryContext::SwitchTo(errorData.ctx);
 
   va_list args;
   va_start(args, fmt);
@@ -101,29 +101,12 @@ void logFinish(const char* fmt, ...) {
 
   g_free(tmp);
 
-  if (level == ERROR) {
+  if (level >= ERROR) {
     /*
      * Note that we leave CurrentMemoryContext set to ErrorContext. The
      * handler should reset it to something else soon.
      */
     throw Exception(level);
-  }
-
-  EmitErrorReport();
-
-  if (errorData.message) {
-    Free(errorData.message);
-  }
-
-  /* Exit error-handling context */
-  MemoryContext::SwitchTo(old);
-
-  if (level == FATAL) {
-    fflush(stdout);
-    fflush(stderr);
-
-    //todo: 只退出当前线程
-    exit(0);
   }
 }
 

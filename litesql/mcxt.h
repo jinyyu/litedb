@@ -31,7 +31,7 @@ struct MemoryContext {
   std::unordered_set<void*> chucks;
   std::list<MemoryContext*> children;
 
-private:
+ private:
   explicit MemoryContext(const char* name, MemoryContext* parent)
       : parent(parent),
         name(name) {

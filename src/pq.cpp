@@ -71,6 +71,12 @@ void PQ_SendU8(u8 i) {
   PqSendBuffer.push_back(i);
 }
 
+void PQ_SendU32(u32 i) {
+  i = htonl(i);
+  u8* p = (u8*) &i;
+  PqSendBuffer.insert(PqSendBuffer.end(), p, p + 4);
+}
+
 void PQ_SendString(const char* str) {
   PqSendBuffer.insert(PqSendBuffer.end(), str, str + strlen(str) + 1);
 }
@@ -81,7 +87,7 @@ void PQ_EndMessage() {
   memcpy(PqSendBuffer.data() + 1, &size, 4);
 }
 
-int PQ_Flush(int fd){
+int PQ_Flush(int fd) {
   const u8* data = PqSendBuffer.data();
   size_t len = PqSendBuffer.size();
 

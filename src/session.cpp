@@ -22,24 +22,44 @@ Session::~Session() {
 }
 
 void Session::Start() {
+  int status;
   CurSession = this;
   MemoryContext::Init();
-  int status = ProcessStartupPacket();
+  status = ProcessStartupPacket();
   if (status != STATUS_OK) {
-    MemoryContext::Release();
-    this->sessionCloseCallback();
-    return;
+    goto cleanup;
+  }
+
+  status = ClientAuthentication();
+  if (status != STATUS_OK) {
+    goto cleanup;
   }
 
   while (!forceClose) {
     try {
+
+      PQ_BeginMessage('Z');
+      PQ_SendU8('I');
+      PQ_EndMessage();
+
+      PQ_Flush(CurSession->fd);
+
+      sleep(30);
       eReport(ERROR, "TEST");
     } catch (Exception& e) {
       EmitErrorReport();
+
+      if (e.level > ERROR) {
+        forceClose = true;
+        break;
+      }
     }
 
-    sleep(10);
   }
+
+cleanup:
+  MemoryContext::Release();
+  this->sessionCloseCallback();
   CurSession = nullptr;
 }
 
@@ -94,6 +114,17 @@ int Session::ProcessStartupPacket() {
     }
 
     Free(data);
+  }
+  return STATUS_OK;
+}
+
+int Session::ClientAuthentication() {
+  PQ_BeginMessage('R');
+  PQ_SendU32(AUTH_REQ_OK);
+  PQ_EndMessage();
+
+  if (PQ_Flush(CurSession->fd) != 0) {
+    return STATUS_ERROR;
   }
   return STATUS_OK;
 }

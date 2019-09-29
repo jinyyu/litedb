@@ -24,6 +24,20 @@ namespace db {
 #define PG_DIAG_SOURCE_LINE           'L'
 #define PG_DIAG_SOURCE_FUNCTION       'R'
 
+#define AUTH_REQ_OK          0    /* User is authenticated  */
+#define AUTH_REQ_KRB4        1    /* Kerberos V4. Not supported any more. */
+#define AUTH_REQ_KRB5        2    /* Kerberos V5. Not supported any more. */
+#define AUTH_REQ_PASSWORD    3    /* Password */
+#define AUTH_REQ_CRYPT       4    /* crypt password. Not supported any more. */
+#define AUTH_REQ_MD5         5    /* md5 password */
+#define AUTH_REQ_SCM_CREDS   6    /* transfer SCM credentials */
+#define AUTH_REQ_GSS         7    /* GSSAPI without wrap() */
+#define AUTH_REQ_GSS_CONT    8    /* Continue GSS exchanges */
+#define AUTH_REQ_SSPI        9    /* SSPI negotiate without wrap() */
+#define AUTH_REQ_SASL       10    /* Begin SASL authentication */
+#define AUTH_REQ_SASL_CONT  11    /* Continue SASL authentication */
+#define AUTH_REQ_SASL_FIN   12    /* Final SASL message */
+
 #pragma pack(push, 1)
 
 struct StartupPacket {
@@ -51,10 +65,16 @@ int PQ_GetBytes(int socket, u8* buf, size_t len);
 void PQ_BeginMessage(char msgType);
 
 /* --------------------------------
- *		PQ_SendU8	- append raw data to  buffer
+ *		PQ_SendU8	- append raw data to buffer
  * --------------------------------
  */
 void PQ_SendU8(u8 i);
+
+/* --------------------------------
+ *		PQ_SendU32	- append  binary [u]int32 to buffer
+ * --------------------------------
+ */
+void PQ_SendU32(u32 i);
 
 /* --------------------------------
  *		PQ_SendString	- append a null-terminated text string
