@@ -6,7 +6,9 @@
 namespace db {
 
 thread_local MemoryContext* TopMemoryContext = nullptr;
+thread_local MemoryContext* ErrorContext = nullptr;
 thread_local MemoryContext* CurTransactionContext = nullptr;
+
 
 Object::Object() {
   assert(CurTransactionContext);
@@ -19,37 +21,24 @@ Object::~Object() {
   ctx->objects.erase(this);
 }
 
-MemoryContext::~MemoryContext() {
-  for (auto obj : objects) {
-    delete (obj);
-  }
-
-  for (auto c : chucks) {
-    free(c);
-  }
-
-  for (auto ch : children) {
-    delete (ch);
-  }
-}
-
 void MemoryContext::Init() {
   assert(!TopMemoryContext);
-  TopMemoryContext = new MemoryContext("top memory context");
+  TopMemoryContext = new MemoryContext("TopMemoryContext", nullptr);
   CurTransactionContext = TopMemoryContext;
+  ErrorContext = Create(TopMemoryContext, "ErrorContext");
 }
 
 void MemoryContext::Release() {
-  if (TopMemoryContext) {
-    delete (TopMemoryContext);
-    TopMemoryContext = nullptr;
-    CurTransactionContext = nullptr;
-  }
+  assert(TopMemoryContext);
+  delete (TopMemoryContext);
+  TopMemoryContext = nullptr;
+  CurTransactionContext = nullptr;
+  ErrorContext = nullptr;
 }
 
 MemoryContext* MemoryContext::Create(MemoryContext* parent, const char* name) {
   assert(parent);
-  MemoryContext* ctx = new MemoryContext(name);
+  MemoryContext* ctx = new MemoryContext(name, parent);
   parent->children.push_back(ctx);
   return ctx;
 }
@@ -58,6 +47,23 @@ MemoryContext* MemoryContext::SwitchTo(MemoryContext* ctx) {
   MemoryContext* old = CurTransactionContext;
   CurTransactionContext = ctx;
   return old;
+}
+
+void MemoryContext::Reset() {
+  for (auto obj : objects) {
+    delete (obj);
+  }
+  objects.clear();
+
+  for (auto c : chucks) {
+    free(c);
+  }
+  chucks.clear();
+
+  for (auto ch : children) {
+    delete (ch);
+  }
+  children.clear();
 }
 
 struct Chucks {

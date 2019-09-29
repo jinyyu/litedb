@@ -1,6 +1,7 @@
 
 
 set(SRC
+    elog.cpp
     mcxt.cpp
     pq.cpp
     session.cpp)

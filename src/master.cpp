@@ -11,6 +11,7 @@
 #include <litesql/session.h>
 #include <mutex>
 #include <thread>
+#include <signal.h>
 
 namespace db {
 
@@ -48,6 +49,8 @@ struct Server {
       exit(EXIT_FAILURE);
     }
 
+    fprintf(stdout, "listening on IPv4 address 0.0.0.0:%d\n", port);
+
     while (running) {
       struct sockaddr_in peer;
       socklen_t len = sizeof(in_addr);
@@ -55,11 +58,19 @@ struct Server {
 
       int clientFd = accept4(serverFd, (struct sockaddr*) &peer, &len, SOCK_CLOEXEC);
       if (clientFd < 0) {
+        if (errno == EBADF) {
+          //stop
+          break;
+        }
         fprintf(stderr, "accept4 error %s\n", strerror(errno));
-        continue;
+        return;
       }
       OnNewConnection(clientFd, &peer);
     }
+  }
+
+  void Stop() {
+    close(serverFd);
   }
 
   void OnNewConnection(int fd, struct sockaddr_in* addr) {
@@ -93,8 +104,17 @@ struct Server {
 
 } // db
 
+
+static db::Server* server = nullptr;
+
+void HandleStop(int) {
+  if (server) {
+    server->Stop();
+  }
+}
+
 int main(int argc, char* argv[]) {
-  int port;
+  int port = 5432;
   GOptionEntry entries[] = {
       {"port", 'p', 0, G_OPTION_ARG_INT, &port, "listen port", NULL},
       {NULL}
@@ -107,6 +127,7 @@ int main(int argc, char* argv[]) {
     fprintf(stderr, "option parsing failed: %s\n", error->message);
     exit(EXIT_FAILURE);
   }
+  g_option_context_free(context);
 
   if (port == 0) {
     char* help = g_option_context_get_help(context, true, NULL);
@@ -115,6 +136,14 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  db::Server server((db::u16) port);
-  server.Loop();
+  server = new db::Server((db::u16) port);
+
+  signal(SIGINT, HandleStop);
+
+  server->Loop();
+  delete server;
+  fprintf(stderr, "server stopped\n");
+
+  //设置空指针，使valgrind可以发现内存泄漏
+  server = nullptr;
 }

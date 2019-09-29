@@ -13,5 +13,12 @@ typedef uint32_t u32;          /* 4-byte unsigned integer */
 typedef int64_t i64;           /* 8-byte signed integer */
 typedef uint64_t u64;          /* 8-byte unsigned integer */
 
+
+#define STATUS_OK               (0)
+#define STATUS_ERROR            (-1)
+#define STATUS_EOF              (-2)
+#define STATUS_FOUND            (1)
+#define STATUS_WAITING          (2)
+
 }
 #endif //LITESQL_LITESQL_LITESQLINT_H_

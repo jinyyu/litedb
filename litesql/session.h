@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <litesql/int.h>
 #include <functional>
-#include <unordered_map>
+#include <atomic>
 
 namespace db {
 
@@ -14,13 +14,18 @@ struct Session {
   ~Session();
 
   void Start();
-  void ProcessStartupPacket();
+
+  /*
+   * Read a client's startup packet and do something according to it.
+   *
+   * Returns STATUS_OK or STATUS_ERROR
+   */
+  int ProcessStartupPacket();
 
   int fd;                       // the docker
   u16 port;                     // peer port
   char peer[INET_ADDRSTRLEN];   //peer ip
   std::function<void()> sessionCloseCallback;
-  std::unordered_map<std::string, std::string> startupParameters;
 };
 
 } // db

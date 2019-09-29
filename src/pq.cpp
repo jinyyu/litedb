@@ -11,6 +11,7 @@ namespace db {
 thread_local static char PqRecvBuffer[PQ_RECV_BUFFER_SIZE];
 thread_local static int PqRecvPointer = 0;
 thread_local static int PqRecvLength = 0;
+thread_local static std::vector<u8> PqSendBuffer;
 
 int PQ_GetBytes(int socket, u8* buf, size_t len) {
   int left = PqRecvLength - PqRecvPointer;
@@ -55,6 +56,11 @@ int PQ_GetBytes(int socket, u8* buf, size_t len) {
     }
   }
   return 0;
+}
+
+void PQ_BeginMessage(char msgType) {
+  PqSendBuffer.resize(5);
+  PqSendBuffer[0] = msgType;
 }
 
 }
