@@ -4,6 +4,10 @@
 #include <string.h>
 #include <errno.h>
 #include <vector>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 namespace db {
 
@@ -61,6 +65,43 @@ int PQ_GetBytes(int socket, u8* buf, size_t len) {
 void PQ_BeginMessage(char msgType) {
   PqSendBuffer.resize(5);
   PqSendBuffer[0] = msgType;
+}
+
+void PQ_SendU8(u8 i) {
+  PqSendBuffer.push_back(i);
+}
+
+void PQ_SendString(const char* str) {
+  PqSendBuffer.insert(PqSendBuffer.end(), str, str + strlen(str) + 1);
+}
+
+void PQ_EndMessage() {
+  u32 size = PqSendBuffer.size() - 1;
+  size = htonl(size);
+  memcpy(PqSendBuffer.data() + 1, &size, 4);
+}
+
+int PQ_Flush(int fd){
+  const u8* data = PqSendBuffer.data();
+  size_t len = PqSendBuffer.size();
+
+  while (len) {
+    ssize_t bytes = send(fd, data, len, 0);
+    if (bytes < 0) {
+      if (errno == EINTR) {
+        /* Ok if interrupted */
+        continue;
+      } else {
+        return EOF;
+      }
+    } else if (bytes == 0) {
+      return EOF;
+    }
+
+    data += bytes;
+    len -= bytes;
+  }
+  return 0;
 }
 
 }

@@ -45,6 +45,7 @@ extern thread_local MemoryContext* CurTransactionContext;
 void* Malloc(size_t size);
 void* Malloc0(size_t size);
 void Free(void* ptr);
+char* Strdup(const char* str);
 
 }
 

@@ -9,7 +9,6 @@ thread_local MemoryContext* TopMemoryContext = nullptr;
 thread_local MemoryContext* ErrorContext = nullptr;
 thread_local MemoryContext* CurTransactionContext = nullptr;
 
-
 Object::Object() {
   assert(CurTransactionContext);
 
@@ -90,6 +89,19 @@ void Free(void* ptr) {
   Chucks* c = (Chucks*) ((u8*) ptr - sizeof(MemoryContext*));
   c->ctx->chucks.erase(c);
   free(c);
+}
+
+char* Strdup(const char* str) {
+  if (!str) {
+    return nullptr;
+  }
+  size_t len = strlen(str);
+  if (len == 0) {
+    return (char*) "";
+  }
+  char* ret = (char*) Malloc(len + 1);
+  memcpy(ret, str, len + 1);
+  return ret;
 }
 
 }

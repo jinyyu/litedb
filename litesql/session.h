@@ -22,11 +22,15 @@ struct Session {
    */
   int ProcessStartupPacket();
 
+  bool forceClose;
   int fd;                       // the docker
   u16 port;                     // peer port
   char peer[INET_ADDRSTRLEN];   //peer ip
   std::function<void()> sessionCloseCallback;
 };
+
+
+extern thread_local Session* CurSession;
 
 } // db
 

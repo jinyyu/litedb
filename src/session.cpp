@@ -6,8 +6,11 @@
 
 namespace db {
 
+thread_local Session* CurSession = nullptr;
+
 Session::Session(int fd, const char* peerAddr, u16 peerPort)
-    : fd(fd),
+    : forceClose(false),
+      fd(fd),
       port(peerPort) {
   strcpy(peer, peerAddr);
   fprintf(stderr, "new connection %s:%d\n", peer, port);
@@ -19,7 +22,7 @@ Session::~Session() {
 }
 
 void Session::Start() {
-
+  CurSession = this;
   MemoryContext::Init();
   int status = ProcessStartupPacket();
   if (status != STATUS_OK) {
@@ -28,6 +31,16 @@ void Session::Start() {
     return;
   }
 
+  while (!forceClose) {
+    try {
+      eReport(ERROR, "TEST");
+    } catch (Exception& e) {
+      EmitErrorReport();
+    }
+
+    sleep(10);
+  }
+  CurSession = nullptr;
 }
 
 int Session::ProcessStartupPacket() {

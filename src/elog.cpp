@@ -1,5 +1,7 @@
 #include <litesql/elog.h>
 #include <litesql/mcxt.h>
+#include <litesql/pq.h>
+#include <litesql/session.h>
 #include <string.h>
 #include <assert.h>
 #include <glib.h>
@@ -18,12 +20,12 @@ static thread_local ErrorData errorData;
 
 static const char* ErrorLevelStrings[] = {
     "COMMERROR",
+    "DEBUG",
     "INFO",
     "NOTICE",
     "WARNING",
     "ERROR",
     "FATAL",
-    "PANIC",
 };
 
 static const char* ErrorSeverity(int level) {
@@ -33,7 +35,40 @@ static const char* ErrorSeverity(int level) {
 
 static void SendMessageToServer(ErrorData* data) {
   fprintf(stderr, "%s [%s:%d] %s\n",
-          ErrorSeverity(data->level), data->filename, data->lineno, data->message);
+          ErrorSeverity(data->level),
+          data->filename,
+          data->lineno,
+          data->message);
+}
+
+static void SendMessageToFrontend(ErrorData* data) {
+  if (data->level < ERROR) {
+    return;
+  }
+
+  PQ_BeginMessage('E');
+  const char* sev = ErrorSeverity(data->level);
+  PQ_SendU8(PG_DIAG_SEVERITY);
+  PQ_SendString(sev);
+  PQ_BeginMessage(PG_DIAG_SEVERITY_NONLOCALIZED);
+  PQ_SendString(sev);
+
+  /* M field is required per protocol, so always send something */
+  PQ_BeginMessage(PG_DIAG_MESSAGE_PRIMARY);
+  if (data->message) {
+    PQ_SendString(data->message);
+  } else {
+    PQ_SendString("missing error text");
+  }
+
+  PQ_SendU8('\0'); /* terminator */
+
+  PQ_EndMessage();
+
+  if (PQ_Flush(CurSession->fd) != 0) {
+    CurSession->forceClose = true;
+  }
+
 }
 
 void logStart(int level, const char* filename, int lineno) {
@@ -96,6 +131,7 @@ void EmitErrorReport() {
   MemoryContext* old = MemoryContext::SwitchTo(errorData.ctx);
 
   SendMessageToServer(&errorData);
+  SendMessageToFrontend(&errorData);
 
   MemoryContext::SwitchTo(old);
 }
