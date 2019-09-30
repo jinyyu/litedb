@@ -40,7 +40,9 @@ struct MemoryContext {
 
 extern thread_local MemoryContext* TopMemoryContext;
 extern thread_local MemoryContext* ErrorContext;
+extern thread_local MemoryContext* TopTransactionContext;
 extern thread_local MemoryContext* CurTransactionContext;
+
 
 void* Malloc(size_t size);
 void* Malloc0(size_t size);

@@ -1,6 +1,7 @@
 #ifndef LITESQL_LITESQL_LITESQLINT_H_
 #define LITESQL_LITESQL_LITESQLINT_H_
 #include <stdint.h>
+#include <endian.h>
 
 namespace db {
 

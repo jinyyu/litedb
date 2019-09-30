@@ -37,7 +37,7 @@ struct Server {
     struct sockaddr_in in_addr;
     memset(&in_addr, 0, sizeof(in_addr));
     in_addr.sin_family = AF_INET;
-    in_addr.sin_port = htons(port);
+    in_addr.sin_port = htobe16(port);
 
     if (bind(serverFd, (const sockaddr*) &in_addr, sizeof(in_addr)) < 0) {
       fprintf(stderr, "bind socket error %s\n", strerror(errno));
@@ -76,7 +76,7 @@ struct Server {
   void OnNewConnection(int fd, struct sockaddr_in* addr) {
     char ip[INET_ADDRSTRLEN];
     inet_ntop(addr->sin_family, &addr->sin_addr, ip, INET_ADDRSTRLEN);
-    Session* session = new Session(fd, ip, ntohs(addr->sin_port));
+    Session* session = new Session(fd, ip, be16toh(addr->sin_port));
 
     std::lock_guard<std::mutex> guard(this->sessionLock);
     sessions[fd] = session;

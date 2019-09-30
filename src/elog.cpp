@@ -46,6 +46,8 @@ static void SendMessageToFrontend(ErrorData* data) {
     return;
   }
 
+  /*
+
   PQ_BeginMessage('E');
   const char* sev = ErrorSeverity(data->level);
   PQ_SendU8(PG_DIAG_SEVERITY);
@@ -53,7 +55,7 @@ static void SendMessageToFrontend(ErrorData* data) {
   PQ_BeginMessage(PG_DIAG_SEVERITY_NONLOCALIZED);
   PQ_SendString(sev);
 
-  /* M field is required per protocol, so always send something */
+  // M field is required per protocol, so always send something
   PQ_BeginMessage(PG_DIAG_MESSAGE_PRIMARY);
   if (data->message) {
     PQ_SendString(data->message);
@@ -61,13 +63,14 @@ static void SendMessageToFrontend(ErrorData* data) {
     PQ_SendString("missing error text");
   }
 
-  PQ_SendU8('\0'); /* terminator */
+  PQ_SendU8('\0'); // terminator
 
   PQ_EndMessage();
 
   if (PQ_Flush(CurSession->fd) != 0) {
     CurSession->forceClose = true;
   }
+  */
 
 }
 
@@ -88,7 +91,7 @@ void logStart(int level, const char* filename, int lineno) {
 
 void logFinish(const char* fmt, ...) {
   int level = errorData.level;
-  MemoryContext::SwitchTo(errorData.ctx);
+  MemoryContext* old = MemoryContext::SwitchTo(errorData.ctx);
 
   va_list args;
   va_start(args, fmt);
@@ -108,6 +111,10 @@ void logFinish(const char* fmt, ...) {
      */
     throw Exception(level);
   }
+
+  MemoryContext::SwitchTo(old);
+
+  EmitErrorReport();
 }
 
 void EmitErrorReport() {

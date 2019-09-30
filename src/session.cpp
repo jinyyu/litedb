@@ -37,13 +37,11 @@ void Session::Start() {
 
   while (!forceClose) {
     try {
-
-      PQ_BeginMessage('Z');
-      PQ_SendU8('I');
-      PQ_EndMessage();
-
-      PQ_Flush(CurSession->fd);
-
+      sendBuffer.clear();
+      PQMessage* msg = MakePQMessage('Z', 1);
+      msg->PutU8('I', 0);
+      PQ_Append(sendBuffer, msg);
+      PQ_Flush(fd, sendBuffer);
       sleep(30);
       eReport(ERROR, "TEST");
     } catch (Exception& e) {
@@ -70,7 +68,7 @@ int Session::ProcessStartupPacket() {
     eReport(COMMERROR, "incomplete startup packet");
     return STATUS_ERROR;
   }
-  u32 len = ntohl(packet.length);
+  u32 len = be32toh(packet.length);
   if (len < sizeof(packet) || len > MAX_STARTUP_PACKET_LENGTH) {
     eReport(COMMERROR, "invalid length of startup packet");
     return STATUS_ERROR;
@@ -109,8 +107,16 @@ int Session::ProcessStartupPacket() {
       ptr += valueLen;
       paramLen -= valueLen;
 
-      eReport(DEBUG, "%s:%s", key, value);
-
+      if (strcmp(key, "database") == 0) {
+        database = value;
+        eReport(DEBUG, "database:%s", value);
+      } else if (strcmp(key, "user") == 0) {
+        user = value;
+        eReport(DEBUG, "user:%s", value);
+      } else if (strcmp(key, "client_encoding") == 0) {
+        client_encoding = value;
+        eReport(DEBUG, "client_encoding:%s", value);
+      }
     }
 
     Free(data);
@@ -119,14 +125,38 @@ int Session::ProcessStartupPacket() {
 }
 
 int Session::ClientAuthentication() {
-  PQ_BeginMessage('R');
-  PQ_SendU32(AUTH_REQ_OK);
-  PQ_EndMessage();
+  sendBuffer.clear();
+  MemoryContext* old = MemoryContext::SwitchTo(TopTransactionContext);
 
-  if (PQ_Flush(CurSession->fd) != 0) {
-    return STATUS_ERROR;
+  {
+    //Authentication request
+    u32 authReq = AUTH_REQ_OK;
+    PQMessage* msg = MakePQMessage('R', sizeof(authReq));
+    msg->PutU32(authReq, 0);
+    PQ_Append(sendBuffer, msg);
   }
-  return STATUS_OK;
+
+  {
+    const char* name = "server_version";
+    size_t nameLen = strlen(name) + 1;
+    const char* value = "liteSQL";
+    size_t valueLen = strlen(value) + 1;
+    PQMessage* msg = MakePQMessage('S', nameLen + valueLen);
+    u32 offset = 0;
+    offset = msg->PutData(offset, (u8*) name, nameLen);
+    msg->PutData(offset, (u8*) value, valueLen);
+    PQ_Append(sendBuffer, msg);
+  }
+
+  int status = PQ_Flush(fd, sendBuffer);
+  if (status != 0) {
+    status = STATUS_ERROR;
+  } else {
+    status = STATUS_OK;
+  }
+
+  MemoryContext::SwitchTo(old);
+  return status;
 }
 
 }

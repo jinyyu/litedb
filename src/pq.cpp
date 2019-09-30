@@ -1,5 +1,6 @@
 #include <litesql/pq.h>
 #include <litesql/int.h>
+#include <litesql/mcxt.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
@@ -12,10 +13,46 @@
 namespace db {
 
 #define PQ_RECV_BUFFER_SIZE 8192
+
 thread_local static char PqRecvBuffer[PQ_RECV_BUFFER_SIZE];
 thread_local static int PqRecvPointer = 0;
 thread_local static int PqRecvLength = 0;
-thread_local static std::vector<u8> PqSendBuffer;
+
+PQMessage* MakePQMessage(u8 type, size_t dataLen) {
+  u32 totalLen = dataLen + 5;
+  PQMessage* msg = (PQMessage*) Malloc(totalLen);
+  msg->type = type;
+  msg->len = htobe32(dataLen + sizeof(u32));
+  return msg;
+}
+
+u32 PQMessage::PutU8(u32 offset, u8 i) {
+  data[offset] = i;
+  return offset + 1;
+}
+
+u32 PQMessage::PutU16(u32 offset, u16 i) {
+  i = htobe16(i);
+  memcpy(data + offset, &i, 2);
+  return offset + 2;
+}
+
+u32 PQMessage::PutU32(u32 offset, u32 i) {
+  i = htobe32(i);
+  memcpy(data + offset, &i, 4);
+  return offset + 4;
+}
+
+u32 PQMessage::PutU64(u32 offset, u64 i) {
+  i = htobe64(i);
+  memcpy(data + offset, &i, 8);
+  return offset + 8;
+}
+
+u32 PQMessage::PutData(u32 offset, u8* dataPtr, u32 dataLen) {
+  memcpy(data + offset, dataPtr, dataLen);
+  return offset + dataLen;
+}
 
 int PQ_GetBytes(int socket, u8* buf, size_t len) {
   int left = PqRecvLength - PqRecvPointer;
@@ -62,37 +99,17 @@ int PQ_GetBytes(int socket, u8* buf, size_t len) {
   return 0;
 }
 
-void PQ_BeginMessage(char msgType) {
-  PqSendBuffer.resize(5);
-  PqSendBuffer[0] = msgType;
+void PQ_Append(std::vector<u8>& buffer, PQMessage* msg) {
+  u32 totalLen = be32toh(msg->len) + 1;
+  u8* ptr = (u8*) msg;
+  buffer.insert(buffer.end(), ptr, ptr + totalLen);
 }
 
-void PQ_SendU8(u8 i) {
-  PqSendBuffer.push_back(i);
-}
-
-void PQ_SendU32(u32 i) {
-  i = htonl(i);
-  u8* p = (u8*) &i;
-  PqSendBuffer.insert(PqSendBuffer.end(), p, p + 4);
-}
-
-void PQ_SendString(const char* str) {
-  PqSendBuffer.insert(PqSendBuffer.end(), str, str + strlen(str) + 1);
-}
-
-void PQ_EndMessage() {
-  u32 size = PqSendBuffer.size() - 1;
-  size = htonl(size);
-  memcpy(PqSendBuffer.data() + 1, &size, 4);
-}
-
-int PQ_Flush(int fd) {
-  const u8* data = PqSendBuffer.data();
-  size_t len = PqSendBuffer.size();
-
-  while (len) {
-    ssize_t bytes = send(fd, data, len, 0);
+int PQ_Flush(int fd, const std::vector<u8>& buffer) {
+  const u8* ptr = buffer.data();
+  size_t size = buffer.size();
+  while (size > 0) {
+    ssize_t bytes = send(fd, ptr, size, 0);
     if (bytes < 0) {
       if (errno == EINTR) {
         /* Ok if interrupted */
@@ -103,9 +120,8 @@ int PQ_Flush(int fd) {
     } else if (bytes == 0) {
       return EOF;
     }
-
-    data += bytes;
-    len -= bytes;
+    ptr += bytes;
+    size -= bytes;
   }
   return 0;
 }

@@ -6,6 +6,7 @@
 #include <litesql/int.h>
 #include <functional>
 #include <atomic>
+#include <vector>
 
 namespace db {
 
@@ -32,7 +33,11 @@ struct Session {
   int fd;                       // the docker
   u16 port;                     // peer port
   char peer[INET_ADDRSTRLEN];   //peer ip
+  std::vector<u8> sendBuffer;
   std::function<void()> sessionCloseCallback;
+  std::string database;
+  std::string user;
+  std::string client_encoding;
 };
 
 extern thread_local Session* CurSession;

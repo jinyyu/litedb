@@ -2,6 +2,7 @@
 #define LITESQL_LITESQL_PQ_H_
 #include <litesql/int.h>
 #include <stdio.h>
+#include <vector>
 
 namespace db {
 
@@ -46,7 +47,22 @@ struct StartupPacket {
   u16 minorVersion;
   char Parameters[0];
 };
+
+struct PQMessage {
+  u8 type;
+  u32 len;     //消息长度, data长度+4，大端
+  u8 data[0];
+
+  // 往data写入数据, 返回写入后偏移
+  u32 PutU8(u32 offset, u8 i);
+  u32 PutU16(u32 offset, u16 i);
+  u32 PutU32(u32 offset, u32 i);
+  u32 PutU64(u32 offset, u64 i);
+  u32 PutData(u32 offset, u8* dataPtr, u32 dataLen);
+};
 #pragma pack(pop)
+
+PQMessage* MakePQMessage(u8 type, size_t dataLen);
 
 #define MAX_STARTUP_PACKET_LENGTH 10000
 
@@ -59,42 +75,18 @@ struct StartupPacket {
 int PQ_GetBytes(int socket, u8* buf, size_t len);
 
 /* --------------------------------
- *		PQ_BeginMessage		- initialize for sending a message
+ *		PQ_Append	- append a message to buffer
  * --------------------------------
  */
-void PQ_BeginMessage(char msgType);
+void PQ_Append(std::vector<u8>& buffer, PQMessage* msg);
 
 /* --------------------------------
- *		PQ_SendU8	- append raw data to buffer
- * --------------------------------
- */
-void PQ_SendU8(u8 i);
-
-/* --------------------------------
- *		PQ_SendU32	- append  binary [u]int32 to buffer
- * --------------------------------
- */
-void PQ_SendU32(u32 i);
-
-/* --------------------------------
- *		PQ_SendString	- append a null-terminated text string
- * --------------------------------
- */
-void PQ_SendString(const char* str);
-
-/* --------------------------------
- *		PQ_EndMessage	- send the completed message to the frontend
- * --------------------------------
- */
-void PQ_EndMessage();
-
-/* --------------------------------
- *		PQ_Flush		- flush data to frontend
+ *		PQ_Flush	- flush socket
  *
  *		returns 0 if OK, EOF if trouble
  * --------------------------------
  */
-int PQ_Flush(int fd);
+int PQ_Flush(int fd, const std::vector<u8>& buffer);
 
 }
 

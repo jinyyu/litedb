@@ -7,6 +7,7 @@ namespace db {
 
 thread_local MemoryContext* TopMemoryContext = nullptr;
 thread_local MemoryContext* ErrorContext = nullptr;
+thread_local MemoryContext* TopTransactionContext = nullptr;
 thread_local MemoryContext* CurTransactionContext = nullptr;
 
 Object::Object() {
@@ -23,14 +24,16 @@ Object::~Object() {
 void MemoryContext::Init() {
   assert(!TopMemoryContext);
   TopMemoryContext = new MemoryContext("TopMemoryContext", nullptr);
-  CurTransactionContext = TopMemoryContext;
   ErrorContext = Create(TopMemoryContext, "ErrorContext");
+  TopTransactionContext = Create(TopMemoryContext, "TopTransactionContext");
+  CurTransactionContext = TopTransactionContext;
 }
 
 void MemoryContext::Release() {
   assert(TopMemoryContext);
   delete (TopMemoryContext);
   TopMemoryContext = nullptr;
+  TopTransactionContext = nullptr;
   CurTransactionContext = nullptr;
   ErrorContext = nullptr;
 }
