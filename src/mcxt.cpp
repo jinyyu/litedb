@@ -7,6 +7,7 @@ namespace db {
 
 thread_local MemoryContext* TopMemoryContext = nullptr;
 thread_local MemoryContext* ErrorContext = nullptr;
+thread_local MemoryContext* MessageContext = nullptr;
 thread_local MemoryContext* TopTransactionContext = nullptr;
 thread_local MemoryContext* CurTransactionContext = nullptr;
 
@@ -26,6 +27,7 @@ void MemoryContext::Init() {
   TopMemoryContext = new MemoryContext("TopMemoryContext", nullptr);
   ErrorContext = Create(TopMemoryContext, "ErrorContext");
   TopTransactionContext = Create(TopMemoryContext, "TopTransactionContext");
+  MessageContext = Create(TopMemoryContext, "MessageContext");
   CurTransactionContext = TopTransactionContext;
 }
 
@@ -33,9 +35,10 @@ void MemoryContext::Release() {
   assert(TopMemoryContext);
   delete (TopMemoryContext);
   TopMemoryContext = nullptr;
+  ErrorContext = nullptr;
+  MessageContext = nullptr;
   TopTransactionContext = nullptr;
   CurTransactionContext = nullptr;
-  ErrorContext = nullptr;
 }
 
 MemoryContext* MemoryContext::Create(MemoryContext* parent, const char* name) {

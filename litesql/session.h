@@ -29,6 +29,17 @@ struct Session {
    */
   int ClientAuthentication();
 
+  /*
+   * FlushErrorState --- flush the error state after error recovery
+   */
+  void FlushErrorState();
+
+  /* ----------------
+   * ReadyForQuery - tell client that we are ready for a new query
+   * ----------------
+   */
+  void ReadyForQuery();
+
   bool forceClose;
   int fd;                       // the docker
   u16 port;                     // peer port

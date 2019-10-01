@@ -37,22 +37,55 @@ void Session::Start() {
 
   while (!forceClose) {
     try {
-      sendBuffer.clear();
-      PQMessage* msg = MakePQMessage('Z', 1);
-      msg->PutU8('I', 0);
-      PQ_Append(sendBuffer, msg);
-      PQ_Flush(fd, sendBuffer);
-      sleep(30);
-      eReport(ERROR, "TEST");
+
+      // Release storage left over from prior query cycle
+      MemoryContext::SwitchTo(MessageContext);
+      MessageContext->Reset();
+
+      ReadyForQuery();
+
+      u8 firstChar;
+      u32 commandLen;
+
+      //read a command (loop blocks here)
+      if (PQ_GetBytes(fd, &firstChar, 1)) {
+        eReport(COMMERROR, "unexpected EOF on client connection");
+        break;
+      }
+
+      if (PQ_GetBytes(fd, (u8*)&commandLen, 4)) {
+        eReport(COMMERROR, "unexpected EOF on client connection");
+        break;
+      }
+      commandLen = be32toh(commandLen);
+      if (commandLen <4 || commandLen > )
+
+
+      switch (firstChar) {
+        case 'Q': {
+
+        }
+        default: {
+
+        }
+      }
     } catch (Exception& e) {
+
+      /* Make sure libpq is in a good state */
+      sendBuffer.clear();
+      PQ_Reset();
+
       EmitErrorReport();
+
+      FlushErrorState();
+
+      MemoryContext::SwitchTo(TopMemoryContext);
 
       if (e.level > ERROR) {
         forceClose = true;
         break;
       }
     }
-
   }
 
 cleanup:
@@ -147,6 +180,17 @@ int Session::ClientAuthentication() {
     msg->PutData(offset, (u8*) value, valueLen);
     PQ_Append(sendBuffer, msg);
   }
+  {
+    const char* name = "client_encoding";
+    size_t nameLen = strlen(name) + 1;
+    const char* value = client_encoding.c_str();
+    size_t valueLen = strlen(value) + 1;
+    PQMessage* msg = MakePQMessage('S', nameLen + valueLen);
+    u32 offset = 0;
+    offset = msg->PutData(offset, (u8*) name, nameLen);
+    msg->PutData(offset, (u8*) value, valueLen);
+    PQ_Append(sendBuffer, msg);
+  }
 
   int status = PQ_Flush(fd, sendBuffer);
   if (status != 0) {
@@ -157,6 +201,20 @@ int Session::ClientAuthentication() {
 
   MemoryContext::SwitchTo(old);
   return status;
+}
+
+void Session::FlushErrorState() {
+  ErrorContext->Reset();
+}
+
+void Session::ReadyForQuery() {
+  sendBuffer.clear();
+  PQMessage* msg = MakePQMessage('Z', 1);
+  msg->PutU8(0, 'I');
+  PQ_Append(sendBuffer, msg);
+  if (PQ_Flush(fd, sendBuffer) != 0) {
+    eReport(FATAL, "send msg error");
+  };
 }
 
 }

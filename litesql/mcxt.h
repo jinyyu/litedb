@@ -40,6 +40,7 @@ struct MemoryContext {
 
 extern thread_local MemoryContext* TopMemoryContext;
 extern thread_local MemoryContext* ErrorContext;
+extern thread_local MemoryContext* MessageContext;
 extern thread_local MemoryContext* TopTransactionContext;
 extern thread_local MemoryContext* CurTransactionContext;
 

@@ -42,7 +42,10 @@ static void SendMessageToServer(ErrorData* data) {
 }
 
 static void SendMessageToFrontend(ErrorData* data) {
-  if (data->level < ERROR) {
+  if (data->level == COMMERROR) {
+    CurSession->forceClose = true;
+    return;
+  } else if (data->level < ERROR) {
     return;
   }
 

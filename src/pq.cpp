@@ -15,8 +15,8 @@ namespace db {
 #define PQ_RECV_BUFFER_SIZE 8192
 
 thread_local static char PqRecvBuffer[PQ_RECV_BUFFER_SIZE];
-thread_local static int PqRecvPointer = 0;
-thread_local static int PqRecvLength = 0;
+thread_local static size_t PqRecvPointer = 0;
+thread_local static size_t PqRecvLength = 0;
 
 PQMessage* MakePQMessage(u8 type, size_t dataLen) {
   u32 totalLen = dataLen + 5;
@@ -27,7 +27,7 @@ PQMessage* MakePQMessage(u8 type, size_t dataLen) {
 }
 
 u32 PQMessage::PutU8(u32 offset, u8 i) {
-  data[offset] = i;
+  memcpy(data + offset, &i, 1);
   return offset + 1;
 }
 
@@ -54,13 +54,21 @@ u32 PQMessage::PutData(u32 offset, u8* dataPtr, u32 dataLen) {
   return offset + dataLen;
 }
 
+void PQ_Reset() {
+  PqRecvPointer = 0;
+  PqRecvLength = 0;
+}
+
 int PQ_GetBytes(int socket, u8* buf, size_t len) {
-  int left = PqRecvLength - PqRecvPointer;
+  size_t left = PqRecvLength - PqRecvPointer;
   if (left > 0) {
-    memcpy(buf, PqRecvBuffer + PqRecvPointer, left);
-    buf += left;
-    len -= left;
-    PqRecvPointer += left;
+    size_t bytes = std::min(len, left);
+
+    memcpy(buf, PqRecvBuffer + PqRecvPointer, bytes);
+    PqRecvPointer += bytes;
+
+    buf += bytes;
+    len -= bytes;
   }
 
   while (len > 0) {

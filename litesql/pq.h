@@ -66,6 +66,8 @@ PQMessage* MakePQMessage(u8 type, size_t dataLen);
 
 #define MAX_STARTUP_PACKET_LENGTH 10000
 
+void PQ_Reset();
+
 /* --------------------------------
  *		PQ_GetBytes		- get a known number of bytes from connection
  *
