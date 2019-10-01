@@ -53,20 +53,29 @@ void Session::Start() {
         break;
       }
 
-      if (PQ_GetBytes(fd, (u8*)&commandLen, 4)) {
+      if (PQ_GetBytes(fd, (u8*) &commandLen, 4)) {
         eReport(COMMERROR, "unexpected EOF on client connection");
         break;
       }
       commandLen = be32toh(commandLen);
-      if (commandLen <4 || commandLen > )
-
+      if (commandLen < 4 || commandLen > 64 * 1024) {
+        eReport(COMMERROR, "invalid packet");
+        break;
+      }
 
       switch (firstChar) {
         case 'Q': {
+          u32 sqlLen = commandLen - 4;
+          char* query = (char*) Malloc(sqlLen);
+          if (PQ_GetBytes(fd, (u8*) query, sqlLen) != 0) {
+            eReport(COMMERROR, "unexpected EOF on client connection");
+            goto cleanup;
+          }
 
+          ExecSimpleQuery(query);
         }
         default: {
-
+          eReport(FATAL, "invalid frontend message type %c", firstChar);
         }
       }
     } catch (Exception& e) {
@@ -215,6 +224,10 @@ void Session::ReadyForQuery() {
   if (PQ_Flush(fd, sendBuffer) != 0) {
     eReport(FATAL, "send msg error");
   };
+}
+
+void Session::ExecSimpleQuery(const char* query) {
+
 }
 
 }

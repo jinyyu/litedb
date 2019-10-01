@@ -40,6 +40,8 @@ struct Session {
    */
   void ReadyForQuery();
 
+  void ExecSimpleQuery(const char* query);
+
   bool forceClose;
   int fd;                       // the docker
   u16 port;                     // peer port
