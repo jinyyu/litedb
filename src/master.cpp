@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
 
   if (port == 0) {
     char* help = g_option_context_get_help(context, true, NULL);
-    fprintf(stderr, help);
+    fprintf(stderr, "%s", help);
     free(help);
     exit(EXIT_FAILURE);
   }

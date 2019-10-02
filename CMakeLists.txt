@@ -9,6 +9,8 @@ include_directories(${CMAKE_SOURCE_DIR})
 
 set(LIBS ${LIBS} pthread)
 
+find_package(BISON REQUIRED)
+find_package(FLEX REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(glib glib-2.0 REQUIRED)
 include_directories(${glib_INCLUDE_DIRS})
