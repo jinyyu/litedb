@@ -7,15 +7,21 @@
 
 namespace db {
 
-int parser_parse();
-int parser_lex();
-void parser_error(const char* msg);
+struct Scanner {
+  char* scanBuf;
+  size_t scanBufLen;
+  void* flex;
+};
 
 struct Parser : Object {
-  static void Parse(const char* query, std::list<RawStmt*>* list);
+  ~Parser() final;
+  static void Parse(char* query, size_t queryLen, std::list<RawStmt*>* list);
 
+  Scanner scanner;
+  std::list<RawStmt*>* list;
 private:
-  explicit Parser(const char* query);
+  explicit Parser(char* query, size_t queryLen);
 };
+
 }
 #endif //LITESQL_LITESQL_PARSER_H_

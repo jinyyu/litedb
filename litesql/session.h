@@ -40,7 +40,7 @@ struct Session {
    */
   void ReadyForQuery();
 
-  void ExecSimpleQuery(const char* query);
+  void ExecSimpleQuery(char* query, size_t queryLen);
 
   bool forceClose;
   int fd;                       // the docker

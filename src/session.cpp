@@ -66,13 +66,17 @@ void Session::Start() {
       switch (firstChar) {
         case 'Q': {
           u32 sqlLen = commandLen - 4;
-          char* query = (char*) Malloc(sqlLen);
+          char* query = (char*) Malloc(sqlLen + 1); // 额外多申请一字节
           if (PQ_GetBytes(fd, (u8*) query, sqlLen) != 0) {
             eReport(COMMERROR, "unexpected EOF on client connection");
             goto cleanup;
           }
-
-          ExecSimpleQuery(query);
+          size_t strLen = strlen(query);
+          if (strLen > sqlLen) {
+            eReport(COMMERROR, "invalid sql len");
+            goto cleanup;
+          }
+          ExecSimpleQuery(query, strLen);
         }
         default: {
           eReport(FATAL, "invalid frontend message type %c", firstChar);
@@ -226,14 +230,14 @@ void Session::ReadyForQuery() {
   };
 }
 
-void Session::ExecSimpleQuery(const char* query) {
+void Session::ExecSimpleQuery(char* query, size_t queryLen) {
   /*
    * Switch to appropriate context for constructing parsetrees.
    */
   MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
 
   std::list<RawStmt*> parseTreeList;
-  Parser::Parse(query, &parseTreeList);
+  Parser::Parse(query, queryLen, &parseTreeList);
 
   /*
  * Switch back to transaction context to enter the loop.
