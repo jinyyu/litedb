@@ -8,6 +8,8 @@ set(SRC
         ${FLEX_scanner_OUTPUTS}
         elog.cpp
         mcxt.cpp
+        parser/keywords.cpp
+        parser/nodes.cpp
         parser/parser.cpp
         pq.cpp
         session.cpp parser/parser.cpp)

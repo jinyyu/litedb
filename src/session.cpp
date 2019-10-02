@@ -1,8 +1,8 @@
-#include <thread>
 #include <litesql/session.h>
 #include <litesql/mcxt.h>
 #include <litesql/pq.h>
 #include <litesql/elog.h>
+#include <litesql/parser.h>
 
 namespace db {
 
@@ -227,7 +227,18 @@ void Session::ReadyForQuery() {
 }
 
 void Session::ExecSimpleQuery(const char* query) {
+  /*
+   * Switch to appropriate context for constructing parsetrees.
+   */
+  MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
 
+  std::list<RawStmt*> parseTreeList;
+  Parser::Parse(query, &parseTreeList);
+
+  /*
+ * Switch back to transaction context to enter the loop.
+ */
+  MemoryContext::SwitchTo(old);
 }
 
 }

@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <litesql/int.h>
 #include <litesql/session.h>
+#include <litesql/keywords.h>
 #include <mutex>
 #include <thread>
 #include <signal.h>
@@ -27,6 +28,8 @@ struct Server {
 
     int optval = 1;
     setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+    InitKeyword();
   }
 
   ~Server() {

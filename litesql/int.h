@@ -21,5 +21,7 @@ typedef uint64_t u64;          /* 8-byte unsigned integer */
 #define STATUS_FOUND            (1)
 #define STATUS_WAITING          (2)
 
+#define NAMEDATALEN 64
+
 }
 #endif //LITESQL_LITESQL_LITESQLINT_H_

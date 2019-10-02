@@ -13,5 +13,8 @@ void parser_error(const char* msg) {
 
 }
 
+void Parser::Parse(const char* query, std::list<RawStmt*>* list) {
+}
+
 }
 
