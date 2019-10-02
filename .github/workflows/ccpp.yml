@@ -4,13 +4,9 @@ on: [push]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-    
     steps:
     - uses: actions/checkout@v1
-    - name: install
-      run: apt install flex bison
     - name: configure
       run: mkdir -p build && cd build && cmake ..
     - name: make
