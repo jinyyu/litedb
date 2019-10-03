@@ -17,25 +17,25 @@ struct Object {
 
 struct MemoryContext {
 
-~MemoryContext() { Reset(); }
-static void Init();
-static void Release();
-static MemoryContext* Create(MemoryContext* parent, const char* name);
-static MemoryContext* SwitchTo(MemoryContext* ctx);
+  ~MemoryContext() { Reset(); }
+  static void Init();
+  static void Release();
+  static MemoryContext* Create(MemoryContext* parent, const char* name);
+  static MemoryContext* SwitchTo(MemoryContext* ctx);
 
-void Reset();
+  void Reset();
 
-MemoryContext* parent;
-const char* name;
-std::unordered_set<Object*> objects;
-std::unordered_set<void*> chucks;
-std::list<MemoryContext*> children;
+  MemoryContext* parent;
+  const char* name;
+  std::unordered_set<Object*> objects;
+  std::unordered_set<void*> chucks;
+  std::list<MemoryContext*> children;
 
- private:
-explicit MemoryContext(const char* name, MemoryContext* parent)
-    : parent(parent),
-      name(name) {
-}
+private:
+  explicit MemoryContext(const char* name, MemoryContext* parent)
+      : parent(parent),
+        name(name) {
+  }
 };
 
 extern thread_local MemoryContext* TopMemoryContext;

@@ -28,11 +28,18 @@ using namespace db;
 
 %union
 {
-  void* stmt;
+    int            ival;
+    char*          str;
+    const char     *keyword;
+    void*  stmt;
 }
 
 %token GET_P
 %token IDENT_P
+
+%token <str>    FCONST BCONST IDENT SCONST XCONST Op
+%token <ival>	ICONST PARAM
+%token	EQUALS_GREATER LESS_EQUALS GREATER_EQUALS NOT_EQUALS
 
 %type <stmt>	stmtblock stmt GetStmt
 

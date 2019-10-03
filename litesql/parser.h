@@ -4,6 +4,7 @@
 #include <litesql/mcxt.h>
 #include <litesql/nodes.h>
 #include <list>
+#include <vector>
 
 #define PARSER_LTYPE int
 union PARSER_STYPE;
@@ -14,6 +15,9 @@ struct Scanner {
   char* scanBuf;
   size_t scanBufLen;
   void* flex;
+  int xcdepth;           //depth of nesting in slash-star comments
+
+  std::vector<char> literalBuf;   //literalbuf is used to accumulate literal values when multiple rules are needed to parse a single literal
 };
 
 struct Parser : Object {

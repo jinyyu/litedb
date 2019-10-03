@@ -33,6 +33,7 @@ void Parser::Parse(char* query, size_t queryLen, std::list<RawStmt*>* list) {
 int parser_lex(PARSER_STYPE* yylval, PARSER_LTYPE* yylloc, Parser* parser) {
   int token = scanner_lex(yylval, yylloc, parser->scanner.flex);
   return token;
+
 }
 
 int parser_error(PARSER_LTYPE* yylloc, Parser* parser, const char* msg) {

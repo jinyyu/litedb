@@ -6,8 +6,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
-    - name: configure
-      run: mkdir -p build && cd build && cmake ..
-    - name: make
-      run: cd build && make
+      - uses: actions/checkout@v1
+      - name: configure
+        run: mkdir -p build && cd build # action not support flex && bison
