@@ -116,6 +116,10 @@ void PQ_Append(std::vector<u8>& buffer, PQMessage* msg) {
 int PQ_Flush(int fd, const std::vector<u8>& buffer) {
   const u8* ptr = buffer.data();
   size_t size = buffer.size();
+  return PQ_Flush(fd, ptr, size);
+}
+
+int PQ_Flush(int fd, const u8* ptr, size_t size) {
   while (size > 0) {
     ssize_t bytes = send(fd, ptr, size, 0);
     if (bytes < 0) {

@@ -9,7 +9,7 @@ namespace db {
 struct MemoryContext;
 struct Object {
 
-  explicit Object();
+  explicit Object(MemoryContext* ctx);
   virtual ~Object();
 
   MemoryContext* ctx;

@@ -89,6 +89,7 @@ void PQ_Append(std::vector<u8>& buffer, PQMessage* msg);
  * --------------------------------
  */
 int PQ_Flush(int fd, const std::vector<u8>& buffer);
+int PQ_Flush(int fd, const u8* data, size_t dataLen);
 
 }
 

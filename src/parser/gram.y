@@ -4,8 +4,17 @@
 #define YYERROR_VERBOSE
 using namespace db;
 
-static int parser_lex(PARSER_STYPE* yylval, PARSER_LTYPE* yylloc, Parser* parser);
-static int parser_error(PARSER_LTYPE* yylloc, Parser* parser, const char* msg);
+/*
+ * Location tracking support --- simpler than bison's default, since we only
+ * want to track the start position not the end position of each nonterminal.
+ */
+#define YYLLOC_DEFAULT(Current, Rhs, N) \
+	do { \
+		if ((N) > 0) \
+			(Current) = (Rhs)[1]; \
+		else \
+			(Current) = (-1); \
+	} while (0)
 
 %}
 
@@ -19,13 +28,13 @@ static int parser_error(PARSER_LTYPE* yylloc, Parser* parser, const char* msg);
 
 %union
 {
-    int ival;
+  void* stmt;
 }
 
 %token GET_P
 %token IDENT_P
 
-%type <ival>	stmtblock
+%type <stmt>	stmtblock stmt GetStmt
 
 /* Grammar follows */
 %%
@@ -33,15 +42,24 @@ static int parser_error(PARSER_LTYPE* yylloc, Parser* parser, const char* msg);
 /*
  *	The target production for the whole parse.
  */
-stmtblock:    {
+stmtblock:  stmt
+              {
+                yylval.stmt = $1;
               };
 
+stmt :
+			GetStmt
+			| /*EMPTY*/
+				{ $$ = NULL; }
+		;
+
+GetStmt: IDENT_P
+             {
+               $$ = NULL;
+             }
+  ;
 %%
 
-int parser_lex(PARSER_STYPE* yylval, PARSER_LTYPE* yylloc, Parser* parser) {
-
-}
-
-int parser_error(PARSER_LTYPE* yylloc, Parser* parser, const char* msg) {
+void help() {
 
 }

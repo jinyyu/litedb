@@ -1,13 +1,15 @@
 #include <litesql/keywords.h>
+#include <litesql/parser.h>
 #include <string.h>
 #include <stdlib.h>
+#include "gram.hpp"
 
 namespace db {
 
 static ScanKeyword ScanKeywords[] = {
-    {}
+    {"get", GET_P, UNRESERVED_KEYWORD},
 };
-static const int NumScanKeywords = sizeof(ScanKeywords);
+static const int NumScanKeywords = sizeof(ScanKeywords) / sizeof(ScanKeyword);
 
 static int keyCompare(const void* ap, const void* bp) {
   const ScanKeyword* a = (ScanKeyword*) ap;

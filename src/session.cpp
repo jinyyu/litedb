@@ -76,10 +76,11 @@ void Session::Start() {
             eReport(COMMERROR, "invalid sql len");
             goto cleanup;
           }
-          ExecSimpleQuery(query, strLen);
+          //ExecSimpleQuery(query, strLen);
+          //break;
         }
         default: {
-          eReport(FATAL, "invalid frontend message type %c", firstChar);
+          eReport(ERROR, "invalid frontend message type %c", firstChar);
         }
       }
     } catch (Exception& e) {

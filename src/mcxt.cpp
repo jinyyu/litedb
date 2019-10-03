@@ -11,11 +11,9 @@ thread_local MemoryContext* MessageContext = nullptr;
 thread_local MemoryContext* TopTransactionContext = nullptr;
 thread_local MemoryContext* CurTransactionContext = nullptr;
 
-Object::Object() {
-  assert(CurTransactionContext);
-
-  ctx = CurTransactionContext;
-  ctx->objects.insert(this);
+Object::Object(MemoryContext* ctx) {
+  this->ctx = ctx;
+  this->ctx->objects.insert(this);
 }
 
 Object::~Object() {
