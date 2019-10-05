@@ -96,10 +96,13 @@ static void SendMessageToFrontend(ErrorData* data) {
   }
 }
 
+void logStartLocation(int level, const char* filename, int lineno, int location) {
+  logStart(level, filename, lineno);
+  errorData.cursorPos = location;
+}
+
 void logStart(int level, const char* filename, int lineno) {
-  int cursorPos = errorData.cursorPos;
   memset(&errorData, 0, sizeof(errorData));
-  errorData.cursorPos = cursorPos;
   errorData.level = level;
   const char* str = strrchr(filename, '/');
   if (str) {

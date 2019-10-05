@@ -21,7 +21,7 @@ Session::~Session() {
   close(fd);
 }
 
-void Session::Start() {
+void Session::Loop() {
   int status;
   CurSession = this;
   MemoryContext::Init();
@@ -76,8 +76,12 @@ void Session::Start() {
             eReport(COMMERROR, "invalid sql len");
             goto cleanup;
           }
-          //ExecSimpleQuery(query, strLen);
-          //break;
+          ExecSimpleQuery(query, strLen);
+          break;
+        }
+        case 'X': {
+          forceClose = true;
+          break;
         }
         default: {
           eReport(ERROR, "invalid frontend message type %c", firstChar);

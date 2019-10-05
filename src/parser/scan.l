@@ -4,6 +4,7 @@
 #include <litesql/keywords.h>
 #include <litesql/mcxt.h>
 #include <litesql/elog.h>
+#include <algorithm>
 #include "gram.hpp"
 using namespace db;
 }
@@ -13,12 +14,11 @@ typedef PARSER_STYPE YYSTYPE;
 typedef PARSER_LTYPE YYLTYPE;
 
 #define SCANNER (&((Parser*)scanner_get_extra(yyscanner))->scanner)
-#define SET_YYLLOC()  (*(yylloc) = yytext - SCANNER->scanBuf)
 
 /*
  * Advance yylloc by the given number of bytes.
  */
-#define ADVANCE_YYLLOC(delta)  ( *(yylloc) += (delta) )
+
 #define startlit()	( SCANNER->literalBuf.clear() )
 
 static void addlit(char *ytext, int yleng, yyscan_t yyscanner);
@@ -237,8 +237,6 @@ other			.
 				}
 
 {xcstart}		{
-					/* Set location in case of syntax error in comment */
-					SET_YYLLOC();
 					SCANNER->xcdepth = 0;
 					BEGIN(xc);
 					/* Put back any characters past slash-star; see above */
@@ -279,7 +277,6 @@ other			.
 					 * In the meantime, place a leading "b" on the string
 					 * to mark it for the input routine as a binary string.
 					 */
-					SET_YYLLOC();
 					BEGIN(xb);
 					startlit();
 					addlitchar('b', yyscanner);
@@ -308,7 +305,6 @@ other			.
 					 * In the meantime, place a leading "x" on the string
 					 * to mark it for the input routine as a hex string.
 					 */
-					SET_YYLLOC();
 					BEGIN(xh);
 					startlit();
 					addlitchar('x', yyscanner);
@@ -322,8 +318,7 @@ other			.
 				}
 <xh><<EOF>>		{ eReport(ERROR, "unterminated hexadecimal string literal"); }
 
-{xqstart}		{;
-					SET_YYLLOC();
+{xqstart}		{
                     BEGIN(xq);
 					startlit();
 				}
@@ -340,7 +335,6 @@ other			.
 <xq><<EOF>>		{ eReport(ERROR, "unterminated quoted string"); }
 
 {xdstart}		{
-					SET_YYLLOC();
 					BEGIN(xd);
 					startlit();
 				}
@@ -362,34 +356,28 @@ other			.
 <xd><<EOF>>		{ eReport(ERROR, "unterminated quoted identifier"); }
 
 {equals_greater} {
-					SET_YYLLOC();
 					return EQUALS_GREATER;
 				}
 
 {less_equals}	{
-					SET_YYLLOC();
 					return LESS_EQUALS;
 				}
 
 {greater_equals} {
-					SET_YYLLOC();
 					return GREATER_EQUALS;
 				}
 
 {less_greater}	{
 					/* We accept both "<>" and "!=" as meaning NOT_EQUALS */
-					SET_YYLLOC();
 					return NOT_EQUALS;
 				}
 
 {not_equals}	{
 					/* We accept both "<>" and "!=" as meaning NOT_EQUALS */
-					SET_YYLLOC();
 					return NOT_EQUALS;
 				}
 
 {self}			{
-					SET_YYLLOC();
 					return yytext[0];
 				}
 {operator}		{
@@ -451,8 +439,6 @@ other			.
 						}
 					}
 
-					SET_YYLLOC();
-
 					if (nchars < yyleng)
 					{
 						/* Strip the unwanted chars from the token */
@@ -501,27 +487,22 @@ other			.
 				}
 
 {param}			{
-					SET_YYLLOC();
 					yylval->ival = atol(yytext + 1);
 					return PARAM;
 				}
 {integer}		{
-					SET_YYLLOC();
 					return process_integer_literal(yytext, yylval);
 				}
 {decimal}		{
-					SET_YYLLOC();
 					yylval->str = Strdup(yytext);
 					return FCONST;
 				}
 {decimalfail}	{
 					/* throw back the .., and treat as integer */
 					yyless(yyleng - 2);
-					SET_YYLLOC();
 					return process_integer_literal(yytext, yylval);
 				}
 {real}			{
-					SET_YYLLOC();
 					yylval->str = Strdup(yytext);
 					return FCONST;
 				}
@@ -533,14 +514,12 @@ other			.
 					 * syntax error anyway, we don't bother to distinguish.
 					 */
 					yyless(yyleng - 1);
-					SET_YYLLOC();
 					yylval->str = Strdup(yytext);
 					return FCONST;
 				}
 {realfail2}		{
 					/* throw back the [Ee][+-], and proceed as above */
 					yyless(yyleng - 2);
-					SET_YYLLOC();
 					yylval->str = Strdup(yytext);
 					return FCONST;
 				}
@@ -548,8 +527,6 @@ other			.
 {identifier}	{
 					const ScanKeyword *keyword;
 					char	   *ident;
-
-					SET_YYLLOC();
 
 					/* Is it a keyword? */
 					keyword = ScanKeywordLookup(yytext);
@@ -566,19 +543,17 @@ other			.
 				}
 
 {other}			{
-					SET_YYLLOC();
 					return yytext[0];
 				}
 
 <<EOF>>			{
-					SET_YYLLOC();
 					yyterminate();
 				}
 
 %%
 
 void *scanner_alloc (yy_size_t size,yyscan_t yyscanner) {
-    if (size >0) {
+    if (size > 0) {
         return Malloc(size);
     } else {
         return NULL;
@@ -636,6 +611,18 @@ static int	process_integer_literal(const char *token, YYSTYPE *lval) {
 namespace db
 {
 
+int ScannerCurrentPosition(Scanner* scanner, char* token, size_t tokenSize) {
+    struct yyguts_t * yyg = (struct yyguts_t*)(scanner->flex);
+    if (yytext) {
+        size_t position = yytext - scanner-> scanBuf;
+        snprintf(token, tokenSize, "%s", yytext);
+        return position + 1;
+    } else {
+        return 0;
+    }
+}
+
+
 void ScannerInit(Scanner* scanner, char* query, size_t queryLen) {
     void* flex;
     if (scanner_lex_init(&flex) != 0 ) {
@@ -646,6 +633,7 @@ void ScannerInit(Scanner* scanner, char* query, size_t queryLen) {
     scanner->scanBufLen = queryLen;
     scanner->scanBuf[queryLen] = scanner->scanBuf[queryLen + 1] = YY_END_OF_BUFFER_CHAR;
     scanner->flex = flex;
+    scanner->scanBufLen = queryLen + 2;
     scanner__scan_buffer(scanner->scanBuf, queryLen + 2, flex);
 }
 

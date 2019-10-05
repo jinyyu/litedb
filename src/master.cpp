@@ -93,7 +93,7 @@ struct Server {
     };
 
     std::thread thread([session]() {
-      session->Start();
+      session->Loop();
     });
     thread.detach();
   }

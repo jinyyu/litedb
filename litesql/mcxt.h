@@ -11,6 +11,7 @@ struct Object {
 
   explicit Object(MemoryContext* ctx);
   virtual ~Object();
+  virtual void Drop();
 
   MemoryContext* ctx;
 };

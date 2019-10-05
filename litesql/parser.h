@@ -6,8 +6,8 @@
 #include <list>
 #include <vector>
 
-#define PARSER_LTYPE int
 union PARSER_STYPE;
+struct PARSER_LTYPE;
 
 namespace db {
 
@@ -31,7 +31,7 @@ private:
 };
 
 int parser_lex(PARSER_STYPE* yylval, PARSER_LTYPE* yylloc, Parser* parser);
-int parser_error(PARSER_LTYPE* yylloc, Parser* parser, const char* msg);
+void parser_error(PARSER_LTYPE* yylloc, Parser* parser, const char* msg);
 
 }
 #endif //LITESQL_LITESQL_PARSER_H_

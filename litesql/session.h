@@ -14,7 +14,7 @@ struct Session {
   explicit Session(int fd, const char* peerAddr, u16 peerPort);
   ~Session();
 
-  void Start();
+  void Loop();
 
   /*
    * Read a client's startup packet and do something according to it.

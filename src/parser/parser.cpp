@@ -9,6 +9,7 @@ namespace db {
 
 extern void ScannerInit(Scanner* scanner, char* query, size_t queryLen);
 extern void ScannerFinish(Scanner* scanner);
+extern int ScannerCurrentPosition(Scanner* scanner, char* token, size_t tokenSize);
 
 Parser::Parser(char* query, size_t queryLen)
     : Object(CurTransactionContext) {
@@ -36,9 +37,14 @@ int parser_lex(PARSER_STYPE* yylval, PARSER_LTYPE* yylloc, Parser* parser) {
 
 }
 
-int parser_error(PARSER_LTYPE* yylloc, Parser* parser, const char* msg) {
-  eReport(DEBUG, "--------------------error %d, %s", *yylloc, msg);
-  return 0;
+void parser_error(PARSER_LTYPE*, Parser* parser, const char* msg) {
+  char token[16];
+  int position = ScannerCurrentPosition(&parser->scanner, token, sizeof(token));
+  if (position == 0) {
+    eReport(ERROR, "%s at end of input", msg);
+  } else {
+    eReportLocation(ERROR, position, "%s at or near \"%s\"", msg, token);
+  }
 }
 
 }

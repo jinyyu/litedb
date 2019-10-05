@@ -22,6 +22,7 @@ namespace db {
 								   * known state */
 #define FATAL       6            /* fatal error - abort process */
 
+void logStartLocation(int level, const char* filename, int lineno, int location);
 void logStart(int level, const char* filename, int lineno);
 void logFinish(const char* fmt, ...);
 
@@ -36,6 +37,14 @@ struct Exception : public std::exception {
     logFinish(format,  ##__VA_ARGS__);   \
     if (level >= ERROR) __builtin_unreachable();  \
 } while(0)
+
+#define eReportLocation(level, location, format, ...) do   \
+{                                        \
+    logStartLocation(level, __FILE__, __LINE__, location); \
+    logFinish(format,  ##__VA_ARGS__);   \
+    if (level >= ERROR) __builtin_unreachable();  \
+} while(0)
+
 
 void EmitErrorReport();
 

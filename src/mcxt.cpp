@@ -17,7 +17,12 @@ Object::Object(MemoryContext* ctx) {
 }
 
 Object::~Object() {
+
+}
+
+void Object::Drop() {
   ctx->objects.erase(this);
+  delete (this);
 }
 
 void MemoryContext::Init() {

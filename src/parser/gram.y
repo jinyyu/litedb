@@ -4,18 +4,6 @@
 #define YYERROR_VERBOSE
 using namespace db;
 
-/*
- * Location tracking support --- simpler than bison's default, since we only
- * want to track the start position not the end position of each nonterminal.
- */
-#define YYLLOC_DEFAULT(Current, Rhs, N) \
-	do { \
-		if ((N) > 0) \
-			(Current) = (Rhs)[1]; \
-		else \
-			(Current) = (-1); \
-	} while (0)
-
 %}
 
 %pure-parser
@@ -60,7 +48,7 @@ stmt :
 				{ $$ = NULL; }
 		;
 
-GetStmt: IDENT_P
+GetStmt: GET_P GET_P
              {
                $$ = NULL;
              }
