@@ -483,7 +483,7 @@ other			.
 						eReport(ERROR, "operator too long");
 
 					yylval->str = Strdup(yytext);
-					return Op;
+					return OP;
 				}
 
 {param}			{
@@ -621,7 +621,6 @@ int ScannerCurrentPosition(Scanner* scanner, char* token, size_t tokenSize) {
         return 0;
     }
 }
-
 
 void ScannerInit(Scanner* scanner, char* query, size_t queryLen) {
     void* flex;
