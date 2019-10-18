@@ -1,0 +1,9 @@
+#ifndef LITESQL_LITESQL_BTREE_RB_H_
+#define LITESQL_LITESQL_BTREE_RB_H_
+namespace db {
+
+
+
+
+}
+#endif //LITESQL_LITESQL_BTREE_RB_H_
