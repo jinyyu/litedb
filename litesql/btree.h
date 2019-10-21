@@ -22,7 +22,7 @@ struct Btree {
   virtual int CreateIndex(int* idx) = 0;
   virtual int DropTable(int tab) = 0;
   virtual int ClearTable(int tab) = 0;
-  virtual int Cursor(int iTable, int wrFlag, BtCursor** ppCur) = 0;
+  virtual int Cursor(int iTable, int wrFlag, BtCursor** cursor) = 0;
   virtual int GetMeta(int* meta) = 0;
   virtual int UpdateMeta(int* meta) = 0;
   virtual char* IntegrityCheck(int*, int) = 0;
@@ -35,16 +35,14 @@ struct Btree {
 struct BtCursor {
   virtual int Moveto(const void* key, int keyLen, int* res) = 0;
   virtual int Delete() = 0;
-  virtual int Insert(const void* key, int keyLen,
-                     const void* data, int dataLen) = 0;
+  virtual int Insert(const void* key, int keyLen, const void* data, int dataLen) = 0;
   virtual int First(int* res) = 0;
   virtual int Last(int* res) = 0;
   virtual int Next(int* res) = 0;
   virtual int Previous(int* res) = 0;
   virtual int KeySize(int* size) = 0;
   virtual int Key(int offset, int amt, char* zBuf) = 0;
-  virtual int KeyCompare(const void* pKey, int nKey,
-                         int nIgnore, int* pRes) = 0;
+  virtual int KeyCompare(const void* key, int keyLen, int nIgnore, int* res) = 0;
   virtual int DataSize(int* size) = 0;
   virtual int Data(int offset, int amt, char* zBuf) = 0;
   virtual int CloseCursor() = 0;

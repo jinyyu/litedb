@@ -137,7 +137,7 @@ struct RBtree : public Btree {
 
   ~RBtree() final {
     for (auto& it : tableHash) {
-      delete (it.second);
+      free(it.second);
     }
   }
 
@@ -279,7 +279,7 @@ struct RBtree : public Btree {
    *
    * Note that RbtCursor.eSkip and RbtCursor.pNode both initialize to 0.
    */
-  int Cursor(int iTable, int wrFlag, BtCursor** ppCur) final;
+  int Cursor(int iTable, int wrFlag, BtCursor** cursor) final;
 
   int GetMeta(int* meta) final {
     memcpy(meta, metaData, sizeof(int) * BTREE_META);
@@ -370,6 +370,8 @@ struct RbtCursor : public BtCursor {
         eSkip(0),
         wrFlag(0) {}
 
+  virtual ~RbtCursor() {}
+
   /* Move the cursor so that it points to an entry near key.
    * Return a success code.
    *
@@ -413,13 +415,13 @@ struct RbtCursor : public BtCursor {
   /*
    * Delete the entry that the cursor is pointing to.
    *
-   * The cursor is left pointing at either the next or the previous
-   * entry.  If the cursor is left pointing to the next entry, then
-   * the eSkip flag is set to SKIP_NEXT which forces the next call to
-   * Next() to be a no-op.  That way, you can always call
-   * Next() after a delete and the cursor will be left
-   * pointing to the first entry after the deleted entry.  Similarly,
-   * eSkip is set to SKIP_PREV is the cursor is left pointing to
+   * The cursor is pointing at either the next or the previous
+   * entry.  If the cursor is pointing to the next entry, then
+   * the eSkip flag is set to SKIP_NEXT which forces the next call
+   * to Next() to be a no-op.  That way, you can always call
+   * Next() after a delete and the cursor will be  pointing
+   * to the first entry after the deleted entry.  Similarly,
+   * eSkip is set to SKIP_PREV is the cursor is pointing to
    * the entry prior to the deleted entry so that a subsequent call to
    * Previous() will always leave the cursor pointing at the
    * entry immediately before the one that was deleted.
@@ -433,7 +435,7 @@ struct RbtCursor : public BtCursor {
       return STATUS_LOCKED; /* The table points to has a read lock */
     }
 
-    if (rbTree->treeData.empty()) {
+    if (rbTree->treeData.empty() || iter == rbTree->treeData.end()) {
       return STATUS_OK;
     }
 
@@ -452,14 +454,87 @@ struct RbtCursor : public BtCursor {
       rbTree->logRollbackOp(op);
     }
 
-    //todo
-
-
-
+    void* key = iter->first.data;
+    void* data = iter->second.data;
+    iter = rbTree->treeData.erase(iter);
+    if (iter != rbTree->treeData.end()) {
+      eSkip = SKIP_NEXT;
+    } else {
+      if (iter != rbTree->treeData.begin()) {
+        iter--;
+        eSkip = SKIP_PREV;
+      } else {
+        eSkip = SKIP_NEXT;
+      }
+    }
+    if (rbTree->transState == TRANS_ROLLBACK) {
+      if (key) free(key);
+      if (data) free(data);
+    }
+    return STATUS_OK;
   }
-  int Insert(const void* key, int keyLen,
-             const void* data, int dataLen) final {
 
+  int Insert(const void* key, int keyLen, const void* data, int dataLen) final {
+    /* It is illegal to call sqliteRbtreeInsert() if we are not in a transaction */
+    assert(rbTree->transState != TRANS_NONE);
+
+    /* Make sure some other cursor isn't trying to read this same table */
+    if (checkReadLocks()) {
+      return STATUS_LOCKED; /* The table pCur points to has a read lock */
+    }
+    /* Take a copy of the input data now, in case we need it for the
+    * replace case */
+    Slice sliceData;
+    sliceData.data = malloc(dataLen);
+    memcpy(sliceData.data, data, dataLen);
+
+    Slice slice{.data = (void*) key, .len = keyLen};
+    auto it = rbTree->treeData.find(slice);
+
+    if (it == rbTree->treeData.end()) {
+      Slice sliceKey;
+      sliceKey.data = malloc(keyLen);
+      memcpy(sliceKey.data, key, keyLen);
+      sliceKey.len = keyLen;
+
+      iter = rbTree->treeData.insert(std::make_pair(sliceKey, sliceData)).first;
+
+      /* Set up a rollback-op in case we have to roll this operation back */
+      if (rbTree->transState != TRANS_ROLLBACK) {
+        BtRollbackOp* op = (BtRollbackOp*) malloc(sizeof(BtRollbackOp));
+        op->op = ROLLBACK_DELETE;
+        op->tab = iTree;
+        op->keyLen = keyLen;
+        op->key = malloc(keyLen);
+        memcpy(op->key, key, keyLen);
+        rbTree->logRollbackOp(op);
+      }
+
+    } else {
+      /* No need to insert a new node in the tree, as the key already exists.
+       * Just clobber the current nodes data.
+       */
+
+      /* Set up a rollback-op in case we have to roll this operation back */
+      if (rbTree->transState != TRANS_ROLLBACK) {
+        BtRollbackOp* op = (BtRollbackOp*) malloc(sizeof(BtRollbackOp));
+        op->tab = iTree;
+        op->keyLen = keyLen;
+        op->key = malloc(keyLen);
+        memcpy(op->key, key, op->keyLen);
+
+        op->dataLen = it->second.len;
+        op->data = it->second.data;
+        op->op = ROLLBACK_INSERT;
+        rbTree->logRollbackOp(op);
+      } else {
+        free(it->second.data);
+      }
+
+      it->second.data = sliceData.data;
+      it->second.len = sliceData.len;
+    }
+    return STATUS_OK;
   }
 
   int First(int* res) final {
@@ -492,34 +567,32 @@ struct RbtCursor : public BtCursor {
    * this routine was called, then set *res=1.
    */
   int Next(int* res) final {
-    eSkip = SKIP_NONE;
-    if (rbTree->transState != SKIP_NEXT) {
+    if (eSkip != SKIP_NEXT) {
       if (iter != rbTree->treeData.end()) {
         iter++;
       }
     }
-
     if (rbTree->treeData.empty() || iter == rbTree->treeData.end()) {
       *res = 1;
     } else {
       *res = 0;
     }
+    eSkip = SKIP_NONE;
     return STATUS_OK;
   }
 
   int Previous(int* res) final {
-    eSkip = SKIP_NONE;
     if (rbTree->treeData.empty() || iter == rbTree->treeData.begin()) {
       *res = 1;
     } else {
       *res = 0;
     }
-
     if (rbTree->transState != SKIP_PREV) {
       if (iter != rbTree->treeData.begin()) {
         iter--;
       }
     }
+    eSkip = SKIP_NONE;
     return STATUS_OK;
   }
   int KeySize(int* size) final {
@@ -530,18 +603,36 @@ struct RbtCursor : public BtCursor {
     }
     return STATUS_OK;
   }
+
   int Key(int offset, int amt, char* zBuf) final {
     if (iter == rbTree->treeData.end()) {
       return 0;
     }
-    //todo
+
+    if ((amt + offset) <= iter->first.len) {
+      memcpy(zBuf, ((char*) iter->first.data) + offset, amt);
+    } else {
+      amt = iter->first.len - offset;
+      memcpy(zBuf, ((char*) iter->first.data) + offset, amt);
+    }
+    return amt;
   }
 
-  virtual int KeyCompare(const void* pKey, int nKey,
-                         int nIgnore, int* pRes) {
-
+  int KeyCompare(const void* key, int keyLen, int nIgnore, int* res) final {
+    if (iter == rbTree->treeData.end()) {
+      *res = -1;
+    } else {
+      if (iter->first.len - nIgnore < 0) {
+        *res = -1;
+      } else {
+        *res = key_compare(iter->first.data, iter->first.len - nIgnore,
+                           key, keyLen);
+      }
+    }
+    return STATUS_OK;
   }
-  virtual int DataSize(int* size) {
+
+  int DataSize(int* size) final {
     if (iter != rbTree->treeData.end()) {
       *size = iter->second.len;
     } else {
@@ -549,14 +640,28 @@ struct RbtCursor : public BtCursor {
     }
     return STATUS_OK;
   }
-  virtual int Data(int offset, int amt, char* zBuf) {
 
+  int Data(int offset, int amt, char* zBuf) final {
+    if (iter == rbTree->treeData.end()) {
+      return 0;
+    }
+
+    if ((amt + offset) <= iter->second.len) {
+      memcpy(zBuf, ((char*) iter->second.data) + offset, amt);
+    } else {
+      amt = iter->second.len - offset;
+      memcpy(zBuf, ((char*) iter->second.data) + offset, amt);
+    }
+    return amt;
   }
-  virtual int CloseCursor() {
 
+  int CloseCursor() final {
+    delete (this);
+    return STATUS_OK;
   }
-  virtual int CursorDump(int*) {
 
+  int CursorDump(int*) final {
+    return STATUS_OK;
   }
 
 private:
