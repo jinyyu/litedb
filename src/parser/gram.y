@@ -1,7 +1,9 @@
 %{
+#include <assert.h>
 #include <litesql/parser.h>
 #include <litesql/nodes.h>
 #include "gram.hpp"
+
 #define YYERROR_VERBOSE
 using namespace db;
 
@@ -22,7 +24,7 @@ using namespace db;
     char*          str;
     const char*    keyword;
     db::Node*      node;
-    std::list<db::Node*>* list;
+    db::NodeList*      list;
 }
 
 %token IDENT_P
@@ -35,7 +37,7 @@ using namespace db;
 %type <str> name
 %type <node> SchemaOptName
 
-%type <list> stmtmulti
+%type <list> stmtblock stmtmulti
 %type <node> stmt
 %type <boolean> OptTemp
 %type <node> CreateTableStmt
@@ -67,17 +69,38 @@ using namespace db;
 /* Grammar follows */
 %%
 
+/*
+ *	The target production for the whole parse.
+ */
+stmtblock:
+    stmtmulti
+    {
+        parser->nodes = $1;
+    }
+    ;
+
 stmtmulti:
     stmtmulti ';' stmt
         {
-            if ($3) {
-                $$->push_back($3);
+            if (!$1 && !$3) {
+                $$ = nullptr;
+            } else if ($1 && $3) {
+                $1->Append($3);
+                $$ = $1;
+            } else if ($1) {
+                assert(!$3);
+                $$ = $1;
+            } else {
+                assert(!$1);
+                $$ = new NodeList($3);
             }
 		}
 	| stmt
 		{
 		    if ($1) {
-		        $$->push_back($1);
+		        $$ = new NodeList($1);
+		    } else {
+		        $$ = nullptr;
 		    }
 	    }
 	;

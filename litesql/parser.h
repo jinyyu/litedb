@@ -22,10 +22,10 @@ struct Scanner {
 
 struct Parser : Object {
   ~Parser() final;
-  static void Parse(char* query, size_t queryLen, std::list<Node*>* list);
+  static NodeList* Parse(char* query, size_t queryLen);
 
   Scanner scanner;
-  std::list<Node*>* list;
+  NodeList* nodes;
 private:
   explicit Parser(char* query, size_t queryLen);
 };

@@ -12,7 +12,8 @@ extern void ScannerFinish(Scanner* scanner);
 extern int ScannerCurrentPosition(Scanner* scanner, char* token, size_t tokenSize);
 
 Parser::Parser(char* query, size_t queryLen)
-    : Object(CurTransactionContext) {
+    : Object(CurTransactionContext),
+      nodes(nullptr) {
   ScannerInit(&scanner, query, queryLen);
 }
 
@@ -20,15 +21,15 @@ Parser::~Parser() {
   ScannerFinish(&scanner);
 }
 
-void Parser::Parse(char* query, size_t queryLen, std::list<Node*>* list) {
+NodeList* Parser::Parse(char* query, size_t queryLen) {
   Parser* parser = new Parser(query, queryLen);
-  parser->list = list;
   int result = parser_parse(parser);
   ScannerFinish(&parser->scanner);
   if (result) {
     //error
-    list->clear();
+    return nullptr;
   }
+  return parser->nodes;
 }
 
 int parser_lex(PARSER_STYPE* yylval, PARSER_LTYPE* yylloc, Parser* parser) {

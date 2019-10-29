@@ -241,8 +241,7 @@ void Session::ExecSimpleQuery(char* query, size_t queryLen) {
    */
   MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
 
-  std::list<Node*> parseTreeList;
-  Parser::Parse(query, queryLen, &parseTreeList);
+  NodeList* list = Parser::Parse(query, queryLen);
 
   /*
  * Switch back to transaction context to enter the loop.
