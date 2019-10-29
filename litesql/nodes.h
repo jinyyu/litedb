@@ -1,18 +1,29 @@
 #ifndef LITESQL_SRC_PARSER_NODES_H_
 #define LITESQL_SRC_PARSER_NODES_H_
+#include <litesql/mcxt.h>
+
 namespace db {
 enum NodeTag {
-
+  T_Invalid = 0,
+  T_SchemaOptName
 };
+
+#define newNode(size, tag) \
+({	Node   *_result; \
+	_result = (Node *) Malloc0(size); \
+	_result->type = (tag); \
+	_result; \
+})
+#define makeNode(_type_) ((_type_ *) newNode(sizeof(_type_),T_##_type_))
+
 struct Node {
   NodeTag type;
 };
 
-struct RawStmt {
+struct SchemaOptName {
   NodeTag type;
-  Node* stmt;            /* raw parse tree */
-  int stmtLocation;     /* start location, or -1 if unknown */
-  int stmtLen;          /* length in bytes; 0 means "rest of string" */
+  char* schema;
+  char* name;
 };
 
 };

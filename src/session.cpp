@@ -241,7 +241,7 @@ void Session::ExecSimpleQuery(char* query, size_t queryLen) {
    */
   MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
 
-  std::list<RawStmt*> parseTreeList;
+  std::list<Node*> parseTreeList;
   Parser::Parse(query, queryLen, &parseTreeList);
 
   /*

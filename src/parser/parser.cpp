@@ -20,7 +20,7 @@ Parser::~Parser() {
   ScannerFinish(&scanner);
 }
 
-void Parser::Parse(char* query, size_t queryLen, std::list<RawStmt*>* list) {
+void Parser::Parse(char* query, size_t queryLen, std::list<Node*>* list) {
   Parser* parser = new Parser(query, queryLen);
   parser->list = list;
   int result = parser_parse(parser);

@@ -7,7 +7,14 @@
 namespace db {
 
 static ScanKeyword ScanKeywords[] = {
-    {"get", GET_P, UNRESERVED_KEYWORD},
+    {"create", CREATE, RESERVED_KEYWORD},
+    {"exists", EXISTS, UNRESERVED_KEYWORD},
+    {"if", IF_P, UNRESERVED_KEYWORD},
+    {"not", NOT, RESERVED_KEYWORD},
+    {"table", TABLE, RESERVED_KEYWORD},
+    {"temp", TEMP, UNRESERVED_KEYWORD},
+    {"temporary", TEMPORARY, UNRESERVED_KEYWORD},
+
 };
 static const int NumScanKeywords = sizeof(ScanKeywords) / sizeof(ScanKeyword);
 

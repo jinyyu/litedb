@@ -1,5 +1,6 @@
 %{
 #include <litesql/parser.h>
+#include <litesql/nodes.h>
 #include "gram.hpp"
 #define YYERROR_VERBOSE
 using namespace db;
@@ -17,19 +18,28 @@ using namespace db;
 %union
 {
     int            ival;
+    bool           boolean;
     char*          str;
-    const char     *keyword;
-    std::list<db::RawStmt*>*  list;
+    const char*    keyword;
+    db::Node*      node;
+    std::list<db::Node*>* list;
 }
 
-%token GET_P
 %token IDENT_P
 
-%token <str>    FCONST BCONST IDENT SCONST XCONST OP
-%token <ival>	ICONST PARAM
-%token  EQUALS_GREATER LESS_EQUALS GREATER_EQUALS NOT_EQUALS
+%token <str>  FCONST BCONST IDENT SCONST XCONST OP
+%token <ival> ICONST PARAM
+%token EQUALS_GREATER LESS_EQUALS GREATER_EQUALS NOT_EQUALS
 
-%type <list>    stmtblock stmtmulti
+%type <keyword> unreserved_keyword
+%type <str> name
+%type <node> SchemaOptName
+
+%type <list> stmtmulti
+%type <node> stmt
+%type <boolean> OptTemp
+%type <node> CreateTableStmt
+
 
 // Define operator precedence early so that this is the first occurance
 // of the operator tokens in the grammer.  Keeping the operators together
@@ -47,31 +57,89 @@ using namespace db;
 %left   CONCAT
 %right  UMINUS UPLUS BITNOT
 
+%token <keyword>
+        CREATE
+        EXISTS
+        IF_P
+        NOT
+        TABLE TEMP TEMPORARY
+
 /* Grammar follows */
 %%
 
-/*
- *	The target production for the whole parse.
- */
-stmtblock:  stmtmulti
-              {
-                $$ = $1;
-              };
+stmtmulti:
+    stmtmulti ';' stmt
+        {
+            if ($3) {
+                $$->push_back($3);
+            }
+		}
+	| stmt
+		{
+		    if ($1) {
+		        $$->push_back($1);
+		    }
+	    }
+	;
 
-stmtmulti:	stmtmulti ';' stmt
-				{
+stmt:
+    CreateTableStmt
+        {
+            $$ = $1;
+        }
+    | /*empty*/
+        {
+            $$ = NULL;
+        }
+     ;
 
-				}
-			| stmt
-				{
+CreateTableStmt:
+    CREATE OptTemp TABLE IF_P NOT EXISTS SchemaOptName
+        {
+             $$ = NULL;
+        }
+    ;
 
-				}
-		;
+OptTemp:
+    TEMPORARY { $$ = true; }
+    | TEMP    { $$ = true; }
+    | /*empty*/  { $$ = false; }
 
-stmt: AND
-              {
+unreserved_keyword:
+    EXISTS
+    | IF_P
+    | TEMP
+    | TEMPORARY
+    ;
 
-              };
+name:
+    IDENT
+        {
+            $$ = (char*) $1;
+        }
+    | unreserved_keyword
+        {
+            $$ = (char*) $1;
+        }
+    ;
+
+SchemaOptName:
+    name
+        {
+            SchemaOptName* n = makeNode(SchemaOptName);
+            n->name = $1;
+            $$ = (Node*) n;
+        }
+    | name '.' name
+        {
+            SchemaOptName* n = makeNode(SchemaOptName);
+            n->schema = $1;
+            n->name = $3;
+            $$ = (Node*) n;
+        }
+    ;
+
+
 %%
 
 void help() {
