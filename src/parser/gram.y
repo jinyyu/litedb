@@ -61,16 +61,17 @@ using namespace db;
 %token <keyword>
         ABORT_P ASC AUTOINCREMENT
         CONFLICT CONSTRAINT CREATE
-        DESC
+        DEFAULT DESC
         EXISTS
         FAIL
         IGNORE IF_P
-        NOT
+        NOT NULL_P
         KEY
         ON_P
         PRIMARY
         REPLACE ROLLBACK
         TABLE TEMP TEMPORARY
+        UNIQUE
 
 /* Grammar follows */
 %%
@@ -213,6 +214,18 @@ column_def:
 
 column_constraint:
     constraint_name_opt primary_key_constraint
+        {
+        }
+    | constraint_name_opt NOT NULL_P conflict_clause
+        {
+        }
+    | constraint_name_opt UNIQUE conflict_clause
+        {
+        }
+    | constraint_name_opt DEFAULT ICONST
+        {
+        }
+    | constraint_name_opt DEFAULT SCONST
         {
         }
     ;

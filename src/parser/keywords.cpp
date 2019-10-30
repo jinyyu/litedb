@@ -12,6 +12,7 @@ static ScanKeyword ScanKeywords[] = {
     {"asc", ASC, RESERVED_KEYWORD},
     {"conflict", CONFLICT, UNRESERVED_KEYWORD},
     {"constraint", CONSTRAINT, RESERVED_KEYWORD},
+    {"default", DEFAULT, RESERVED_KEYWORD},
     {"desc", DESC, RESERVED_KEYWORD},
     {"create", CREATE, RESERVED_KEYWORD},
     {"exists", EXISTS, UNRESERVED_KEYWORD},
@@ -19,6 +20,7 @@ static ScanKeyword ScanKeywords[] = {
     {"if", IF_P, UNRESERVED_KEYWORD},
     {"ignore", IGNORE, UNRESERVED_KEYWORD},
     {"not", NOT, RESERVED_KEYWORD},
+    {"null", NULL_P, RESERVED_KEYWORD},
     {"key", KEY, UNRESERVED_KEYWORD},
     {"on", ON_P, UNRESERVED_KEYWORD},
     {"primary", PRIMARY, RESERVED_KEYWORD},
@@ -27,6 +29,7 @@ static ScanKeyword ScanKeywords[] = {
     {"table", TABLE, RESERVED_KEYWORD},
     {"temp", TEMP, UNRESERVED_KEYWORD},
     {"temporary", TEMPORARY, UNRESERVED_KEYWORD},
+    {"unique", UNIQUE, RESERVED_KEYWORD},
 
 };
 static const int NumScanKeywords = sizeof(ScanKeywords) / sizeof(ScanKeyword);
