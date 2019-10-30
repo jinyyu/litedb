@@ -34,14 +34,13 @@ using namespace db;
 %token EQUALS_GREATER LESS_EQUALS GREATER_EQUALS NOT_EQUALS
 
 %type <keyword> unreserved_keyword
-%type <str> name
+%type <str> name typename column_name constraint_name_opt
 %type <node> SchemaOptName
 
 %type <list> stmtblock stmtmulti
-%type <node> stmt
+%type <node> stmt CreateTableStmt column_constraint
 %type <boolean> OptTemp
-%type <node> CreateTableStmt
-
+%type <ival> conflict_clause
 
 // Define operator precedence early so that this is the first occurance
 // of the operator tokens in the grammer.  Keeping the operators together
@@ -60,10 +59,17 @@ using namespace db;
 %right  UMINUS UPLUS BITNOT
 
 %token <keyword>
-        CREATE
+        ABORT_P ASC AUTOINCREMENT
+        CONFLICT CONSTRAINT CREATE
+        DESC
         EXISTS
-        IF_P
+        FAIL
+        IGNORE IF_P
         NOT
+        KEY
+        ON_P
+        PRIMARY
+        REPLACE ROLLBACK
         TABLE TEMP TEMPORARY
 
 /* Grammar follows */
@@ -117,9 +123,13 @@ stmt:
      ;
 
 CreateTableStmt:
-    CREATE OptTemp TABLE IF_P NOT EXISTS SchemaOptName
+    CREATE OptTemp TABLE IF_P NOT EXISTS SchemaOptName '(' column_def_list ')'
         {
              $$ = NULL;
+        }
+    | CREATE OptTemp TABLE SchemaOptName '(' column_def_list ')'
+        {
+            $$ = NULL;
         }
     ;
 
@@ -129,8 +139,15 @@ OptTemp:
     | /*empty*/  { $$ = false; }
 
 unreserved_keyword:
-    EXISTS
+    ABORT_P
+    | CONFLICT
+    | EXISTS
+    | FAIL
     | IF_P
+    | IGNORE
+    | KEY
+    | REPLACE
+    | ROLLBACK
     | TEMP
     | TEMPORARY
     ;
@@ -144,6 +161,20 @@ name:
         {
             $$ = (char*) $1;
         }
+    ;
+
+typename:
+    IDENT
+        {
+             $$ = $1;
+        }
+    ;
+
+column_name:
+    name
+         {
+             $$ = $1;
+         }
     ;
 
 SchemaOptName:
@@ -162,7 +193,82 @@ SchemaOptName:
         }
     ;
 
+column_def_list:
+    column_def_list ',' column_def
+        {
+        }
+    | column_def
+        {
+        }
+    ;
 
+column_def:
+    column_name typename
+        {
+        }
+    | column_name typename column_constraint
+        {
+        }
+    ;
+
+column_constraint:
+    constraint_name_opt primary_key_constraint
+        {
+        }
+    ;
+
+constraint_name_opt:
+    CONSTRAINT name
+        {
+             $$ = (char*) $1;
+        }
+    | /*empty*/
+        {
+            $$ = NULL;
+        }
+    ;
+
+primary_key_constraint:
+    PRIMARY KEY conflict_clause
+        {
+        }
+    | PRIMARY KEY ASC conflict_clause
+        {
+        }
+    | PRIMARY KEY DESC conflict_clause
+        {
+        }
+    | PRIMARY KEY conflict_clause AUTOINCREMENT
+        {
+        }
+    | PRIMARY KEY ASC conflict_clause AUTOINCREMENT
+        {
+        }
+    | PRIMARY KEY DESC conflict_clause AUTOINCREMENT
+        {
+        }
+    ;
+
+conflict_clause:
+    ON_P CONFLICT ROLLBACK
+        {
+        }
+    | ON_P CONFLICT ABORT_P
+        {
+        }
+    | ON_P CONFLICT FAIL
+        {
+        }
+    | ON_P CONFLICT IGNORE
+        {
+        }
+    | ON_P CONFLICT REPLACE
+        {
+        }
+    | /*empty*/
+        {
+        }
+    ;
 %%
 
 void help() {

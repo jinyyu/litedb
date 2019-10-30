@@ -7,10 +7,23 @@
 namespace db {
 
 static ScanKeyword ScanKeywords[] = {
+    {"abort", ABORT_P, UNRESERVED_KEYWORD},
+    {"autoincrement", AUTOINCREMENT, RESERVED_KEYWORD},
+    {"asc", ASC, RESERVED_KEYWORD},
+    {"conflict", CONFLICT, UNRESERVED_KEYWORD},
+    {"constraint", CONSTRAINT, RESERVED_KEYWORD},
+    {"desc", DESC, RESERVED_KEYWORD},
     {"create", CREATE, RESERVED_KEYWORD},
     {"exists", EXISTS, UNRESERVED_KEYWORD},
+    {"fail", FAIL, UNRESERVED_KEYWORD},
     {"if", IF_P, UNRESERVED_KEYWORD},
+    {"ignore", IGNORE, UNRESERVED_KEYWORD},
     {"not", NOT, RESERVED_KEYWORD},
+    {"key", KEY, UNRESERVED_KEYWORD},
+    {"on", ON_P, UNRESERVED_KEYWORD},
+    {"primary", PRIMARY, RESERVED_KEYWORD},
+    {"replace", REPLACE, UNRESERVED_KEYWORD},
+    {"rollback", ROLLBACK, UNRESERVED_KEYWORD},
     {"table", TABLE, RESERVED_KEYWORD},
     {"temp", TEMP, UNRESERVED_KEYWORD},
     {"temporary", TEMPORARY, UNRESERVED_KEYWORD},
