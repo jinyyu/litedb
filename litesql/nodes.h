@@ -6,7 +6,11 @@
 namespace db {
 enum NodeTag {
   T_Invalid = 0,
-  T_SchemaOptName
+  T_CreateTableStmt,
+  T_Typename,
+  T_ColumnDef,
+  T_ColumnConstraint,
+  T_Value,
 };
 
 #define newNode(size, tag) \
@@ -38,6 +42,67 @@ struct NodeList : public Object {
     nodes.push_back(node);
   }
   std::list<Node*> nodes;
+};
+
+struct Typename {
+  NodeTag type;
+  char* name;
+  int leftPrecision;
+  int rightPrecision;
+};
+
+struct ColumnDef
+{
+  NodeTag type;
+  Typename* typeName;
+  char* constraintName;
+  NodeList* columnConstraints;
+};
+
+enum ConstraintType
+{
+  CONSTRAINT_NONE,
+  CONSTRAINT_NOT_NULL,
+  CONSTRAINT_PRIMARY_KEY,
+  CONSTRAINT_UNIQUE,
+  CONSTRAINT_CHECK,
+  CONSTRAINT_DEFAULT,
+};
+
+enum ConflictAlgorithm
+{
+  CONFLICT_DEFAULT,
+  CONFLICT_ROLLBACK,
+  CONFLICT_ABORT,
+  CONFLICT_FAIL,
+  CONFLICT_IGNORE,
+  CONFLICT_REPLACE,
+};
+
+struct Value
+{
+  NodeTag type;
+  bool isInt;
+  int vInt;
+  bool isStr;
+  char* str;
+  bool isNUll;
+};
+
+struct ColumnConstraint
+{
+  NodeTag type;
+  ConstraintType constraint;
+  ConflictAlgorithm conflictAlgorithm;
+  Value* defaultValue;
+};
+
+struct CreateTableStmt {
+  NodeTag type;
+  bool temp;
+  char* name;
+  NodeList* columns;
+  NodeList* table_constraints;
 };
 
 };
