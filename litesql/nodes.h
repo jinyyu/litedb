@@ -11,6 +11,8 @@ enum NodeTag {
   T_ColumnDef,
   T_ColumnConstraint,
   T_Value,
+  T_TableConstraint,
+  T_Name,
 };
 
 #define newNode(size, tag) \
@@ -42,6 +44,12 @@ struct NodeList : public Object {
     nodes.push_back(node);
   }
   std::list<Node*> nodes;
+};
+
+struct Name
+{
+  NodeTag type;
+  char* name;
 };
 
 struct Typename {
@@ -95,6 +103,20 @@ struct ColumnConstraint
   ConstraintType constraint;
   ConflictAlgorithm conflictAlgorithm;
   Value* defaultValue;
+};
+
+struct Expr
+{
+  NodeTag type;
+};
+
+struct TableConstraint
+{
+  NodeTag type;
+  ConstraintType constraint;
+  NodeList* columnList;
+  ConflictAlgorithm conflictAlgorithm;
+  Expr* expr;
 };
 
 struct CreateTableStmt {

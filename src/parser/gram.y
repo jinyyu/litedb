@@ -353,36 +353,75 @@ conflict_clause:
 table_constraint:
     table_constraint ','  constraint
         {
+            $1->Append($3);
         }
     | constraint
         {
+            $$ = new NodeList($1);
         }
     ;
 
 constraint:
     PRIMARY KEY '(' column_list ')'
         {
+            TableConstraint* n = makeNode(TableConstraint);
+            n->constraint = CONSTRAINT_PRIMARY_KEY;
+            n->columnList = $4;
+            $$ = (Node*) n;
         }
     | PRIMARY KEY '(' column_list ')' conflict_clause
         {
+            TableConstraint* n = makeNode(TableConstraint);
+            n->constraint = CONSTRAINT_PRIMARY_KEY;
+            n->columnList = $4;
+            n->conflictAlgorithm = (ConflictAlgorithm) $6;
+            $$ = (Node*) n;
         }
     | UNIQUE  '(' column_list ')'
         {
+            TableConstraint* n = makeNode(TableConstraint);
+            n->constraint = CONSTRAINT_UNIQUE;
+            n->columnList = $3;
+            $$ = (Node*) n;
         }
     | UNIQUE  '(' column_list ')' conflict_clause
         {
+            TableConstraint* n = makeNode(TableConstraint);
+            n->constraint = CONSTRAINT_UNIQUE;
+            n->columnList = $3;
+            n->conflictAlgorithm = (ConflictAlgorithm) $5;
+            $$ = (Node*) n;
         }
-    | CHECK /*todo expr*/
+    | CHECK expr
         {
+            TableConstraint* n = makeNode(TableConstraint);
+            n->constraint = CONSTRAINT_CHECK;
+            n->expr = (Expr*) $2;
+            $$ = (Node*) n;
+        }
+    | CHECK expr conflict_clause
+        {
+            TableConstraint* n = makeNode(TableConstraint);
+            n->constraint = CONSTRAINT_CHECK;
+            n->expr = (Expr*) $2;
+            n->conflictAlgorithm = (ConflictAlgorithm) $3;
+            $$ = (Node*) n;
         }
     ;
 
 column_list:
     column_list ',' name
         {
+            Name* name = makeNode(Name);
+            name->name = $3;
+            $1->Append((Node*)name);
+            $$ = $1;
         }
     | name
         {
+            Name* name = makeNode(Name);
+            name->name = $1;
+            $$ = new NodeList((Node*)name);
         }
     ;
 
