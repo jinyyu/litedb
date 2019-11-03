@@ -34,11 +34,10 @@ using namespace db;
 %token EQUALS_GREATER LESS_EQUALS GREATER_EQUALS NOT_EQUALS
 
 %type <keyword> unreserved_keyword
-%type <str> name typename column_name constraint_name_opt
-%type <node> SchemaOptName
-
+%type <str> name typename
 %type <list> stmtblock stmtmulti
-%type <node> stmt CreateTableStmt column_constraint
+%type <list> column_constraint_list table_constraint column_list
+%type <node> stmt CreateTableStmt column_constraint type constraint
 %type <boolean> OptTemp
 %type <ival> conflict_clause
 
@@ -60,7 +59,7 @@ using namespace db;
 
 %token <keyword>
         ABORT_P ASC AUTOINCREMENT
-        CONFLICT CONSTRAINT CREATE
+        CHECK CONFLICT CONSTRAINT CREATE
         DEFAULT DESC
         EXISTS
         FAIL
@@ -124,13 +123,13 @@ stmt:
      ;
 
 CreateTableStmt:
-    CREATE OptTemp TABLE IF_P NOT EXISTS SchemaOptName '(' column_def_list ')'
+    CREATE OptTemp TABLE name '(' column_def_list ')'
         {
              $$ = NULL;
         }
-    | CREATE OptTemp TABLE SchemaOptName '(' column_def_list ')'
+    | CREATE OptTemp TABLE name '(' column_def_list ',' table_constraint ')'
         {
-            $$ = NULL;
+             $$ = NULL;
         }
     ;
 
@@ -139,18 +138,78 @@ OptTemp:
     | TEMP    { $$ = true; }
     | /*empty*/  { $$ = false; }
 
-unreserved_keyword:
-    ABORT_P
-    | CONFLICT
-    | EXISTS
-    | FAIL
-    | IF_P
-    | IGNORE
-    | KEY
-    | REPLACE
-    | ROLLBACK
-    | TEMP
-    | TEMPORARY
+column_def_list:
+    column_def_list ',' column_def
+        {
+
+        }
+    | column_def
+        {
+        }
+    ;
+
+column_def:
+    name type
+        {
+        }
+    | name type column_constraint_list
+        {
+        }
+    | name type CONSTRAINT name column_constraint_list
+        {
+        }
+
+    ;
+
+column_constraint_list:
+    column_constraint_list column_constraint
+        {
+        }
+    | column_constraint
+        {
+        }
+    ;
+
+column_constraint:
+    NOT NULL_P
+        {
+        }
+    | PRIMARY KEY
+        {
+        }
+    | UNIQUE
+        {
+        }
+    | CHECK
+        {
+        }
+    | DEFAULT value
+        {
+        }
+    ;
+
+type:
+    typename
+        {
+        }
+    | typename '(' ICONST ')'
+        {
+        }
+    | typename '(' ICONST ',' ICONST ')'
+        {
+        }
+    ;
+
+value:
+    ICONST
+        {
+        }
+    | SCONST
+        {
+        }
+    | NULL_P
+        {
+        }
     ;
 
 name:
@@ -165,102 +224,7 @@ name:
     ;
 
 typename:
-    IDENT
-        {
-             $$ = $1;
-        }
-    ;
-
-column_name:
-    name
-         {
-             $$ = $1;
-         }
-    ;
-
-SchemaOptName:
-    name
-        {
-            SchemaOptName* n = makeNode(SchemaOptName);
-            n->name = $1;
-            $$ = (Node*) n;
-        }
-    | name '.' name
-        {
-            SchemaOptName* n = makeNode(SchemaOptName);
-            n->schema = $1;
-            n->name = $3;
-            $$ = (Node*) n;
-        }
-    ;
-
-column_def_list:
-    column_def_list ',' column_def
-        {
-        }
-    | column_def
-        {
-        }
-    ;
-
-column_def:
-    column_name typename
-        {
-        }
-    | column_name typename column_constraint
-        {
-        }
-    ;
-
-column_constraint:
-    constraint_name_opt primary_key_constraint
-        {
-        }
-    | constraint_name_opt NOT NULL_P conflict_clause
-        {
-        }
-    | constraint_name_opt UNIQUE conflict_clause
-        {
-        }
-    | constraint_name_opt DEFAULT ICONST
-        {
-        }
-    | constraint_name_opt DEFAULT SCONST
-        {
-        }
-    ;
-
-constraint_name_opt:
-    CONSTRAINT name
-        {
-             $$ = (char*) $1;
-        }
-    | /*empty*/
-        {
-            $$ = NULL;
-        }
-    ;
-
-primary_key_constraint:
-    PRIMARY KEY conflict_clause
-        {
-        }
-    | PRIMARY KEY ASC conflict_clause
-        {
-        }
-    | PRIMARY KEY DESC conflict_clause
-        {
-        }
-    | PRIMARY KEY conflict_clause AUTOINCREMENT
-        {
-        }
-    | PRIMARY KEY ASC conflict_clause AUTOINCREMENT
-        {
-        }
-    | PRIMARY KEY DESC conflict_clause AUTOINCREMENT
-        {
-        }
-    ;
+    name    {  $$ = $1; }
 
 conflict_clause:
     ON_P CONFLICT ROLLBACK
@@ -278,9 +242,56 @@ conflict_clause:
     | ON_P CONFLICT REPLACE
         {
         }
-    | /*empty*/
+    ;
+
+table_constraint:
+    table_constraint ','  constraint
         {
         }
+    | constraint
+        {
+        }
+    ;
+
+constraint:
+    PRIMARY KEY '(' column_list ')'
+        {
+        }
+    | PRIMARY KEY '(' column_list ')' conflict_clause
+        {
+        }
+    | UNIQUE  '(' column_list ')'
+        {
+        }
+    | UNIQUE  '(' column_list ')' conflict_clause
+        {
+        }
+    | CHECK /*todo expr*/
+        {
+        }
+    ;
+
+column_list:
+    column_list ',' name
+        {
+        }
+    | name
+        {
+        }
+    ;
+
+unreserved_keyword:
+    ABORT_P
+    | CONFLICT
+    | EXISTS
+    | FAIL
+    | IF_P
+    | IGNORE
+    | KEY
+    | REPLACE
+    | ROLLBACK
+    | TEMP
+    | TEMPORARY
     ;
 %%
 

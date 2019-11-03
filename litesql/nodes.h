@@ -21,12 +21,6 @@ struct Node {
   NodeTag type;
 };
 
-struct SchemaOptName {
-  NodeTag type;
-  char* schema;
-  char* name;
-};
-
 struct NodeList : public Object {
   explicit NodeList() : Object(CurTransactionContext) {
   }

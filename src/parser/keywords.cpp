@@ -10,6 +10,7 @@ static ScanKeyword ScanKeywords[] = {
     {"abort", ABORT_P, UNRESERVED_KEYWORD},
     {"autoincrement", AUTOINCREMENT, RESERVED_KEYWORD},
     {"asc", ASC, RESERVED_KEYWORD},
+    {"check", CHECK, RESERVED_KEYWORD},
     {"conflict", CONFLICT, UNRESERVED_KEYWORD},
     {"constraint", CONSTRAINT, RESERVED_KEYWORD},
     {"default", DEFAULT, RESERVED_KEYWORD},
