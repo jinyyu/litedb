@@ -230,6 +230,7 @@ void NodeDisplay(Node* node) {
 
   rapidjson::StringBuffer buffer;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+  writer.SetIndent(' ', 2);
   doc.Accept(writer);
   const char* out = buffer.GetString();
   fprintf(stdout, "%s\n", out);
