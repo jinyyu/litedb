@@ -7,7 +7,6 @@
 #include <functional>
 
 namespace db {
-
 typedef rapidjson::Value (* NodeDumpFunc)(Node* node, rapidjson::Document& doc);
 static rapidjson::Value dumpNode(Node* node, rapidjson::Document& doc);
 static rapidjson::Value dumpArray(NodeList* node, rapidjson::Document& doc);
@@ -15,6 +14,13 @@ static rapidjson::Value notImpl(CreateTableStmt* node, rapidjson::Document& doc)
 static rapidjson::Value dumpCreateTableStmt(CreateTableStmt* node, rapidjson::Document& doc);
 static rapidjson::Value dumpTypename(Typename* node, rapidjson::Document& doc);
 static rapidjson::Value dumpColumnDef(ColumnDef* node, rapidjson::Document& doc);
+static rapidjson::Value dumpName(Name* node, rapidjson::Document& doc);
+static rapidjson::Value dumpValue(Value* node, rapidjson::Document& doc);
+static rapidjson::Value dumpColumnConstraint(ColumnConstraint* node, rapidjson::Document& doc);
+static rapidjson::Value dumpTableConstraint(TableConstraint* node, rapidjson::Document& doc);
+
+static const char* ConstraintTypeStr(ConstraintType type);
+static const char* ConflictAlgorithmStr(ConflictAlgorithm type);
 
 struct NodeTypeNameDumpFunc {
   NodeTag tag;
@@ -27,10 +33,10 @@ static NodeTypeNameDumpFunc nodeTypeNameDumpFunc[] = {
     {T_CreateTableStmt, "CreateTableStmt", (NodeDumpFunc) dumpCreateTableStmt},
     {T_Typename, "Typename", (NodeDumpFunc) dumpTypename},
     {T_ColumnDef, "ColumnDef", (NodeDumpFunc) dumpColumnDef},
-    {T_ColumnConstraint, "ColumnConstraint", (NodeDumpFunc) notImpl},
-    {T_Value, "Value", (NodeDumpFunc) notImpl},
-    {T_TableConstraint, "TableConstraint", (NodeDumpFunc) notImpl},
-    {T_Name, "Name", (NodeDumpFunc) notImpl},
+    {T_ColumnConstraint, "ColumnConstraint", (NodeDumpFunc) dumpColumnConstraint},
+    {T_Value, "Value", (NodeDumpFunc) dumpValue},
+    {T_TableConstraint, "TableConstraint", (NodeDumpFunc) dumpTableConstraint},
+    {T_Name, "Name", (NodeDumpFunc) dumpName},
 };
 
 rapidjson::Value notImpl(CreateTableStmt* node, rapidjson::Document& doc) {
@@ -83,15 +89,115 @@ rapidjson::Value dumpTypename(Typename* node, rapidjson::Document& doc) {
 rapidjson::Value dumpColumnDef(ColumnDef* node, rapidjson::Document& doc) {
   rapidjson::Value value(rapidjson::kObjectType);
   value.AddMember("columnName", rapidjson::Value(node->columnName, doc.GetAllocator()), doc.GetAllocator());
-  value.AddMember("typeName", dumpNode((Node*)node->typeName, doc), doc.GetAllocator());
+  value.AddMember("typeName", dumpNode((Node*) node->typeName, doc), doc.GetAllocator());
   if (node->constraintName) {
-    value.AddMember("constraintName", dumpNode((Node*)node->constraintName, doc), doc.GetAllocator());
+    value.AddMember("constraintName", dumpNode((Node*) node->constraintName, doc), doc.GetAllocator());
   }
   if (node->columnConstraints) {
     value.AddMember("columnConstraints", dumpArray(node->columnConstraints, doc), doc.GetAllocator());
   }
-
   return value;
+}
+
+rapidjson::Value dumpName(Name* node, rapidjson::Document& doc) {
+  rapidjson::Value value;
+  value.SetString(node->name, strlen(node->name), doc.GetAllocator());
+  return value;
+}
+
+rapidjson::Value dumpValue(Value* node, rapidjson::Document& doc) {
+  rapidjson::Value value;
+  if (node->isInt) {
+    value.SetInt(node->vInt);
+  } else if (node->isNUll) {
+    value.SetString("NULL", strlen("NULL"));
+  } else if (node->isStr) {
+    value.SetString(node->str, strlen(node->str), doc.GetAllocator());
+  }
+  return value;
+}
+
+rapidjson::Value dumpColumnConstraint(ColumnConstraint* node, rapidjson::Document& doc) {
+  rapidjson::Value value(rapidjson::kObjectType);
+  if (node->constraint != CONSTRAINT_NONE) {
+    value.AddMember("constraint",
+                    rapidjson::Value(ConstraintTypeStr(node->constraint), doc.GetAllocator()),
+                    doc.GetAllocator());
+  }
+
+  if (node->conflictAlgorithm != CONFLICT_DEFAULT) {
+    value.AddMember("conflictAlgorithm",
+                    rapidjson::Value(ConflictAlgorithmStr(node->conflictAlgorithm), doc.GetAllocator()),
+                    doc.GetAllocator());
+  }
+  if (node->defaultValue) {
+    value.AddMember("defaultValue", dumpNode((Node*) node->defaultValue, doc), doc.GetAllocator());
+  }
+  return value;
+}
+
+rapidjson::Value dumpTableConstraint(TableConstraint* node, rapidjson::Document& doc) {
+  rapidjson::Value value(rapidjson::kObjectType);
+  if (node->constraint != CONSTRAINT_NONE) {
+    value.AddMember("constraint",
+                    rapidjson::Value(ConstraintTypeStr(node->constraint), doc.GetAllocator()),
+                    doc.GetAllocator());
+  }
+  if (node->columnList) {
+    value.AddMember("columnList", dumpArray(node->columnList, doc), doc.GetAllocator());
+  }
+  if (node->conflictAlgorithm != CONFLICT_DEFAULT) {
+    value.AddMember("conflictAlgorithm",
+                    rapidjson::Value(ConflictAlgorithmStr(node->conflictAlgorithm), doc.GetAllocator()),
+                    doc.GetAllocator());
+  }
+  return value;
+}
+
+const char* ConstraintTypeStr(ConstraintType type) {
+  switch (type) {
+    case CONSTRAINT_NOT_NULL: {
+      return "NOT NULL";
+    }
+    case CONSTRAINT_PRIMARY_KEY: {
+      return "PRIMARY KEY";
+    }
+    case CONSTRAINT_UNIQUE: {
+      return "UNIQUE";
+    }
+    case CONSTRAINT_CHECK: {
+      return "CHECK";
+    }
+    case CONSTRAINT_DEFAULT: {
+      return "DEFAULT";
+    }
+    default: {
+      eReport(ERROR, "invalid constraint type %d", type);
+    }
+  }
+}
+
+const char* ConflictAlgorithmStr(ConflictAlgorithm type) {
+  switch (type) {
+    case CONFLICT_ROLLBACK: {
+      return "ROLLBACK";
+    }
+    case CONFLICT_ABORT: {
+      return "ABORT";
+    }
+    case CONFLICT_FAIL: {
+      return "FAIL";
+    }
+    case CONFLICT_IGNORE: {
+      return "IGNORE";
+    }
+    case CONFLICT_REPLACE: {
+      return "REPLACE";
+    }
+    default: {
+      eReport(ERROR, "invalid conflict algorithm %d", type);
+    }
+  }
 }
 
 rapidjson::Value dumpNode(Node* node, rapidjson::Document& doc) {
@@ -99,8 +205,7 @@ rapidjson::Value dumpNode(Node* node, rapidjson::Document& doc) {
   return nodeDumpFunc(node, doc);
 }
 
-rapidjson::Value dumpArray(NodeList* node, rapidjson::Document& doc)
-{
+rapidjson::Value dumpArray(NodeList* node, rapidjson::Document& doc) {
   rapidjson::Value array(rapidjson::kArrayType);
   for (auto it = node->nodes.begin(); it != node->nodes.end(); ++it) {
     auto value = dumpNode(*it, doc);

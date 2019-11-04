@@ -215,6 +215,7 @@ column_constraint:
         }
     | PRIMARY KEY
         {
+            fprintf(stderr, "primary key\n");
             ColumnConstraint* n = makeNode(ColumnConstraint);
             n->constraint = CONSTRAINT_PRIMARY_KEY,
             $$ = (Node*) n;
