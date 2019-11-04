@@ -46,8 +46,7 @@ struct NodeList : public Object {
   std::list<Node*> nodes;
 };
 
-struct Name
-{
+struct Name {
   NodeTag type;
   char* name;
 };
@@ -59,16 +58,15 @@ struct Typename {
   int rightPrecision;
 };
 
-struct ColumnDef
-{
+struct ColumnDef {
   NodeTag type;
+  char* columnName;
   Typename* typeName;
   char* constraintName;
   NodeList* columnConstraints;
 };
 
-enum ConstraintType
-{
+enum ConstraintType {
   CONSTRAINT_NONE,
   CONSTRAINT_NOT_NULL,
   CONSTRAINT_PRIMARY_KEY,
@@ -77,8 +75,7 @@ enum ConstraintType
   CONSTRAINT_DEFAULT,
 };
 
-enum ConflictAlgorithm
-{
+enum ConflictAlgorithm {
   CONFLICT_DEFAULT,
   CONFLICT_ROLLBACK,
   CONFLICT_ABORT,
@@ -87,8 +84,7 @@ enum ConflictAlgorithm
   CONFLICT_REPLACE,
 };
 
-struct Value
-{
+struct Value {
   NodeTag type;
   bool isInt;
   int vInt;
@@ -97,21 +93,18 @@ struct Value
   bool isNUll;
 };
 
-struct ColumnConstraint
-{
+struct ColumnConstraint {
   NodeTag type;
   ConstraintType constraint;
   ConflictAlgorithm conflictAlgorithm;
   Value* defaultValue;
 };
 
-struct Expr
-{
+struct Expr {
   NodeTag type;
 };
 
-struct TableConstraint
-{
+struct TableConstraint {
   NodeTag type;
   ConstraintType constraint;
   NodeList* columnList;

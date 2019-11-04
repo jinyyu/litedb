@@ -164,12 +164,14 @@ column_def:
     name type
         {
             ColumnDef* n = makeNode(ColumnDef);
+            n->columnName = $1;
             n->typeName = (Typename*) $2;
             $$ = (Node*) n;
         }
     | name type column_constraint_list
         {
             ColumnDef* n = makeNode(ColumnDef);
+            n->columnName = $1;
             n->typeName = (Typename*) $2;
             n->columnConstraints = $3;
             $$ = (Node*) n;
@@ -177,6 +179,7 @@ column_def:
     | name type CONSTRAINT name column_constraint_list
         {
             ColumnDef* n = makeNode(ColumnDef);
+            n->columnName = $1;
             n->typeName = (Typename*) $2;
             n->constraintName = $4;
             n->columnConstraints = $5;
