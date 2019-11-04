@@ -127,5 +127,7 @@ struct CreateTableStmt {
   NodeList* table_constraints;
 };
 
+void NodeDisplay(Node* node);
+
 };
 #endif //LITESQL_SRC_PARSER_NODES_H_

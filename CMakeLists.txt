@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 11)
 add_definitions(-Wall)
 
 include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${CMAKE_SOURCE_DIR}/3rd/)
 
 set(LIBS ${LIBS} pthread)
 

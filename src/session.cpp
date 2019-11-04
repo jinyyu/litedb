@@ -242,6 +242,11 @@ void Session::ExecSimpleQuery(char* query, size_t queryLen) {
   MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
 
   NodeList* list = Parser::Parse(query, queryLen);
+  if (list) {
+    for (auto it = list->nodes.begin(); it != list->nodes.end(); ++it) {
+      NodeDisplay(*it);
+    }
+  }
 
   /*
  * Switch back to transaction context to enter the loop.
