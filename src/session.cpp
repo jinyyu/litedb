@@ -3,6 +3,7 @@
 #include <litesql/pq.h>
 #include <litesql/elog.h>
 #include <litesql/parser.h>
+#include <litesql/portal.h>
 
 namespace db {
 
@@ -242,16 +243,19 @@ void Session::ExecSimpleQuery(char* query, size_t queryLen) {
   MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
 
   NodeList* list = Parser::Parse(query, queryLen);
-  if (list) {
-    for (auto it = list->nodes.begin(); it != list->nodes.end(); ++it) {
-      NodeDisplay(*it);
-    }
-  }
 
   /*
- * Switch back to transaction context to enter the loop.
- */
+   * Switch back to transaction context to enter the loop.
+   */
   MemoryContext::SwitchTo(old);
+  if (list) {
+    for (auto it = list->nodes.begin(); it != list->nodes.end(); ++it) {
+      MemoryContext* portalCtx = MemoryContext::Create(CurTransactionContext, "portal context");
+      Portal* portal = new Portal(*it, portalCtx);
+      portal->Run();
+      portal->Drop();
+    }
+  }
 }
 
 }

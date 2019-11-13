@@ -8,14 +8,16 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 set(SRC
         ${BISON_parser_OUTPUTS}
         ${FLEX_scanner_OUTPUTS}
-        btree_rb.cpp
-        elog.cpp
-        mcxt.cpp
         parser/keywords.cpp
         parser/nodes.cpp
         parser/parser.cpp
+        btree_rb.cpp
+        elog.cpp
+        mcxt.cpp
+        portal.cpp
         pq.cpp
-        session.cpp parser/parser.cpp)
+        session.cpp
+        table.cpp)
 
 add_library(litesql ${SRC})
 target_link_libraries(litesql ${LIBS})
