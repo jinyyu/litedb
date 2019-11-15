@@ -161,6 +161,7 @@ int Session::ProcessStartupPacket() {
 
       if (strcmp(key, "database") == 0) {
         database = value;
+        database = ":memory:";
         eReport(DEBUG, "database:%s", value);
       } else if (strcmp(key, "user") == 0) {
         user = value;
@@ -212,6 +213,7 @@ int Session::ClientAuthentication() {
   }
 
   int status = PQ_Flush(fd, sendBuffer);
+  sendBuffer.clear();
   if (status != 0) {
     status = STATUS_ERROR;
   } else {
@@ -227,13 +229,23 @@ void Session::FlushErrorState() {
 }
 
 void Session::ReadyForQuery() {
-  sendBuffer.clear();
+  MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
   PQMessage* msg = MakePQMessage('Z', 1);
   msg->PutU8(0, 'I');
   PQ_Append(sendBuffer, msg);
   if (PQ_Flush(fd, sendBuffer) != 0) {
     eReport(FATAL, "send msg error");
   };
+  sendBuffer.clear();
+  MemoryContext::SwitchTo(old);
+}
+
+void Session::SendCommand(char c, const char* command, int len) {
+  MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
+  PQMessage* msg = MakePQMessage(c, len);
+  msg->PutData(0, (u8*)command, len);
+  PQ_Append(sendBuffer, msg);
+  MemoryContext::SwitchTo(old);
 }
 
 void Session::ExecSimpleQuery(char* query, size_t queryLen) {
@@ -251,7 +263,7 @@ void Session::ExecSimpleQuery(char* query, size_t queryLen) {
   if (list) {
     for (auto it = list->nodes.begin(); it != list->nodes.end(); ++it) {
       MemoryContext* portalCtx = MemoryContext::Create(CurTransactionContext, "portal context");
-      Portal* portal = new Portal(*it, portalCtx);
+      Portal* portal = new Portal(this, *it, portalCtx);
       portal->Run();
       portal->Drop();
     }

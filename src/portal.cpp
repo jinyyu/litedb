@@ -2,7 +2,24 @@
 #include <litesql/nodes.h>
 #include <litesql/elog.h>
 #include <litesql/table.h>
+#include <litesql/session.h>
+
 namespace db {
+
+const char* Portal::CreateCommandTag(Node* parseTree) {
+  const char* tag;
+  switch (parseTree->type) {
+    case T_CreateTableStmt: {
+      tag = "CREATE TABLE";
+      break;
+    }
+    default: {
+      tag = "???";
+      break;
+    }
+  }
+  return tag;
+}
 
 void Portal::Run() {
   NodeDisplay(parseTree);
@@ -15,13 +32,19 @@ void Portal::Run() {
       break;
     }
 
-    default:{
+    default: {
       eReport(ERROR, "unknown node type %d", parseTree->type);
     }
-
   }
-
   MemoryContext::SwitchTo(old);
+
+  EndCommand();
+
+}
+
+void Portal::EndCommand()
+{
+  session->SendCommand('C', commandTag, strlen(commandTag) + 1);
 }
 
 }
