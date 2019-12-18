@@ -1,5 +1,5 @@
-#include <litesql/keywords.h>
-#include <litesql/parser.h>
+#include <litesql/parser/keywords.h>
+#include <litesql/parser/parser.h>
 #include <string.h>
 #include <stdlib.h>
 #include "gram.hpp"

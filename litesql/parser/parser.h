@@ -1,8 +1,8 @@
 #ifndef LITESQL_LITESQL_PARSER_H_
 #define LITESQL_LITESQL_PARSER_H_
 #include <litesql/int.h>
-#include <litesql/mcxt.h>
-#include <litesql/nodes.h>
+#include <litesql/utils/memctx.h>
+#include <litesql/parser/nodes.h>
 #include <list>
 #include <vector>
 

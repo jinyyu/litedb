@@ -1,8 +1,7 @@
 #include <litesql/portal.h>
-#include <litesql/nodes.h>
-#include <litesql/elog.h>
-#include <litesql/table.h>
-#include <litesql/session.h>
+#include <litesql/parser/nodes.h>
+#include <litesql/utils/elog.h>
+#include <litesql/exec/session.h>
 
 namespace db {
 
@@ -28,7 +27,6 @@ void Portal::Run() {
   switch (parseTree->type) {
     case T_CreateTableStmt: {
       CreateTableStmt* stmt = (CreateTableStmt*) parseTree;
-      ProcessCreateTableStmt(stmt);
       break;
     }
 

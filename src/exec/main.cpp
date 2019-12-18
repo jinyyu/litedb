@@ -8,8 +8,8 @@
 #include <glib.h>
 #include <unordered_map>
 #include <litesql/int.h>
-#include <litesql/session.h>
-#include <litesql/keywords.h>
+#include <litesql/exec/session.h>
+#include <litesql/parser/keywords.h>
 #include <mutex>
 #include <thread>
 #include <signal.h>

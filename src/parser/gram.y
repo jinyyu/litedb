@@ -1,7 +1,7 @@
 %{
 #include <assert.h>
-#include <litesql/parser.h>
-#include <litesql/nodes.h>
+#include <litesql/parser/parser.h>
+#include <litesql/parser/nodes.h>
 #include "gram.hpp"
 
 #define YYERROR_VERBOSE

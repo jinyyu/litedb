@@ -1,5 +1,5 @@
-#ifndef LITESQL_LITESQL_MCXT_H_
-#define LITESQL_LITESQL_MCXT_H_
+#ifndef LITESQL_LITESQL_MEMCTX_H_
+#define LITESQL_LITESQL_MEMCTX_H_
 #include <litesql/int.h>
 #include <unordered_set>
 #include <list>
@@ -32,7 +32,7 @@ struct MemoryContext {
   std::unordered_set<void*> chucks;
   std::list<MemoryContext*> children;
 
-private:
+ private:
   explicit MemoryContext(const char* name, MemoryContext* parent)
       : parent(parent),
         name(name) {
@@ -52,4 +52,4 @@ char* Strdup(const char* str);
 
 }
 
-#endif //LITESQL_LITESQL_MCXT_H_
+#endif //LITESQL_LITESQL_MEMCTX_H_

@@ -1,6 +1,6 @@
-#include <litesql/pq.h>
+#include <litesql/utils/pq.h>
 #include <litesql/int.h>
-#include <litesql/mcxt.h>
+#include <litesql/utils/memctx.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>

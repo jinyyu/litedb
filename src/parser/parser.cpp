@@ -1,5 +1,5 @@
-#include <litesql/parser.h>
-#include <litesql/elog.h>
+#include <litesql/parser/parser.h>
+#include <litesql/utils/elog.h>
 #include <string.h>
 #include "gram.hpp"
 
