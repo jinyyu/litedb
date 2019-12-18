@@ -268,7 +268,7 @@ other			.
 					/* ignore */
 				}
 
-<xc><<EOF>>		{ eReport(ERROR, "unterminated /* comment"); }
+<xc><<EOF>>		{ elog(ERROR, "unterminated /* comment"); }
 
 {xbstart}		{
 					/* Binary bit type.
@@ -296,7 +296,7 @@ other			.
 <xb>{quotecontinue}	{
                         /* ignore */
 				    }
-<xb><<EOF>>		{ eReport(ERROR, "unterminated bit string literal"); }
+<xb><<EOF>>		{ elog(ERROR, "unterminated bit string literal"); }
 
 {xhstart}		{
 					/* Hexadecimal bit type.
@@ -316,7 +316,7 @@ other			.
 					yylval->str = litbufdup(yyscanner);
 					return XCONST;
 				}
-<xh><<EOF>>		{ eReport(ERROR, "unterminated hexadecimal string literal"); }
+<xh><<EOF>>		{ elog(ERROR, "unterminated hexadecimal string literal"); }
 
 {xqstart}		{
                     BEGIN(xq);
@@ -332,7 +332,7 @@ other			.
 <xq>{xqdouble}  { addlitchar('\'', yyscanner); }
 <xq>{xqinside}  { addlit(yytext, yyleng, yyscanner); }
 <xq>{quotecontinue} { /* ignore */ }
-<xq><<EOF>>		{ eReport(ERROR, "unterminated quoted string"); }
+<xq><<EOF>>		{ elog(ERROR, "unterminated quoted string"); }
 
 {xdstart}		{
 					BEGIN(xd);
@@ -342,7 +342,7 @@ other			.
 <xd>{xdstop}	{
 					BEGIN(INITIAL);
 					if (SCANNER->literalBuf.empty()) {
-						eReport(ERROR, "zero-length delimited identifier");
+						elog(ERROR, "zero-length delimited identifier");
 					}
 					yylval->str = litbufdup(yyscanner);
 					return IDENT;
@@ -353,7 +353,7 @@ other			.
 <xd>{xdinside}	{
 					addlit(yytext, yyleng, yyscanner);
 				}
-<xd><<EOF>>		{ eReport(ERROR, "unterminated quoted identifier"); }
+<xd><<EOF>>		{ elog(ERROR, "unterminated quoted identifier"); }
 
 {equals_greater} {
 					return EQUALS_GREATER;
@@ -480,7 +480,7 @@ other			.
 					 * a syntactic mistake anyway.
 					 */
 					if (nchars >= NAMEDATALEN)
-						eReport(ERROR, "operator too long");
+						elog(ERROR, "operator too long");
 
 					yylval->str = Strdup(yytext);
 					return OP;
@@ -625,7 +625,7 @@ int ScannerCurrentPosition(Scanner* scanner, char* token, size_t tokenSize) {
 void ScannerInit(Scanner* scanner, char* query, size_t queryLen) {
     void* flex;
     if (scanner_lex_init(&flex) != 0 ) {
-         eReport(ERROR, "scanner_lex_init failed");
+         elog(ERROR, "scanner_lex_init failed");
     }
     scanner_set_extra(scanner, flex);
     scanner->scanBuf = query;

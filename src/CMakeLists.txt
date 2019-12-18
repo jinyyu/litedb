@@ -9,6 +9,7 @@ set(SRC
         ${BISON_parser_OUTPUTS}
         ${FLEX_scanner_OUTPUTS}
         exec/session.cpp
+        parser/analyze.cpp
         parser/keywords.cpp
         parser/nodes.cpp
         parser/parser.cpp

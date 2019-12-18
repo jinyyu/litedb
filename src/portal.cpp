@@ -31,7 +31,7 @@ void Portal::Run() {
     }
 
     default: {
-      eReport(ERROR, "unknown node type %d", parseTree->type);
+      elog(ERROR, "unknown node type %d", parseTree->type);
     }
   }
   MemoryContext::SwitchTo(old);

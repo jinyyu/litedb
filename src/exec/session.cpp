@@ -3,6 +3,7 @@
 #include <litesql/utils/pq.h>
 #include <litesql/utils/elog.h>
 #include <litesql/parser/parser.h>
+#include <litesql/parser/analyze.h>
 #include <litesql/portal.h>
 
 namespace db {
@@ -50,17 +51,17 @@ void Session::Loop() {
 
       //read a command (loop blocks here)
       if (PQ_GetBytes(fd, &firstChar, 1)) {
-        eReport(COMMERROR, "unexpected EOF on client connection");
+        elog(COMMERROR, "unexpected EOF on client connection");
         break;
       }
 
       if (PQ_GetBytes(fd, (u8*) &commandLen, 4)) {
-        eReport(COMMERROR, "unexpected EOF on client connection");
+        elog(COMMERROR, "unexpected EOF on client connection");
         break;
       }
       commandLen = be32toh(commandLen);
       if (commandLen < 4 || commandLen > 64 * 1024) {
-        eReport(COMMERROR, "invalid packet");
+        elog(COMMERROR, "invalid packet");
         break;
       }
 
@@ -69,14 +70,15 @@ void Session::Loop() {
           u32 sqlLen = commandLen - 4;
           char* query = (char*) Malloc(sqlLen + 1); // 额外多申请一字节
           if (PQ_GetBytes(fd, (u8*) query, sqlLen) != 0) {
-            eReport(COMMERROR, "unexpected EOF on client connection");
+            elog(COMMERROR, "unexpected EOF on client connection");
             goto cleanup;
           }
           size_t strLen = strlen(query);
           if (strLen > sqlLen) {
-            eReport(COMMERROR, "invalid sql len");
+            elog(COMMERROR, "invalid sql len");
             goto cleanup;
           }
+          query[sqlLen] = 0;
           ExecSimpleQuery(query, strLen);
           break;
         }
@@ -85,7 +87,7 @@ void Session::Loop() {
           break;
         }
         default: {
-          eReport(ERROR, "invalid frontend message type %c", firstChar);
+          elog(ERROR, "invalid frontend message type %c", firstChar);
         }
       }
     } catch (Exception& e) {
@@ -117,12 +119,12 @@ int Session::ProcessStartupPacket() {
   StartupPacket packet;
   int ret = PQ_GetBytes(fd, (u8*) &packet, sizeof(packet));
   if (ret == EOF) {
-    eReport(COMMERROR, "incomplete startup packet");
+    elog(COMMERROR, "incomplete startup packet");
     return STATUS_ERROR;
   }
   u32 len = be32toh(packet.length);
   if (len < sizeof(packet) || len > MAX_STARTUP_PACKET_LENGTH) {
-    eReport(COMMERROR, "invalid length of startup packet");
+    elog(COMMERROR, "invalid length of startup packet");
     return STATUS_ERROR;
   }
   u32 paramLen = len - sizeof(packet);
@@ -132,7 +134,7 @@ int Session::ProcessStartupPacket() {
     ret = PQ_GetBytes(fd, (u8*) ptr, paramLen);
 
     if (ret == EOF) {
-      eReport(COMMERROR, "incomplete startup packet");
+      elog(COMMERROR, "incomplete startup packet");
       return STATUS_ERROR;
     }
 
@@ -143,7 +145,7 @@ int Session::ProcessStartupPacket() {
 
       size_t keyLen = strlen(ptr) + 1;
       if (keyLen > paramLen) {
-        eReport(COMMERROR, "invalid startup packet");
+        elog(COMMERROR, "invalid startup packet");
         return STATUS_ERROR;
       }
       char* key = ptr;
@@ -152,7 +154,7 @@ int Session::ProcessStartupPacket() {
 
       size_t valueLen = strlen(ptr) + 1;
       if (valueLen > paramLen) {
-        eReport(COMMERROR, "invalid startup packet");
+        elog(COMMERROR, "invalid startup packet");
         return STATUS_ERROR;
       }
       char* value = ptr;
@@ -162,13 +164,13 @@ int Session::ProcessStartupPacket() {
       if (strcmp(key, "database") == 0) {
         database = value;
         database = ":memory:";
-        eReport(DEBUG, "database:%s", value);
+        elog(DEBUG, "database:%s", value);
       } else if (strcmp(key, "user") == 0) {
         user = value;
-        eReport(DEBUG, "user:%s", value);
+        elog(DEBUG, "user:%s", value);
       } else if (strcmp(key, "client_encoding") == 0) {
         client_encoding = value;
-        eReport(DEBUG, "client_encoding:%s", value);
+        elog(DEBUG, "client_encoding:%s", value);
       }
     }
 
@@ -234,7 +236,7 @@ void Session::ReadyForQuery() {
   msg->PutU8(0, 'I');
   PQ_Append(sendBuffer, msg);
   if (PQ_Flush(fd, sendBuffer) != 0) {
-    eReport(FATAL, "send msg error");
+    elog(FATAL, "send msg error");
   };
   sendBuffer.clear();
   MemoryContext::SwitchTo(old);
@@ -243,29 +245,27 @@ void Session::ReadyForQuery() {
 void Session::SendCommand(char c, const char* command, int len) {
   MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
   PQMessage* msg = MakePQMessage(c, len);
-  msg->PutData(0, (u8*)command, len);
+  msg->PutData(0, (u8*) command, len);
   PQ_Append(sendBuffer, msg);
   MemoryContext::SwitchTo(old);
 }
 
-void Session::ExecSimpleQuery(char* query, size_t queryLen) {
+void Session::ExecSimpleQuery(char* queryString, size_t queryLen) {
   /*
    * Switch to appropriate context for constructing parsetrees.
    */
   MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
 
-  NodeList* list = Parser::Parse(query, queryLen);
+  NodeList* list = Parser::Parse(queryString, queryLen);
 
   /*
    * Switch back to transaction context to enter the loop.
    */
   MemoryContext::SwitchTo(old);
   if (list) {
-    for (auto it = list->nodes.begin(); it != list->nodes.end(); ++it) {
-      MemoryContext* portalCtx = MemoryContext::Create(CurTransactionContext, "portal context");
-      Portal* portal = new Portal(this, *it, portalCtx);
-      portal->Run();
-      portal->Drop();
+    for (Node* parseTree : list->nodes) {
+      Query* query = ParseAnalyze(parseTree, queryString);
+      SendCommand('C', "ok", strlen("ok") + 1);
     }
   }
 }

@@ -42,7 +42,7 @@ struct Session {
 
   void SendCommand(char c, const char* msg, int len);
 
-  void ExecSimpleQuery(char* query, size_t queryLen);
+  void ExecSimpleQuery(char* queryString, size_t queryLen);
 
   bool forceClose;
   int fd;                       // the docker

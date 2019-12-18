@@ -13,6 +13,7 @@ enum NodeTag {
   T_Value,
   T_TableConstraint,
   T_Name,
+  T_Query,
 };
 
 #define newNode(size, tag) \

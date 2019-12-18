@@ -10,8 +10,8 @@ namespace db {
 
 struct ErrorData {
   int level;             /* error level */
-  const char* filename;  /* __FILE__ of eReport() call */
-  int lineno;            /* __LINE__ of eReport() call */
+  const char* filename;  /* __FILE__ of elog() call */
+  int lineno;            /* __LINE__ of elog() call */
   int cursorPos;         /* cursor index into query string */
   char* message;         /* primary error message */
   MemoryContext* ctx;    /* context containing associated non-constant strings */

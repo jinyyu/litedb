@@ -31,14 +31,14 @@ struct Exception : public std::exception {
   int level;
 };
 
-#define eReport(level, format, ...) do   \
+#define elog(level, format, ...) do   \
 {                                        \
     logStart(level, __FILE__, __LINE__); \
     logFinish(format,  ##__VA_ARGS__);   \
     if (level >= ERROR) __builtin_unreachable();  \
 } while(0)
 
-#define eReportLocation(level, location, format, ...) do   \
+#define elogLocation(level, location, format, ...) do   \
 {                                        \
     logStartLocation(level, __FILE__, __LINE__, location); \
     logFinish(format,  ##__VA_ARGS__);   \

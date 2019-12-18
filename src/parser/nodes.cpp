@@ -37,6 +37,7 @@ static NodeTypeNameDumpFunc nodeTypeNameDumpFunc[] = {
     {T_Value, "Value", (NodeDumpFunc) dumpValue},
     {T_TableConstraint, "TableConstraint", (NodeDumpFunc) dumpTableConstraint},
     {T_Name, "Name", (NodeDumpFunc) dumpName},
+    {T_Query, "Query", (NodeDumpFunc) notImpl}
 };
 
 rapidjson::Value notImpl(CreateTableStmt* node, rapidjson::Document& doc) {
@@ -172,7 +173,7 @@ const char* ConstraintTypeStr(ConstraintType type) {
       return "DEFAULT";
     }
     default: {
-      eReport(ERROR, "invalid constraint type %d", type);
+      elog(ERROR, "invalid constraint type %d", type);
     }
   }
 }
@@ -195,7 +196,7 @@ const char* ConflictAlgorithmStr(ConflictAlgorithm type) {
       return "REPLACE";
     }
     default: {
-      eReport(ERROR, "invalid conflict algorithm %d", type);
+      elog(ERROR, "invalid conflict algorithm %d", type);
     }
   }
 }

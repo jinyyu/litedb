@@ -42,9 +42,9 @@ void parser_error(PARSER_LTYPE*, Parser* parser, const char* msg) {
   char token[16];
   int position = ScannerCurrentPosition(&parser->scanner, token, sizeof(token));
   if (position == 0) {
-    eReport(ERROR, "%s at end of input", msg);
+    elog(ERROR, "%s at end of input", msg);
   } else {
-    eReportLocation(ERROR, position, "%s at or near \"%s\"", msg, token);
+    elogLocation(ERROR, position, "%s at or near \"%s\"", msg, token);
   }
 }
 
