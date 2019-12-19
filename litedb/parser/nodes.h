@@ -1,6 +1,6 @@
-#ifndef LITESQL_SRC_PARSER_NODES_H_
-#define LITESQL_SRC_PARSER_NODES_H_
-#include <litesql/utils/memctx.h>
+#ifndef LITEDB_PARSER_NODES_H_
+#define LITEDB_PARSER_NODES_H_
+#include <litedb/utils/memctx.h>
 #include <list>
 
 namespace db {
@@ -124,4 +124,4 @@ struct CreateTableStmt {
 void NodeDisplay(Node* node);
 
 };
-#endif //LITESQL_SRC_PARSER_NODES_H_
+#endif //LITEDB_PARSER_NODES_H_

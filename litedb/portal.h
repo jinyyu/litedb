@@ -1,7 +1,7 @@
-#ifndef LITESQL_LITESQL_PORTAL_H_
-#define LITESQL_LITESQL_PORTAL_H_
-#include <litesql/utils/memctx.h>
-#include <litesql/parser/nodes.h>
+#ifndef LITEDB_PORTAL_H_
+#define LITEDB_PORTAL_H_
+#include <litedb/utils/memctx.h>
+#include <litedb/parser/nodes.h>
 
 namespace db {
 
@@ -36,4 +36,4 @@ struct Portal : Object {
 };
 
 }
-#endif //LITESQL_LITESQL_PORTAL_H_
+#endif //LITEDB_PORTAL_H_

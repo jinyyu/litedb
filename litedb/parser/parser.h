@@ -1,8 +1,8 @@
-#ifndef LITESQL_LITESQL_PARSER_H_
-#define LITESQL_LITESQL_PARSER_H_
-#include <litesql/int.h>
-#include <litesql/utils/memctx.h>
-#include <litesql/parser/nodes.h>
+#ifndef LITEDB_PARSER_H_
+#define LITEDB_PARSER_H_
+#include <litedb/int.h>
+#include <litedb/utils/memctx.h>
+#include <litedb/parser/nodes.h>
 #include <list>
 #include <vector>
 
@@ -34,4 +34,4 @@ int parser_lex(PARSER_STYPE* yylval, PARSER_LTYPE* yylloc, Parser* parser);
 void parser_error(PARSER_LTYPE* yylloc, Parser* parser, const char* msg);
 
 }
-#endif //LITESQL_LITESQL_PARSER_H_
+#endif //LITEDB_PARSER_H_

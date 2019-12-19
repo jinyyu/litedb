@@ -1,5 +1,5 @@
-#include <litesql/parser/analyze.h>
-#include <litesql/utils/elog.h>
+#include <litedb/parser/analyze.h>
+#include <litedb/utils/elog.h>
 
 namespace db {
 

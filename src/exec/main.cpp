@@ -7,9 +7,9 @@
 #include <arpa/inet.h>
 #include <glib.h>
 #include <unordered_map>
-#include <litesql/int.h>
-#include <litesql/exec/session.h>
-#include <litesql/parser/keywords.h>
+#include <litedb/int.h>
+#include <litedb/exec/session.h>
+#include <litedb/parser/keywords.h>
 #include <mutex>
 #include <thread>
 #include <signal.h>

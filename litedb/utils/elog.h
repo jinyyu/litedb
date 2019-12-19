@@ -1,5 +1,5 @@
-#ifndef LITESQL_LITESQL_ELOG_H_
-#define LITESQL_LITESQL_ELOG_H_
+#ifndef LITEDB_ELOG_H_
+#define LITEDB_ELOG_H_
 #include <exception>
 
 namespace db {
@@ -49,4 +49,4 @@ struct Exception : public std::exception {
 void EmitErrorReport();
 
 } //db
-#endif //LITESQL_LITESQL_ELOG_H_
+#endif //LITEDB_LITESQL_ELOG_H_

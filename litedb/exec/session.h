@@ -1,9 +1,9 @@
-#ifndef LITESQL_WORKER_H
-#define LITESQL_WORKER_H
+#ifndef LITEDB__WORKER_H
+#define LITEDB__WORKER_H
 #include <string.h>
 #include <netdb.h>
 #include <unistd.h>
-#include <litesql/int.h>
+#include <litedb/int.h>
 #include <functional>
 #include <atomic>
 #include <vector>
@@ -59,4 +59,4 @@ extern thread_local Session* CurSession;
 
 } // db
 
-#endif //LITESQL_WORKER_H
+#endif //LITEDB__WORKER_H

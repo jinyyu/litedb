@@ -1,5 +1,5 @@
-#ifndef LITESQL_LITESQL_LITESQLINT_H_
-#define LITESQL_LITESQL_LITESQLINT_H_
+#ifndef LITEDB_INT_H_
+#define LITEDB_INT_H_
 #include <stdint.h>
 #include <endian.h>
 
@@ -48,4 +48,4 @@ typedef uint64_t u64;          /* 8-byte unsigned integer */
 #define NAMEDATALEN 64
 
 }
-#endif //LITESQL_LITESQL_LITESQLINT_H_
+#endif //LITEDB_INT_H_

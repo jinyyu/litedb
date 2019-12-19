@@ -1,7 +1,7 @@
-#include <litesql/utils/elog.h>
-#include <litesql/utils/memctx.h>
-#include <litesql/utils/pq.h>
-#include <litesql/exec/session.h>
+#include <litedb/utils/elog.h>
+#include <litedb/utils/memctx.h>
+#include <litedb/utils/pq.h>
+#include <litedb/exec/session.h>
 #include <string.h>
 #include <assert.h>
 #include <glib.h>

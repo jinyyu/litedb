@@ -1,6 +1,6 @@
-#ifndef LITESQL_LITESQL_PQ_H_
-#define LITESQL_LITESQL_PQ_H_
-#include <litesql/int.h>
+#ifndef LITEDB_PQ_H_
+#define LITEDB_PQ_H_
+#include <litedb/int.h>
 #include <stdio.h>
 #include <vector>
 
@@ -93,4 +93,4 @@ int PQ_Flush(int fd, const u8* data, size_t dataLen);
 
 }
 
-#endif //LITESQL_LITESQL_PQ_H_
+#endif //LITEDB_PQ_H_

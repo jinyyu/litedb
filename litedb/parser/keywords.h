@@ -1,6 +1,6 @@
-#ifndef LITESQL_SRC_PARSER_KEYWORDS_H_
-#define LITESQL_SRC_PARSER_KEYWORDS_H_
-#include <litesql/int.h>
+#ifndef LITEDB_PARSER_KEYWORDS_H_
+#define LITEDB_PARSER_KEYWORDS_H_
+#include <litedb/int.h>
 namespace db {
 
 /* Keyword categories --- should match lists in gram.y */
@@ -23,4 +23,4 @@ void InitKeyword();
 const ScanKeyword* ScanKeywordLookup(const char* text);
 
 }
-#endif //LITESQL_SRC_PARSER_KEYWORDS_H_
+#endif //LITEDB_PARSER_KEYWORDS_H_

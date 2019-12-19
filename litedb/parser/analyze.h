@@ -1,6 +1,6 @@
-#ifndef LITESQL_LITESQL_PARSER_ANALYZE_H_
-#define LITESQL_LITESQL_PARSER_ANALYZE_H_
-#include <litesql/parser/nodes.h>
+#ifndef LITEDB_PARSER_ANALYZE_H_
+#define LITEDB_PARSER_ANALYZE_H_
+#include <litedb/parser/nodes.h>
 
 namespace db {
 
@@ -34,4 +34,4 @@ Query* ParseAnalyze(Node* parseTree, const char* queryString);
 
 }
 
-#endif //LITESQL_LITESQL_PARSER_ANALYZE_H_
+#endif //LITEDB_PARSER_ANALYZE_H_

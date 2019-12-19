@@ -1,9 +1,9 @@
 %top{
-#include <litesql/int.h>
-#include <litesql/parser/parser.h>
-#include <litesql/parser/keywords.h>
-#include <litesql/utils/memctx.h>
-#include <litesql/utils/elog.h>
+#include <litedb/int.h>
+#include <litedb/parser/parser.h>
+#include <litedb/parser/keywords.h>
+#include <litedb/utils/memctx.h>
+#include <litedb/utils/elog.h>
 #include <algorithm>
 #include "gram.hpp"
 using namespace db;

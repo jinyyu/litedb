@@ -19,9 +19,9 @@ set(SRC
         utils/pq.cpp
         exec/session.cpp)
 
-add_library(litesql++ ${SRC})
-target_link_libraries(litesql++ ${LIBS})
+add_library(litedb++ ${SRC})
+target_link_libraries(litedb++ ${LIBS})
 
-add_executable(litesql exec/main.cpp)
-target_link_libraries(litesql ${LIBS} litesql++)
+add_executable(litedb exec/main.cpp)
+target_link_libraries(litedb ${LIBS} litedb++)
 

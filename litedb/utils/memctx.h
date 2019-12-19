@@ -1,6 +1,6 @@
-#ifndef LITESQL_LITESQL_MEMCTX_H_
-#define LITESQL_LITESQL_MEMCTX_H_
-#include <litesql/int.h>
+#ifndef LITEDB_LITESQL_MEMCTX_H_
+#define LITEDB_LITESQL_MEMCTX_H_
+#include <litedb/int.h>
 #include <unordered_set>
 #include <list>
 
@@ -52,4 +52,4 @@ char* Strdup(const char* str);
 
 }
 
-#endif //LITESQL_LITESQL_MEMCTX_H_
+#endif //LITEDB_MEMCTX_H_

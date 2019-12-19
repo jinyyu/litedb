@@ -1,5 +1,5 @@
-#include <litesql/parser/nodes.h>
-#include <litesql/utils/elog.h>
+#include <litedb/parser/nodes.h>
+#include <litedb/utils/elog.h>
 #include <assert.h>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
