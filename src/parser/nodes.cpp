@@ -7,9 +7,10 @@
 #include <functional>
 
 namespace db {
+
 typedef rapidjson::Value (* NodeDumpFunc)(Node* node, rapidjson::Document& doc);
 static rapidjson::Value dumpNode(Node* node, rapidjson::Document& doc);
-static rapidjson::Value dumpArray(NodeList* node, rapidjson::Document& doc);
+static rapidjson::Value dumpArray(List<Node>* nodeList, rapidjson::Document& doc);
 static rapidjson::Value notImpl(CreateTableStmt* node, rapidjson::Document& doc);
 static rapidjson::Value dumpCreateTableStmt(CreateTableStmt* node, rapidjson::Document& doc);
 static rapidjson::Value dumpTypename(Typename* node, rapidjson::Document& doc);
@@ -206,10 +207,10 @@ rapidjson::Value dumpNode(Node* node, rapidjson::Document& doc) {
   return nodeDumpFunc(node, doc);
 }
 
-rapidjson::Value dumpArray(NodeList* node, rapidjson::Document& doc) {
+rapidjson::Value dumpArray(List<Node>* nodeList, rapidjson::Document& doc) {
   rapidjson::Value array(rapidjson::kArrayType);
-  for (auto it = node->nodes.begin(); it != node->nodes.end(); ++it) {
-    auto value = dumpNode(*it, doc);
+  for (Node* node: nodeList->list) {
+    auto value = dumpNode(node, doc);
     array.PushBack(value, doc.GetAllocator());
   }
   return array;

@@ -3,7 +3,7 @@
 #include <litedb/int.h>
 #include <litedb/utils/memctx.h>
 #include <litedb/parser/nodes.h>
-#include <list>
+#include <litedb/utils/list.h>
 #include <vector>
 
 union PARSER_STYPE;
@@ -22,10 +22,10 @@ struct Scanner {
 
 struct Parser : Object {
   ~Parser() final;
-  static NodeList* Parse(char* query, size_t queryLen);
+  static List<Node>* Parse(char* query, size_t queryLen);
 
   Scanner scanner;
-  NodeList* nodes;
+  List<Node>* nodes;
 private:
   explicit Parser(char* query, size_t queryLen);
 };

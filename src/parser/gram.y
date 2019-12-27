@@ -19,12 +19,12 @@ using namespace db;
 
 %union
 {
-    int            ival;
-    bool           boolean;
-    char*          str;
-    const char*    keyword;
-    db::Node*      node;
-    db::NodeList*      list;
+    int                  ival;
+    bool                 boolean;
+    char*                str;
+    const char*          keyword;
+    db::Node*            node;
+    db::List<db::Node>*  list;
 }
 
 %token IDENT_P
@@ -98,13 +98,13 @@ stmtmulti:
                 $$ = $1;
             } else {
                 assert(!$1);
-                $$ = new NodeList($3);
+                $$ = new List<Node>($3);
             }
 		}
 	| stmt
 		{
 		    if ($1) {
-		        $$ = new NodeList($1);
+		        $$ = new List<Node>($1);
 		    } else {
 		        $$ = nullptr;
 		    }
@@ -156,7 +156,7 @@ column_def_list:
         }
     | column_def
         {
-            $$ = new NodeList($1);
+            $$ = new List<Node>($1);
         }
     ;
 
@@ -195,7 +195,7 @@ column_constraint_list:
         }
     | column_constraint
         {
-            $$ = new NodeList($1);
+            $$ = new List<Node>($1);
         }
     ;
 
@@ -360,7 +360,7 @@ table_constraint:
         }
     | constraint
         {
-            $$ = new NodeList($1);
+            $$ = new List<Node>($1);
         }
     ;
 
@@ -424,7 +424,7 @@ column_list:
         {
             Name* name = makeNode(Name);
             name->name = $1;
-            $$ = new NodeList((Node*)name);
+            $$ = new List<Node>((Node*)name);
         }
     ;
 

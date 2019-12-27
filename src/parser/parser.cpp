@@ -1,5 +1,6 @@
 #include <litedb/parser/parser.h>
 #include <litedb/utils/elog.h>
+#include <litedb/utils/list.h>
 #include <string.h>
 #include "gram.hpp"
 
@@ -21,7 +22,7 @@ Parser::~Parser() {
   ScannerFinish(&scanner);
 }
 
-NodeList* Parser::Parse(char* query, size_t queryLen) {
+List<Node>* Parser::Parse(char* query, size_t queryLen) {
   Parser* parser = new Parser(query, queryLen);
   int result = parser_parse(parser);
   ScannerFinish(&parser->scanner);

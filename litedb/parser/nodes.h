@@ -1,7 +1,7 @@
 #ifndef LITEDB_PARSER_NODES_H_
 #define LITEDB_PARSER_NODES_H_
 #include <litedb/utils/memctx.h>
-#include <list>
+#include <litedb/utils/list.h>
 
 namespace db {
 enum NodeTag {
@@ -28,25 +28,6 @@ struct Node {
   NodeTag type;
 };
 
-struct NodeList : public Object {
-  explicit NodeList() : Object(CurTransactionContext) {
-  }
-
-  explicit NodeList(Node* node) : Object(CurTransactionContext) {
-    nodes.push_back(node);
-  }
-
-  explicit NodeList(Node* node1, Node* node2) : Object(CurTransactionContext) {
-    nodes.push_back(node1);
-    nodes.push_back(node2);
-  }
-
-  void Append(Node* node) {
-    nodes.push_back(node);
-  }
-  std::list<Node*> nodes;
-};
-
 struct Name {
   NodeTag type;
   char* name;
@@ -64,7 +45,7 @@ struct ColumnDef {
   char* columnName;
   Typename* typeName;
   char* constraintName;
-  NodeList* columnConstraints;
+  List<Node>* columnConstraints;
 };
 
 enum ConstraintType {
@@ -108,7 +89,7 @@ struct Expr {
 struct TableConstraint {
   NodeTag type;
   ConstraintType constraint;
-  NodeList* columnList;
+  List<Node>* columnList;
   ConflictAlgorithm conflictAlgorithm;
   Expr* expr;
 };
@@ -117,8 +98,8 @@ struct CreateTableStmt {
   NodeTag type;
   bool temp;
   char* name;
-  NodeList* columns;
-  NodeList* table_constraints;
+  List<Node>* columns;
+  List<Node>* table_constraints;
 };
 
 void NodeDisplay(Node* node);

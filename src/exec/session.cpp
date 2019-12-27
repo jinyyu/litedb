@@ -256,14 +256,14 @@ void Session::ExecSimpleQuery(char* queryString, size_t queryLen) {
    */
   MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
 
-  NodeList* list = Parser::Parse(queryString, queryLen);
+  List<Node>* list = Parser::Parse(queryString, queryLen);
 
   /*
    * Switch back to transaction context to enter the loop.
    */
   MemoryContext::SwitchTo(old);
   if (list) {
-    for (Node* parseTree : list->nodes) {
+    for (Node* parseTree : list->list) {
       Query* query = ParseAnalyze(parseTree, queryString);
       SendCommand('C', "ok", strlen("ok") + 1);
     }
