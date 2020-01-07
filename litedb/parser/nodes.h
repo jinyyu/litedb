@@ -14,6 +14,7 @@ enum NodeTag {
   T_TableConstraint,
   T_Name,
   T_Query,
+  T_PlannedStmt,
 };
 
 #define newNode(size, tag) \

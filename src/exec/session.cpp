@@ -4,11 +4,43 @@
 #include <litedb/utils/elog.h>
 #include <litedb/parser/parser.h>
 #include <litedb/parser/analyze.h>
-#include <litedb/portal.h>
+#include <litedb/utils/portal.h>
+#include <litedb/parser/plannodes.h>
+#include <assert.h>
 
 namespace db {
 
 thread_local Session* CurSession = nullptr;
+
+static List<Node>* AnalyzeAndRewrite(Node* parseTrees, const char* src);
+static List<Node>* PlanQueries(List<Node>* queryTrees);
+
+List<Node>* AnalyzeAndRewrite(Node* parseTrees, const char* src) {
+  Query* query = ParseAnalyze(parseTrees, src);
+
+  List<Node>* ret = new List<Node>();
+  ret->Append((Node*) query);
+  return ret;
+}
+
+List<Node>* PlanQueries(List<Node>* queryTrees) {
+  List<Node>* ret = new List<Node>();
+
+  for(Node* node: queryTrees->list) {
+    Query* query = (Query*) node;
+    assert(query->type == T_Query);
+
+    PlannedStmt* stmt;
+    if (query->commandType == CMD_CMD_UTILITY) {
+
+      stmt = makeNode(PlannedStmt);
+      stmt->commandType = CMD_CMD_UTILITY;
+      stmt->utilityStmt = query->utilityStmt;
+      ret->Append((Node*) stmt);
+    }
+  }
+  return ret;
+}
 
 Session::Session(int fd, const char* peerAddr, u16 peerPort)
     : forceClose(false),
@@ -256,15 +288,21 @@ void Session::ExecSimpleQuery(char* queryString, size_t queryLen) {
    */
   MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
 
-  List<Node>* list = Parser::Parse(queryString, queryLen);
+  List<Node>* parseTrees = Parser::Parse(queryString, queryLen);
 
   /*
    * Switch back to transaction context to enter the loop.
    */
   MemoryContext::SwitchTo(old);
-  if (list) {
-    for (Node* parseTree : list->list) {
-      Query* query = ParseAnalyze(parseTree, queryString);
+  if (parseTrees) {
+    for (Node* parseTree : parseTrees->list) {
+      List<Node>* querytree = AnalyzeAndRewrite(parseTree, queryString);
+      List<Node>* planTree = PlanQueries(querytree);
+
+      Portal portal(this, planTree);
+      portal.Start();
+      portal.Run();
+
       SendCommand('C', "ok", strlen("ok") + 1);
     }
   }

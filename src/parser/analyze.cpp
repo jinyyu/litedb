@@ -16,7 +16,7 @@ Query* ParseAnalyze(Node* parseTree, const char* queryString) {
   switch (parseTree->type) {
     case T_CreateTableStmt: {
       result = makeNode(Query);
-      result->commandType = CMD_CREATE;
+      result->commandType = CMD_CMD_UTILITY;
       result->utilityStmt = parseTree;
       break;
     }

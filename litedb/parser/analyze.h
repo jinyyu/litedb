@@ -6,17 +6,17 @@ namespace db {
 
 typedef enum CmdType {
   CMD_UNKNOWN,
-  CMD_CREATE,      /*  create stmt */
   CMD_SELECT,      /* select stmt */
   CMD_UPDATE,      /* update stmt */
   CMD_INSERT,      /* insert stmt */
   CMD_DELETE,      /* delete stmt */
+  CMD_CMD_UTILITY, /* cmds like create etc. */
 } CmdType;
 
 struct Query {
   NodeTag type;
-  CmdType commandType;    /* create|select|insert|update|delete */
-  Node* utilityStmt;       /* non-null if commandType == CMD_CREATE */
+  CmdType commandType;    /* select|insert|update|delete|etc */
+  Node* utilityStmt;       /* non-null if commandType == CMD_CMD_UTILITY */
 };
 
 struct ParseState {

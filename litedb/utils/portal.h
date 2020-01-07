@@ -7,18 +7,19 @@ namespace db {
 
 struct Session;
 
-struct Portal : Object {
-  explicit Portal(Session* session, Node* parseTree, MemoryContext* portalContext)
-      : Object(portalContext),
-        session(session),
-        portalContext(portalContext),
-        parseTree(parseTree) {
-    commandTag = CreateCommandTag(parseTree);
+struct Portal {
+  explicit Portal(Session* session, List<Node>* planTrees)
+      : session(session),
+        planTrees(planTrees) {
   }
 
-  virtual ~Portal() {
+  ~Portal() {
+
+    fprintf(stderr, "------------hi\n");
 
   }
+
+  void Start() {}
 
   void Run();
 
@@ -27,11 +28,8 @@ struct Portal : Object {
    */
   static const char* CreateCommandTag(Node* parseTree);
 
-  void EndCommand();
-
   Session* session;
-  MemoryContext* portalContext;
-  Node* parseTree;
+  List<Node>* planTrees;
   const char* commandTag;
 };
 
