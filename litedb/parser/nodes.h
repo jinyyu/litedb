@@ -1,6 +1,6 @@
 #ifndef LITEDB_PARSER_NODES_H_
 #define LITEDB_PARSER_NODES_H_
-#include <litedb/utils/memctx.h>
+#include <litedb/utils/env.h>
 #include <litedb/utils/list.h>
 
 namespace db {
@@ -19,7 +19,7 @@ enum NodeTag {
 
 #define newNode(size, tag) \
 ({    Node   *_result; \
-    _result = (Node *) Malloc0(size); \
+    _result = (Node *) SessionEnv->Malloc0(size); \
     _result->type = (tag); \
     _result; \
 })

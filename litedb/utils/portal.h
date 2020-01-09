@@ -1,6 +1,5 @@
 #ifndef LITEDB_PORTAL_H_
 #define LITEDB_PORTAL_H_
-#include <litedb/utils/memctx.h>
 #include <litedb/parser/nodes.h>
 
 namespace db {

@@ -13,7 +13,7 @@ extern void ScannerFinish(Scanner* scanner);
 extern int ScannerCurrentPosition(Scanner* scanner, char* token, size_t tokenSize);
 
 Parser::Parser(char* query, size_t queryLen)
-    : Object(CurTransactionContext),
+    : Object(),
       nodes(nullptr) {
   ScannerInit(&scanner, query, queryLen);
 }

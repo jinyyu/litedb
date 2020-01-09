@@ -13,8 +13,8 @@ set(SRC
     parser/keywords.cpp
     parser/nodes.cpp
     parser/parser.cpp
+    utils/env.cpp
     utils/elog.cpp
-    utils/memctx.cpp
     utils/portal.cpp
     utils/pq.cpp
     )

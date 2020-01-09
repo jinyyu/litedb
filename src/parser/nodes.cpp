@@ -38,7 +38,8 @@ static NodeTypeNameDumpFunc nodeTypeNameDumpFunc[] = {
     {T_Value, "Value", (NodeDumpFunc) dumpValue},
     {T_TableConstraint, "TableConstraint", (NodeDumpFunc) dumpTableConstraint},
     {T_Name, "Name", (NodeDumpFunc) dumpName},
-    {T_Query, "Query", (NodeDumpFunc) notImpl}
+    {T_Query, "Query", (NodeDumpFunc) notImpl},
+    {T_PlannedStmt, "PlannedStmt", (NodeDumpFunc) notImpl},
 };
 
 rapidjson::Value notImpl(CreateTableStmt* node, rapidjson::Document& doc) {

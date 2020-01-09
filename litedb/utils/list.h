@@ -1,23 +1,23 @@
 #ifndef LITEDB_LITEDB_UTILS_LIST_H_
 #define LITEDB_LITEDB_UTILS_LIST_H_
 #include <list>
-#include <litedb/utils/memctx.h>
+#include <litedb/utils/env.h>
 
 namespace db {
 
 template<typename T>
 struct List : public Object {
   explicit List()
-      : Object(CurTransactionContext) {
+      : Object() {
   }
 
   explicit List(T* t)
-      : Object(CurTransactionContext) {
+      : Object() {
     list.push_back(t);
   }
 
   explicit List(T* t1, T* t2)
-      : Object(CurTransactionContext) {
+      : Object() {
     list.push_back(t1);
     list.push_back(t2);
   }
@@ -26,7 +26,7 @@ struct List : public Object {
     list.push_back(t);
   }
 
-  ~List() override {}
+  ~List() final {}
   std::list<T*> list;
 };
 

@@ -1,5 +1,5 @@
 #include <litedb/utils/elog.h>
-#include <litedb/utils/memctx.h>
+#include <litedb/utils/env.h>
 #include <litedb/utils/pq.h>
 #include <litedb/exec/session.h>
 #include <string.h>
@@ -14,7 +14,6 @@ struct ErrorData {
   int lineno;            /* __LINE__ of elog() call */
   int cursorPos;         /* cursor index into query string */
   char* message;         /* primary error message */
-  MemoryContext* ctx;    /* context containing associated non-constant strings */
 };
 static thread_local ErrorData errorData;
 static const char* ErrorLevelStrings[] = {
@@ -111,12 +110,10 @@ void logStart(int level, const char* filename, int lineno) {
     errorData.filename = filename;
   }
   errorData.lineno = lineno;
-  errorData.ctx = ErrorContext;
 }
 
 void logFinish(const char* fmt, ...) {
   int level = errorData.level;
-  MemoryContext* old = MemoryContext::SwitchTo(errorData.ctx);
 
   va_list args;
   va_start(args, fmt);
@@ -124,7 +121,7 @@ void logFinish(const char* fmt, ...) {
   va_end(args);
 
   size_t len = strlen(tmp) + 1;
-  errorData.message = (char*) Malloc(len);
+  errorData.message = (char*) SessionEnv->Malloc(len);
   memcpy(errorData.message, tmp, len);
 
   g_free(tmp);
@@ -137,18 +134,12 @@ void logFinish(const char* fmt, ...) {
     throw Exception(level);
   }
 
-  MemoryContext::SwitchTo(old);
-
   EmitErrorReport();
 }
 
 void EmitErrorReport() {
-  MemoryContext* old = MemoryContext::SwitchTo(errorData.ctx);
-
   SendMessageToServer(&errorData);
   SendMessageToFrontend(&errorData);
-
-  MemoryContext::SwitchTo(old);
 }
 
 }

@@ -1,11 +1,11 @@
 #include <litedb/exec/session.h>
-#include <litedb/utils/memctx.h>
 #include <litedb/utils/pq.h>
 #include <litedb/utils/elog.h>
 #include <litedb/parser/parser.h>
 #include <litedb/parser/analyze.h>
 #include <litedb/utils/portal.h>
 #include <litedb/parser/plannodes.h>
+#include <litedb//utils/env.h>
 #include <assert.h>
 
 namespace db {
@@ -58,7 +58,9 @@ Session::~Session() {
 void Session::Loop() {
   int status;
   CurSession = this;
-  MemoryContext::Init();
+
+  SessionEnv = std::make_shared<Environment>();
+
   status = ProcessStartupPacket();
   if (status != STATUS_OK) {
     goto cleanup;
@@ -71,10 +73,7 @@ void Session::Loop() {
 
   while (!forceClose) {
     try {
-
-      // Release storage left over from prior query cycle
-      MemoryContext::SwitchTo(MessageContext);
-      MessageContext->Reset();
+      SessionEnv = std::make_shared<Environment>();
 
       ReadyForQuery();
 
@@ -100,7 +99,7 @@ void Session::Loop() {
       switch (firstChar) {
         case 'Q': {
           u32 sqlLen = commandLen - 4;
-          char* query = (char*) Malloc(sqlLen + 1); // 额外多申请一字节
+          char* query = (char*) SessionEnv->Malloc(sqlLen + 1); // 额外多申请一字节
           if (PQ_GetBytes(fd, (u8*) query, sqlLen) != 0) {
             elog(COMMERROR, "unexpected EOF on client connection");
             goto cleanup;
@@ -131,9 +130,6 @@ void Session::Loop() {
       EmitErrorReport();
 
       FlushErrorState();
-
-      MemoryContext::SwitchTo(TopMemoryContext);
-
       if (e.level > ERROR) {
         forceClose = true;
         break;
@@ -142,7 +138,7 @@ void Session::Loop() {
   }
 
 cleanup:
-  MemoryContext::Release();
+  SessionEnv = nullptr;
   this->sessionCloseCallback();
   CurSession = nullptr;
 }
@@ -161,7 +157,7 @@ int Session::ProcessStartupPacket() {
   }
   u32 paramLen = len - sizeof(packet);
   if (paramLen > 0) {
-    char* data = (char*) Malloc(paramLen);
+    char* data = (char*) SessionEnv->Malloc(paramLen);
     char* ptr = data;
     ret = PQ_GetBytes(fd, (u8*) ptr, paramLen);
 
@@ -195,7 +191,7 @@ int Session::ProcessStartupPacket() {
 
       if (strcmp(key, "database") == 0) {
         database = value;
-        database = ":memory:";
+        database = "litedb";
         elog(DEBUG, "database:%s", value);
       } else if (strcmp(key, "user") == 0) {
         user = value;
@@ -206,14 +202,13 @@ int Session::ProcessStartupPacket() {
       }
     }
 
-    Free(data);
+    SessionEnv->Free(data);
   }
   return STATUS_OK;
 }
 
 int Session::ClientAuthentication() {
   sendBuffer.clear();
-  MemoryContext* old = MemoryContext::SwitchTo(TopTransactionContext);
 
   {
     //Authentication request
@@ -254,16 +249,14 @@ int Session::ClientAuthentication() {
     status = STATUS_OK;
   }
 
-  MemoryContext::SwitchTo(old);
   return status;
 }
 
 void Session::FlushErrorState() {
-  ErrorContext->Reset();
+  SessionEnv->ReleaseMemory();
 }
 
 void Session::ReadyForQuery() {
-  MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
   PQMessage* msg = MakePQMessage('Z', 1);
   msg->PutU8(0, 'I');
   PQ_Append(sendBuffer, msg);
@@ -271,29 +264,17 @@ void Session::ReadyForQuery() {
     elog(FATAL, "send msg error");
   };
   sendBuffer.clear();
-  MemoryContext::SwitchTo(old);
 }
 
 void Session::SendCommand(char c, const char* command, int len) {
-  MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
   PQMessage* msg = MakePQMessage(c, len);
   msg->PutData(0, (u8*) command, len);
   PQ_Append(sendBuffer, msg);
-  MemoryContext::SwitchTo(old);
 }
 
 void Session::ExecSimpleQuery(char* queryString, size_t queryLen) {
-  /*
-   * Switch to appropriate context for constructing parsetrees.
-   */
-  MemoryContext* old = MemoryContext::SwitchTo(MessageContext);
-
   List<Node>* parseTrees = Parser::Parse(queryString, queryLen);
 
-  /*
-   * Switch back to transaction context to enter the loop.
-   */
-  MemoryContext::SwitchTo(old);
   if (parseTrees) {
     for (Node* parseTree : parseTrees->list) {
       List<Node>* querytree = AnalyzeAndRewrite(parseTree, queryString);

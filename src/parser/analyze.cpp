@@ -1,10 +1,10 @@
 #include <litedb/parser/analyze.h>
 #include <litedb/utils/elog.h>
-
+#include <litedb/utils/env.h>
 namespace db {
 
 ParseState* ParseState::Create() {
-  ParseState* pstate = (ParseState*) Malloc0(sizeof(ParseState));
+  ParseState* pstate = (ParseState*) SessionEnv->Malloc0(sizeof(ParseState));
   return pstate;
 }
 
@@ -26,7 +26,7 @@ Query* ParseAnalyze(Node* parseTree, const char* queryString) {
     }
   }
 
-  Free(pstate);
+  SessionEnv->Free(pstate);
   return result;
 }
 

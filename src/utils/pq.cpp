@@ -1,6 +1,6 @@
 #include <litedb/utils/pq.h>
 #include <litedb/int.h>
-#include <litedb/utils/memctx.h>
+#include <litedb/utils/env.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
@@ -20,7 +20,7 @@ thread_local static size_t PqRecvLength = 0;
 
 PQMessage* MakePQMessage(u8 type, size_t dataLen) {
   u32 totalLen = dataLen + 5;
-  PQMessage* msg = (PQMessage*) Malloc(totalLen);
+  PQMessage* msg = (PQMessage*) SessionEnv->Malloc(totalLen);
   msg->type = type;
   msg->len = htobe32(dataLen + sizeof(u32));
   return msg;

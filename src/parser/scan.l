@@ -2,7 +2,7 @@
 #include <litedb/int.h>
 #include <litedb/parser/parser.h>
 #include <litedb/parser/keywords.h>
-#include <litedb/utils/memctx.h>
+#include <litedb/utils/env.h>
 #include <litedb/utils/elog.h>
 #include <algorithm>
 #include "gram.hpp"
@@ -482,7 +482,7 @@ other			.
 					if (nchars >= NAMEDATALEN)
 						elog(ERROR, "operator too long");
 
-					yylval->str = Strdup(yytext);
+					yylval->str = SessionEnv->Strdup(yytext);
 					return OP;
 				}
 
@@ -494,7 +494,7 @@ other			.
 					return process_integer_literal(yytext, yylval);
 				}
 {decimal}		{
-					yylval->str = Strdup(yytext);
+					yylval->str = SessionEnv->Strdup(yytext);
 					return FCONST;
 				}
 {decimalfail}	{
@@ -503,7 +503,7 @@ other			.
 					return process_integer_literal(yytext, yylval);
 				}
 {real}			{
-					yylval->str = Strdup(yytext);
+					yylval->str = SessionEnv->Strdup(yytext);
 					return FCONST;
 				}
 {realfail1}		{
@@ -514,13 +514,13 @@ other			.
 					 * syntax error anyway, we don't bother to distinguish.
 					 */
 					yyless(yyleng - 1);
-					yylval->str = Strdup(yytext);
+					yylval->str = SessionEnv->Strdup(yytext);
 					return FCONST;
 				}
 {realfail2}		{
 					/* throw back the [Ee][+-], and proceed as above */
 					yyless(yyleng - 2);
-					yylval->str = Strdup(yytext);
+					yylval->str = SessionEnv->Strdup(yytext);
 					return FCONST;
 				}
 
@@ -535,7 +535,7 @@ other			.
 						yylval->keyword = keyword->name;
 						return keyword->value;
 					}
-					ident = (char*) Malloc(yyleng + 1);
+					ident = (char*) SessionEnv->Malloc(yyleng + 1);
 					memcpy(ident, yytext, yyleng);
 					ident[yyleng] = 0;
 					yylval->str = ident;
@@ -554,7 +554,7 @@ other			.
 
 void *scanner_alloc (yy_size_t size,yyscan_t yyscanner) {
     if (size > 0) {
-        return Malloc(size);
+        return SessionEnv->Malloc(size);
     } else {
         return NULL;
     }
@@ -562,13 +562,13 @@ void *scanner_alloc (yy_size_t size,yyscan_t yyscanner) {
 
 void scanner_free(void *ptr, yyscan_t yyscanner) {
     if (ptr) {
-        Free(ptr);
+        SessionEnv->Free(ptr);
     }
 }
 
 void *scanner_realloc (void* ptr, yy_size_t size, yyscan_t yyscanner) {
     if (ptr) {
-        void* ret = Malloc(size);
+        void* ret = SessionEnv->Malloc(size);
         memcpy(ret, ptr, size);
         return ret;
     } else {
@@ -586,7 +586,7 @@ static void addlitchar(unsigned char ychar, yyscan_t yyscanner) {
 
 static char *litbufdup(yyscan_t yyscanner) {
     size_t len = SCANNER->literalBuf.size();
-    char *str = (char*) Malloc(len + 1);
+    char *str = (char*) SessionEnv->Malloc(len + 1);
     memcpy(str, SCANNER->literalBuf.data(), len);
     str[len] = '\0';
     return str;
@@ -601,7 +601,7 @@ static int	process_integer_literal(const char *token, YYSTYPE *lval) {
 	if (*endptr != '\0' || val != (int)val)
 	{
 		/* integer too large, treat it as a float */
-		lval->str = Strdup(token);
+		lval->str = SessionEnv->Strdup(token);
 		return FCONST;
 	}
 	lval->ival = val;
