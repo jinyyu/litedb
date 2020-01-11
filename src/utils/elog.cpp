@@ -40,7 +40,7 @@ static void SendMessageToServer(ErrorData* data) {
 }
 
 static void SendMessageToFrontend(ErrorData* data) {
-  if (data->level == BACKEND) {
+  if (data->level == BACKEND && CurSession) {
     CurSession->forceClose = true;
     return;
   } else if (data->level < ERROR) {
@@ -131,7 +131,7 @@ void logFinish(const char* fmt, ...) {
      * Note that we leave CurrentMemoryContext set to ErrorContext. The
      * handler should reset it to something else soon.
      */
-    throw Exception(level);
+    throw LevelException(level);
   }
 
   EmitErrorReport();

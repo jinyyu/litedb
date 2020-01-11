@@ -11,6 +11,7 @@ set(SRC
         bin/initdb.cpp
         bin/server.cpp
         bin/session.cpp
+        catalog/catalog.cpp
         parser/analyze.cpp
         parser/keywords.cpp
         parser/nodes.cpp

@@ -3,9 +3,13 @@
 #include <lmdb.h>
 #include <litedb/storage/database.h>
 #include <litedb/int.h>
+#include <memory>
+#include <unordered_map>
 #include "litedb/storage/exception.h"
 
 namespace db {
+
+typedef std::shared_ptr<Transaction> TransactionPtr;
 
 class DatabaseMdb : public Database {
  public:
@@ -35,7 +39,42 @@ class DatabaseMdb : public Database {
 };
 
 class TransactionMdb : public Transaction {
+ public:
+  explicit TransactionMdb(DatabaseMdb* mdb_, MDB_txn* txn)
+      : mdb_(mdb_),
+        txn_(txn) {
 
+  }
+
+  ~TransactionMdb() final;
+
+  Table* Open(const std::string& name) final;
+
+  void Commit() final;
+
+  void Abort() final;
+
+  DatabaseMdb* mdb_;
+  MDB_txn* txn_;
+  std::unordered_map<std::string, Table*> tables_;
+};
+
+class TableMdb : public Table {
+ public:
+  explicit TableMdb(TransactionMdb* trans, MDB_dbi dbi)
+      : trans_(trans),
+        dbi_(dbi) {
+
+  }
+
+  void Put(Entry* key, Entry* value) final;
+
+  void Get(Entry* key, Entry* value) final;
+
+  void Del(Entry* key, Entry* value) final;
+
+  TransactionMdb* trans_;
+  MDB_dbi dbi_;
 };
 
 }

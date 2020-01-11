@@ -2,7 +2,10 @@
 #define LITEDB_BIN_INITDB_H_
 
 namespace db {
-void InitDBMain(const char* workspace);
+
+int InitDBMain(const char* workspace);
+void InitCatalog();
+
 }
 
 #endif //LITEDB_BIN_INITDB_H_

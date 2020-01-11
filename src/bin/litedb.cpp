@@ -33,8 +33,10 @@ int main(int argc, char* argv[]) {
     help(context);
   }
 
+  g_option_context_free(context);
+
   if (initdb) {
-    db::InitDBMain(database);
+    return db::InitDBMain(database);
   }
 
   return db::Server::Main(database, port);

@@ -1,5 +1,6 @@
 #include <litedb/storage/database.h>
 #include "litedb/storage/databasemdb.h"
+#include <assert.h>
 
 namespace db {
 
@@ -36,11 +37,64 @@ DatabaseMdb::~DatabaseMdb() {
 }
 
 Transaction* DatabaseMdb::Begin() {
-  return nullptr;
+  MDB_txn* txn = nullptr;
+  int rc = mdb_txn_begin(env_, nullptr, 0, &txn);
+  CHECK_LMDB_ERROR(rc);
+  return new TransactionMdb(this, txn);
 }
 
 void DatabaseMdb::Open(const char* path, unsigned int flags, mdb_mode_t mode) {
   int rc = mdb_env_open(env_, path, 0, MDB_DEFAULT_MODE);
+  CHECK_LMDB_ERROR(rc);
+}
+
+TransactionMdb::~TransactionMdb() {
+  for (auto it : tables_) {
+    delete (it.second);
+  }
+
+  if (txn_) {
+    Abort();
+  }
+}
+
+Table* TransactionMdb::Open(const std::string& name) {
+  auto it = tables_.find(name);
+  if (it != tables_.end()) {
+    return it->second;
+  }
+
+  MDB_dbi dbi;
+  int rc = mdb_dbi_open(txn_, name.c_str(), MDB_CREATE, &dbi);
+  CHECK_LMDB_ERROR(rc);
+  TableMdb* tbl = new TableMdb(this, dbi);
+  tables_[name] = tbl;
+  return tbl;
+}
+
+void TransactionMdb::Commit() {
+  int rc = mdb_txn_commit(txn_);
+  CHECK_LMDB_ERROR(rc);
+  txn_ = nullptr;
+}
+
+void TransactionMdb::Abort() {
+  mdb_txn_abort(txn_);
+  txn_ = nullptr;
+}
+
+void TableMdb::Put(Entry* key, Entry* value) {
+  int rc = mdb_put(trans_->txn_, dbi_, (MDB_val*) key, (MDB_val*) value, 0);
+  CHECK_LMDB_ERROR(rc);
+}
+
+void TableMdb::Get(Entry* key, Entry* value) {
+  int rc = mdb_get(trans_->txn_, dbi_, (MDB_val*) key, (MDB_val*) value);
+  CHECK_LMDB_ERROR(rc);
+}
+
+void TableMdb::Del(Entry* key, Entry* value) {
+  int rc = mdb_del(trans_->txn_, dbi_, (MDB_val*) key, (MDB_val*) value);
   CHECK_LMDB_ERROR(rc);
 }
 

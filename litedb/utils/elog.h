@@ -26,8 +26,8 @@ void logStartLocation(int level, const char* filename, int lineno, int location)
 void logStart(int level, const char* filename, int lineno);
 void logFinish(const char* fmt, ...);
 
-struct Exception : public std::exception {
-  explicit Exception(int level) : level(level) {}
+struct LevelException : public std::exception {
+  explicit LevelException(int level) : level(level) {}
   int level;
 };
 

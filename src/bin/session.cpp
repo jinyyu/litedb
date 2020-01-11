@@ -121,7 +121,7 @@ void Session::Loop() {
           elog(ERROR, "invalid frontend message type %c", firstChar);
         }
       }
-    } catch (Exception& e) {
+    } catch (LevelException& e) {
 
       /* Make sure libpq is in a good state */
       sendBuffer.clear();
