@@ -1,5 +1,5 @@
-#ifndef LITEDB__WORKER_H
-#define LITEDB__WORKER_H
+#ifndef LITEDB_SESSION_H
+#define LITEDB_SESSION_H
 #include <string.h>
 #include <netdb.h>
 #include <unistd.h>
@@ -10,7 +10,8 @@
 
 namespace db {
 
-struct Session {
+class Session {
+ public:
   explicit Session(int fd, const char* peerAddr, u16 peerPort);
   ~Session();
 
@@ -59,4 +60,4 @@ extern thread_local Session* CurSession;
 
 } // db
 
-#endif //LITEDB__WORKER_H
+#endif

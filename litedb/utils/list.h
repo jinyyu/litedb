@@ -1,5 +1,5 @@
-#ifndef LITEDB_LITEDB_UTILS_LIST_H_
-#define LITEDB_LITEDB_UTILS_LIST_H_
+#ifndef LITEDB_UTILS_LIST_H_
+#define LITEDB_UTILS_LIST_H_
 #include <list>
 #include <litedb/utils/env.h>
 
@@ -31,4 +31,4 @@ struct List : public Object {
 };
 
 }
-#endif //LITEDB_LITEDB_UTILS_LIST_H_
+#endif //LITEDB_UTILS_LIST_H_

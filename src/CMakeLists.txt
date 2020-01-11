@@ -6,24 +6,26 @@ ADD_FLEX_BISON_DEPENDENCY(scanner parser)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 set(SRC
-    ${BISON_parser_OUTPUTS}
-    ${FLEX_scanner_OUTPUTS}
-    exec/session.cpp
-    parser/analyze.cpp
-    parser/keywords.cpp
-    parser/nodes.cpp
-    parser/parser.cpp
-    storage/DatabaseMdb.cpp
-    utils/env.cpp
-    utils/elog.cpp
-    utils/portal.cpp
-    utils/pq.cpp storage/Exception.h)
+        ${BISON_parser_OUTPUTS}
+        ${FLEX_scanner_OUTPUTS}
+        bin/initdb.cpp
+        bin/server.cpp
+        bin/session.cpp
+        parser/analyze.cpp
+        parser/keywords.cpp
+        parser/nodes.cpp
+        parser/parser.cpp
+        storage/databasemdb.cpp
+        utils/env.cpp
+        utils/elog.cpp
+        utils/portal.cpp
+        utils/pq.cpp bin/server.cpp)
 
 add_library(litedb++ ${SRC})
 target_link_libraries(litedb++ ${LIBS})
 
 set(LITEDB_LIB litedb++)
 
-add_executable(litedb exec/main.cpp)
+add_executable(litedb bin/litedb.cpp)
 target_link_libraries(litedb ${LIBS} litedb++)
 

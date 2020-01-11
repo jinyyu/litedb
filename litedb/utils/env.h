@@ -1,5 +1,5 @@
-#ifndef LITEDB_LITEDB_UTILS_ENV_H_
-#define LITEDB_LITEDB_UTILS_ENV_H_
+#ifndef LITEDB_UTILS_ENV_H_
+#define LITEDB_UTILS_ENV_H_
 #include <unordered_set>
 #include <memory>
 #include <string.h>
@@ -59,4 +59,4 @@ extern thread_local EnvironmentPtr SessionEnv;
 
 }
 
-#endif //LITEDB_LITEDB_UTILS_ENV_H_
+#endif //LITEDB_UTILS_ENV_H_

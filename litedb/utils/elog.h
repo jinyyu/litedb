@@ -4,7 +4,7 @@
 
 namespace db {
 
-#define COMMERROR   0            /* Client communication problems; same as
+#define BACKEND     0            /* Client communication problems; same as
 									 * LOG for server reporting, but never
 									 * sent to client. */
 #define DEBUG       1
@@ -45,8 +45,8 @@ struct Exception : public std::exception {
     if (level >= ERROR) __builtin_unreachable();  \
 } while(0)
 
-
 void EmitErrorReport();
 
 } //db
-#endif //LITEDB_LITESQL_ELOG_H_
+
+#endif //LITEDB_ELOG_H_

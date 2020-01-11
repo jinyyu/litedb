@@ -1,13 +1,11 @@
-#include <litedb/storage/Database.h>
+#include <litedb/storage/database.h>
 
 using namespace db;
 
 int main(int argc, char* argv[]) {
 
-  Database* env = Database::Create();
-  env->SetMapSize(1024000);
-  env->Open("./example.mdb");
+  Database* db = Database::Open("./example.mdb");
 
-  Database::Terminate(env);
+  Database::Close(db);
 
 }

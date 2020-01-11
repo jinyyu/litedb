@@ -4,7 +4,7 @@
 
 namespace db {
 
-struct Session;
+class Session;
 
 struct Portal {
   explicit Portal(Session* session, List<Node>* planTrees)

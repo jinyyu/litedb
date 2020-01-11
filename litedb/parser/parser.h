@@ -17,7 +17,8 @@ struct Scanner {
   void* flex;
   int xcdepth;           //depth of nesting in slash-star comments
 
-  std::vector<char> literalBuf;   //literalbuf is used to accumulate literal values when multiple rules are needed to parse a single literal
+  std::vector<char> literalBuf;   //literalbuf is used to accumulate literal
+  // values when multiple rules are needed to parse a single literal
 };
 
 struct Parser : Object {
@@ -26,7 +27,7 @@ struct Parser : Object {
 
   Scanner scanner;
   List<Node>* nodes;
-private:
+ private:
   explicit Parser(char* query, size_t queryLen);
 };
 
@@ -34,4 +35,4 @@ int parser_lex(PARSER_STYPE* yylval, PARSER_LTYPE* yylloc, Parser* parser);
 void parser_error(PARSER_LTYPE* yylloc, Parser* parser, const char* msg);
 
 }
-#endif //LITEDB_PARSER_H_
+#endif

@@ -1,7 +1,7 @@
 #include <litedb/utils/elog.h>
 #include <litedb/utils/env.h>
 #include <litedb/utils/pq.h>
-#include <litedb/exec/session.h>
+#include <litedb/bin/session.h>
 #include <string.h>
 #include <assert.h>
 #include <glib.h>
@@ -17,7 +17,7 @@ struct ErrorData {
 };
 static thread_local ErrorData errorData;
 static const char* ErrorLevelStrings[] = {
-    "COMMERROR",
+    "BACKEND",
     "DEBUG",
     "INFO",
     "NOTICE",
@@ -40,7 +40,7 @@ static void SendMessageToServer(ErrorData* data) {
 }
 
 static void SendMessageToFrontend(ErrorData* data) {
-  if (data->level == COMMERROR) {
+  if (data->level == BACKEND) {
     CurSession->forceClose = true;
     return;
   } else if (data->level < ERROR) {

@@ -1,8 +1,7 @@
 #include <litedb/utils/portal.h>
 #include <litedb/parser/nodes.h>
 #include <litedb/utils/elog.h>
-#include <litedb/exec/session.h>
-
+#include <litedb/bin/session.h>
 
 namespace db {
 

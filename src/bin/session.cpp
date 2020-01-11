@@ -1,4 +1,4 @@
-#include <litedb/exec/session.h>
+#include <litedb/bin/session.h>
 #include <litedb/utils/pq.h>
 #include <litedb/utils/elog.h>
 #include <litedb/parser/parser.h>
@@ -26,7 +26,7 @@ List<Node>* AnalyzeAndRewrite(Node* parseTrees, const char* src) {
 List<Node>* PlanQueries(List<Node>* queryTrees) {
   List<Node>* ret = new List<Node>();
 
-  for(Node* node: queryTrees->list) {
+  for (Node* node: queryTrees->list) {
     Query* query = (Query*) node;
     assert(query->type == T_Query);
 
@@ -82,17 +82,17 @@ void Session::Loop() {
 
       //read a command (loop blocks here)
       if (PQ_GetBytes(fd, &firstChar, 1)) {
-        elog(COMMERROR, "unexpected EOF on client connection");
+        elog(BACKEND, "unexpected EOF on client connection");
         break;
       }
 
       if (PQ_GetBytes(fd, (u8*) &commandLen, 4)) {
-        elog(COMMERROR, "unexpected EOF on client connection");
+        elog(BACKEND, "unexpected EOF on client connection");
         break;
       }
       commandLen = be32toh(commandLen);
       if (commandLen < 4 || commandLen > 64 * 1024) {
-        elog(COMMERROR, "invalid packet");
+        elog(BACKEND, "invalid packet");
         break;
       }
 
@@ -101,12 +101,12 @@ void Session::Loop() {
           u32 sqlLen = commandLen - 4;
           char* query = (char*) SessionEnv->Malloc(sqlLen + 1); // 额外多申请一字节
           if (PQ_GetBytes(fd, (u8*) query, sqlLen) != 0) {
-            elog(COMMERROR, "unexpected EOF on client connection");
+            elog(BACKEND, "unexpected EOF on client connection");
             goto cleanup;
           }
           size_t strLen = strlen(query);
           if (strLen > sqlLen) {
-            elog(COMMERROR, "invalid sql len");
+            elog(BACKEND, "invalid sql len");
             goto cleanup;
           }
           query[sqlLen] = 0;
@@ -147,12 +147,12 @@ int Session::ProcessStartupPacket() {
   StartupPacket packet;
   int ret = PQ_GetBytes(fd, (u8*) &packet, sizeof(packet));
   if (ret == EOF) {
-    elog(COMMERROR, "incomplete startup packet");
+    elog(BACKEND, "incomplete startup packet");
     return STATUS_ERROR;
   }
   u32 len = be32toh(packet.length);
   if (len < sizeof(packet) || len > MAX_STARTUP_PACKET_LENGTH) {
-    elog(COMMERROR, "invalid length of startup packet");
+    elog(BACKEND, "invalid length of startup packet");
     return STATUS_ERROR;
   }
   u32 paramLen = len - sizeof(packet);
@@ -162,7 +162,7 @@ int Session::ProcessStartupPacket() {
     ret = PQ_GetBytes(fd, (u8*) ptr, paramLen);
 
     if (ret == EOF) {
-      elog(COMMERROR, "incomplete startup packet");
+      elog(BACKEND, "incomplete startup packet");
       return STATUS_ERROR;
     }
 
@@ -173,7 +173,7 @@ int Session::ProcessStartupPacket() {
 
       size_t keyLen = strlen(ptr) + 1;
       if (keyLen > paramLen) {
-        elog(COMMERROR, "invalid startup packet");
+        elog(BACKEND, "invalid startup packet");
         return STATUS_ERROR;
       }
       char* key = ptr;
@@ -182,7 +182,7 @@ int Session::ProcessStartupPacket() {
 
       size_t valueLen = strlen(ptr) + 1;
       if (valueLen > paramLen) {
-        elog(COMMERROR, "invalid startup packet");
+        elog(BACKEND, "invalid startup packet");
         return STATUS_ERROR;
       }
       char* value = ptr;

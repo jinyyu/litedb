@@ -25,7 +25,6 @@ struct ParseState {
   static ParseState* Create();
 };
 
-
 /*
  * parse_analyze
  *		Analyze a raw parse tree and transform it to Query form.
