@@ -13,14 +13,16 @@ set(SRC
     parser/keywords.cpp
     parser/nodes.cpp
     parser/parser.cpp
+    storage/DatabaseMdb.cpp
     utils/env.cpp
     utils/elog.cpp
     utils/portal.cpp
-    utils/pq.cpp
-    )
+    utils/pq.cpp storage/Exception.h)
 
 add_library(litedb++ ${SRC})
 target_link_libraries(litedb++ ${LIBS})
+
+set(LITEDB_LIB litedb++)
 
 add_executable(litedb exec/main.cpp)
 target_link_libraries(litedb ${LIBS} litedb++)
