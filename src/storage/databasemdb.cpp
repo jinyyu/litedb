@@ -36,11 +36,11 @@ DatabaseMdb::~DatabaseMdb() {
   mdb_env_close(env_);
 }
 
-Transaction* DatabaseMdb::Begin() {
+TransactionPtr DatabaseMdb::Begin() {
   MDB_txn* txn = nullptr;
   int rc = mdb_txn_begin(env_, nullptr, 0, &txn);
   CHECK_LMDB_ERROR(rc);
-  return new TransactionMdb(this, txn);
+  return TransactionPtr(new TransactionMdb(this, txn));
 }
 
 void DatabaseMdb::Open(const char* path, unsigned int flags, mdb_mode_t mode) {
@@ -83,19 +83,90 @@ void TransactionMdb::Abort() {
   txn_ = nullptr;
 }
 
-void TableMdb::Put(Entry* key, Entry* value) {
-  int rc = mdb_put(trans_->txn_, dbi_, (MDB_val*) key, (MDB_val*) value, 0);
-  CHECK_LMDB_ERROR(rc);
+TableMdb::~TableMdb() {
+  for (Cursor* cursor: cursors_) {
+    delete (cursor);
+  }
 }
 
-void TableMdb::Get(Entry* key, Entry* value) {
+bool TableMdb::Put(Entry* key, Entry* value, u32 flags) {
+  int rc = mdb_put(trans_->txn_, dbi_, (MDB_val*) key, (MDB_val*) value, flags);
+  if (rc != MDB_SUCCESS && rc != MDB_KEYEXIST) {
+    CHECK_LMDB_ERROR(rc);
+  }
+  return (rc == MDB_SUCCESS);
+}
+
+bool TableMdb::Get(Entry* key, Entry* value) {
   int rc = mdb_get(trans_->txn_, dbi_, (MDB_val*) key, (MDB_val*) value);
-  CHECK_LMDB_ERROR(rc);
+  if (rc != MDB_SUCCESS && rc != MDB_KEYEXIST) {
+    CHECK_LMDB_ERROR(rc);
+  }
+  return (rc == MDB_SUCCESS);
 }
 
-void TableMdb::Del(Entry* key, Entry* value) {
+bool TableMdb::Del(Entry* key, Entry* value) {
   int rc = mdb_del(trans_->txn_, dbi_, (MDB_val*) key, (MDB_val*) value);
+  if (rc != MDB_SUCCESS && rc != MDB_KEYEXIST) {
+    CHECK_LMDB_ERROR(rc);
+  }
+  return (rc == MDB_SUCCESS);
+}
+
+Cursor* TableMdb::Open() {
+  MDB_cursor* mdb_cursor;
+  int rc = mdb_cursor_open(trans_->txn_, dbi_, &mdb_cursor);
   CHECK_LMDB_ERROR(rc);
+  Cursor* cursor = new CursorMdb(mdb_cursor);
+  cursors_.push_back(cursor);
+  return cursor;
+}
+
+void TableMdb::Close(Cursor* cursor) {
+  for (auto it = cursors_.begin(); it != cursors_.end(); ++it) {
+    if (cursor == *it) {
+      it = cursors_.erase(it);
+      delete (cursor);
+      return;
+    }
+  }
+  assert(false);
+}
+
+void TableMdb::Del(Cursor* cursor, u32 flags) {
+  for (auto it = cursors_.begin(); it != cursors_.end(); ++it) {
+    if (cursor == *it) {
+      it = cursors_.erase(it);
+      CursorMdb* mdbCursor = (CursorMdb*) cursor;
+      int rc = mdb_cursor_del(mdbCursor->cursor_, flags);
+      if (rc != MDB_SUCCESS) {
+        CHECK_LMDB_ERROR(rc);
+      }
+      delete (cursor);
+      return;
+    }
+  }
+  assert(false);
+}
+
+CursorMdb::~CursorMdb() {
+  mdb_cursor_close(cursor_);
+}
+
+bool CursorMdb::Get(Entry* key, Entry* value, u32 op) {
+  int rc = mdb_cursor_get(cursor_, (MDB_val*) key, (MDB_val*) value, static_cast<MDB_cursor_op>(op));
+  if (rc != MDB_SUCCESS && rc != MDB_NOTFOUND) {
+    CHECK_LMDB_ERROR(rc);
+  }
+  return rc == MDB_SUCCESS;
+}
+
+bool CursorMdb::Put(Entry* key, Entry* value, u32 flags) {
+  int rc = mdb_cursor_put(cursor_, (MDB_val*) key, (MDB_val*) value, flags);
+  if (rc != MDB_SUCCESS && rc != MDB_NOTFOUND) {
+    CHECK_LMDB_ERROR(rc);
+  }
+  return rc == MDB_SUCCESS;
 }
 
 }

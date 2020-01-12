@@ -4,15 +4,14 @@
 #include <litedb/utils/elog.h>
 #include <litedb/catalog/catalog.h>
 #include <sys/stat.h>
+#include <lmdb.h>
 
 namespace db {
 
 #define LOG_INFO(format, ...) do { fprintf(stderr, "INFO [%s:%d] " format "\n", strrchr(__FILE__, '/') + 1, __LINE__, ##__VA_ARGS__); } while(0)
 #define LOG_ERROR(format, ...) do { fprintf(stderr, "ERROR [%s:%d] " format "\n", strrchr(__FILE__, '/') + 1, __LINE__, ##__VA_ARGS__); exit(EXIT_FAILURE); } while(0)
 
-
-void InitCatalog()
-{
+void InitCatalog() {
 
   if (mkdir(CATALOG_DATABASE, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)) {
     LOG_ERROR("mkdir error %s", strerror(errno));
@@ -20,7 +19,7 @@ void InitCatalog()
 
   CatalogDB = Database::Open("catalog");
 
-  Transaction* txn = CatalogDB->Begin();
+  TransactionPtr txn = CatalogDB->Begin();
 
   Table* tbl = txn->Open("sys_class");
   const char* test_key = "test_key";
@@ -32,18 +31,24 @@ void InitCatalog()
   tbl->Put(&key, &data);
   fprintf(stderr, "put ok\n");
 
-  Entry out;
+  Cursor* cursor = tbl->Open();
 
-  tbl->Get(&key, &out);
+  key.size = 0;
+  key.data = nullptr;
+  data.size = 0;
+  data.data = nullptr;
 
+  while (cursor->Get(&key, &data, MDB_NEXT)) {
+    std::string k((const char*) key.data, key.size);
+    std::string v((const char*) data.data, data.size);
+    printf("key: '%s', value: '%s'\n", k.c_str(), v.c_str());
+  }
 
-  std::string str((char*)out.data, out.size);
-
-  fprintf(stderr, "get  ok %s\n", str.c_str());
+  tbl->Close(cursor);
 
   txn->Commit();
 
-  delete(txn);
+  txn = nullptr;
 
   Database::Close(CatalogDB);
 }

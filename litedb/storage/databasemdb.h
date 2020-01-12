@@ -4,12 +4,11 @@
 #include <litedb/storage/database.h>
 #include <litedb/int.h>
 #include <memory>
+#include <list>
 #include <unordered_map>
 #include "litedb/storage/exception.h"
 
 namespace db {
-
-typedef std::shared_ptr<Transaction> TransactionPtr;
 
 class DatabaseMdb : public Database {
  public:
@@ -18,7 +17,7 @@ class DatabaseMdb : public Database {
 
   ~DatabaseMdb() final;
 
-  Transaction* Begin() final;
+  TransactionPtr Begin() final;
 
   //Open the environment handle
   void Open(const char* path, unsigned int flags, mdb_mode_t mode);
@@ -67,14 +66,36 @@ class TableMdb : public Table {
 
   }
 
-  void Put(Entry* key, Entry* value) final;
+  virtual ~TableMdb() final;
 
-  void Get(Entry* key, Entry* value) final;
+  bool Put(Entry* key, Entry* value, u32 flags = 0) final;
 
-  void Del(Entry* key, Entry* value) final;
+  bool Get(Entry* key, Entry* value) final;
+
+  bool Del(Entry* key, Entry* value) final;
+
+  Cursor* Open() final;
+
+  void Close(Cursor* cursor) final;
+
+  void Del(Cursor* cursor, u32 flags = 0) final;
 
   TransactionMdb* trans_;
   MDB_dbi dbi_;
+  std::list<Cursor*> cursors_;
+};
+
+class CursorMdb : public Cursor {
+ public:
+  explicit CursorMdb(MDB_cursor* cursor) : cursor_(cursor) {}
+
+  ~CursorMdb() final;
+
+  bool Get(Entry* key, Entry* value, u32 op = 0) final;
+
+  bool Put(Entry* key, Entry* value, u32 flags = 0) final;
+
+  MDB_cursor* cursor_;
 };
 
 }

@@ -2,6 +2,8 @@
 #define LITEDB_STORAGE_DATABASE_H_
 #include <stdexcept>
 #include <string>
+#include <memory>
+#include <litedb/int.h>
 
 namespace db {
 
@@ -18,6 +20,8 @@ class Exception : std::runtime_error {
 
 class Table;
 class Transaction;
+typedef std::shared_ptr<Transaction> TransactionPtr;
+class Cursor;
 
 class Database {
  public:
@@ -31,7 +35,7 @@ class Database {
   virtual ~Database() = default;
 
   //Create a transaction
-  virtual Transaction* Begin() = 0;
+  virtual TransactionPtr Begin() = 0;
 
 };
 
@@ -40,7 +44,7 @@ class Transaction {
 
   virtual ~Transaction() = default;
 
-  //Opens or create a table
+  //Opens or create a Table
   virtual Table* Open(const std::string& name) = 0;
 
   //Commit all the operations of a transaction into the database
@@ -64,12 +68,27 @@ class Table {
 
   virtual ~Table() = default;
 
-  virtual void Put(Entry* key, Entry* value) = 0;
+  virtual bool Put(Entry* key, Entry* value, u32 flags = 0) = 0;
 
-  virtual void Get(Entry* key, Entry* value) = 0;
+  virtual bool Get(Entry* key, Entry* value) = 0;
 
-  virtual void Del(Entry* key, Entry* value) = 0;
+  virtual bool Del(Entry* key, Entry* value = nullptr) = 0;
 
+  virtual Cursor* Open() = 0;
+
+  virtual void Close(Cursor* cursor) = 0;
+
+  virtual void Del(Cursor* cursor, u32 flags = 0) = 0;
+};
+
+class Cursor {
+ public:
+
+  virtual ~Cursor() = default;
+
+  virtual bool Get(Entry* key, Entry* value, u32 op = 0) = 0;
+
+  virtual bool Put(Entry* key, Entry* value, u32 flags = 0) = 0;
 };
 
 }
