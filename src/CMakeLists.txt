@@ -12,15 +12,17 @@ set(SRC
         bin/server.cpp
         bin/session.cpp
         catalog/catalog.cpp
+        catalog/sys_class.cpp
         parser/analyze.cpp
         parser/keywords.cpp
         parser/nodes.cpp
         parser/parser.cpp
         storage/databasemdb.cpp
+        storage/tuple.cpp
         utils/env.cpp
         utils/elog.cpp
         utils/portal.cpp
-        utils/pq.cpp bin/server.cpp)
+        utils/pq.cpp)
 
 add_library(litedb++ ${SRC})
 target_link_libraries(litedb++ ${LIBS})

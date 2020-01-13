@@ -10,6 +10,8 @@ extern Database* PublicDB;
 #define CATALOG_DATABASE "catalog"
 #define PUBLIC_DATABASE "public"
 
+#define NAMEDATALEN 64
+
 }
 
 #endif //LITEDB_CATALOG_CATALOG_H_

@@ -49,10 +49,10 @@ class Transaction {
 
 struct Entry {
   explicit Entry() = default;
-  explicit Entry(const void* data, size_t size) : size(size), data((void*) data) {}
-  explicit Entry(const char* data, size_t size) : size(size), data((void*) data) {}
+  explicit Entry(const void* data, size_t size) : size(size), data((char*) data) {}
+  explicit Entry(const char* data, size_t size) : size(size), data((char*) data) {}
   size_t size;    /**< size of the data item */
-  void* data;    /**< address of the data Entry */
+  char* data;    /**< address of the data Entry */
 };
 
 class Table {

@@ -24,6 +24,11 @@ class Exception : std::runtime_error {
     throw Exception(rc, msg); \
 } while(0)
 
+#define THROW_EXCEPTION(msg) { \
+    fprintf(stderr, "ERROR [%s:%d] %s\n", strrchr(__FILE__, '/') + 1, __LINE__, msg); \
+    throw std::runtime_error(msg); \
+}
+
 }
 
 #endif //LITEDB_STORAGE_EXCEPTION_H_
