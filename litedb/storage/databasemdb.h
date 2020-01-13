@@ -6,7 +6,7 @@
 #include <memory>
 #include <list>
 #include <unordered_map>
-#include "litedb/storage/exception.h"
+#include "litedb/utils/exception.h"
 
 namespace db {
 
@@ -47,7 +47,8 @@ class TransactionMdb : public Transaction {
 
   ~TransactionMdb() final;
 
-  Table* Open(const std::string& name) final;
+  //Opens thd table
+  Table* Open(const std::string& name, u32 flags) final;
 
   void Commit() final;
 
@@ -68,17 +69,16 @@ class TableMdb : public Table {
 
   virtual ~TableMdb() final;
 
-  bool Put(Entry* key, Entry* value, u32 flags = 0) final;
+  bool Put(Entry* key, Entry* value, u32 flags) final;
 
   bool Get(Entry* key, Entry* value) final;
 
   bool Del(Entry* key, Entry* value) final;
 
+
   Cursor* Open() final;
 
   void Close(Cursor* cursor) final;
-
-  void Del(Cursor* cursor, u32 flags = 0) final;
 
   TransactionMdb* trans_;
   MDB_dbi dbi_;
@@ -91,9 +91,11 @@ class CursorMdb : public Cursor {
 
   ~CursorMdb() final;
 
-  bool Get(Entry* key, Entry* value, u32 op = 0) final;
+  bool Get(Entry* key, Entry* value, u32 op) final;
 
-  bool Put(Entry* key, Entry* value, u32 flags = 0) final;
+  bool Put(Entry* key, Entry* value, u32 flags) final;
+
+  void Del(u32 flags) final;
 
   MDB_cursor* cursor_;
 };

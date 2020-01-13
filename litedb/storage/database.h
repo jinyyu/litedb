@@ -1,22 +1,14 @@
 #ifndef LITEDB_STORAGE_DATABASE_H_
 #define LITEDB_STORAGE_DATABASE_H_
-#include <stdexcept>
+#include <litedb/utils/exception.h>
 #include <string>
 #include <memory>
 #include <litedb/int.h>
 
 namespace db {
 
-class Exception : std::runtime_error {
- public:
-  explicit Exception(int code, const char* msg)
-      : runtime_error(msg),
-        code(code) {
-
-  }
-
-  int code;
-};
+#define DB_DEFAULT_FLAG (0)
+#define DB_DEFAULT_OP (0)
 
 class Table;
 class Transaction;
@@ -45,7 +37,7 @@ class Transaction {
   virtual ~Transaction() = default;
 
   //Opens or create a Table
-  virtual Table* Open(const std::string& name) = 0;
+  virtual Table* Open(const std::string& name, u32 flags) = 0;
 
   //Commit all the operations of a transaction into the database
   virtual void Commit() = 0;
@@ -68,17 +60,19 @@ class Table {
 
   virtual ~Table() = default;
 
-  virtual bool Put(Entry* key, Entry* value, u32 flags = 0) = 0;
+  //Store items into the table
+  virtual bool Put(Entry* key, Entry* value, u32 flags) = 0;
 
+  //Get items from the table
   virtual bool Get(Entry* key, Entry* value) = 0;
 
+  //Delete items from the table
   virtual bool Del(Entry* key, Entry* value = nullptr) = 0;
 
+  //Create a cursor
   virtual Cursor* Open() = 0;
 
   virtual void Close(Cursor* cursor) = 0;
-
-  virtual void Del(Cursor* cursor, u32 flags = 0) = 0;
 };
 
 class Cursor {
@@ -86,9 +80,14 @@ class Cursor {
 
   virtual ~Cursor() = default;
 
-  virtual bool Get(Entry* key, Entry* value, u32 op = 0) = 0;
+  //Retrieve by cursor
+  virtual bool Get(Entry* key, Entry* value, u32 op) = 0;
 
-  virtual bool Put(Entry* key, Entry* value, u32 flags = 0) = 0;
+  //Store by cursor
+  virtual bool Put(Entry* key, Entry* value, u32 flags) = 0;
+
+  //Delete current key/data pair
+  virtual void Del(u32 flags) = 0;
 };
 
 }

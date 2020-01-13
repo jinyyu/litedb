@@ -58,14 +58,14 @@ TransactionMdb::~TransactionMdb() {
   }
 }
 
-Table* TransactionMdb::Open(const std::string& name) {
+Table* TransactionMdb::Open(const std::string& name, u32 flags) {
   auto it = tables_.find(name);
   if (it != tables_.end()) {
     return it->second;
   }
 
   MDB_dbi dbi;
-  int rc = mdb_dbi_open(txn_, name.c_str(), MDB_CREATE, &dbi);
+  int rc = mdb_dbi_open(txn_, name.c_str(), flags, &dbi);
   CHECK_LMDB_ERROR(rc);
   TableMdb* tbl = new TableMdb(this, dbi);
   tables_[name] = tbl;
@@ -133,21 +133,6 @@ void TableMdb::Close(Cursor* cursor) {
   assert(false);
 }
 
-void TableMdb::Del(Cursor* cursor, u32 flags) {
-  for (auto it = cursors_.begin(); it != cursors_.end(); ++it) {
-    if (cursor == *it) {
-      it = cursors_.erase(it);
-      CursorMdb* mdbCursor = (CursorMdb*) cursor;
-      int rc = mdb_cursor_del(mdbCursor->cursor_, flags);
-      if (rc != MDB_SUCCESS) {
-        CHECK_LMDB_ERROR(rc);
-      }
-      delete (cursor);
-      return;
-    }
-  }
-  assert(false);
-}
 
 CursorMdb::~CursorMdb() {
   mdb_cursor_close(cursor_);
@@ -168,6 +153,12 @@ bool CursorMdb::Put(Entry* key, Entry* value, u32 flags) {
   }
   return rc == MDB_SUCCESS;
 }
+
+void CursorMdb::Del(u32 flags) {
+  int rc = mdb_cursor_del(cursor_, flags);
+  CHECK_LMDB_ERROR(rc);
+}
+
 
 }
 

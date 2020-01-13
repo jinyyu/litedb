@@ -1,7 +1,6 @@
 #include <litedb/bin/initdb.h>
 #include<unistd.h>
 #include <litedb/utils/env.h>
-#include <litedb/utils/elog.h>
 #include <litedb/catalog/catalog.h>
 #include <sys/stat.h>
 #include <lmdb.h>
@@ -21,14 +20,14 @@ void InitCatalog() {
 
   TransactionPtr txn = CatalogDB->Begin();
 
-  Table* tbl = txn->Open("sys_class");
+  Table* tbl = txn->Open("sys_class", MDB_CREATE);
   const char* test_key = "test_key";
   Entry key(test_key, strlen(test_key));
 
   const char* test_data = "test_data";
   Entry data(test_data, strlen(test_data));
 
-  tbl->Put(&key, &data);
+  tbl->Put(&key, &data, DB_DEFAULT_FLAG);
   fprintf(stderr, "put ok\n");
 
   Cursor* cursor = tbl->Open();
