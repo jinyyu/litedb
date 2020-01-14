@@ -23,4 +23,10 @@ include_directories(${lmdb_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${lmdb_LIBRARIES})
 
 add_subdirectory(src)
-add_subdirectory(test)
+
+pkg_check_modules(GoogleTest gtest)
+IF (GoogleTest_FOUND)
+    include_directories(${GoogleTest_INCLUDE_DIRS})
+    set(gtest_LIBS ${GoogleTest_LIBRARIES})
+    add_subdirectory(test)
+ENDIF ()
