@@ -38,6 +38,10 @@ void Tuple::Get(int index, Entry& entry) const {
   TupleHeaderData* header = (TupleHeaderData*) tuple_;
   u32 headerLen = header->headerSize;
 
+  if (headerLen < sizeof(TupleHeaderData) + (index + 1) * sizeof(TupleDataMeta)) {
+    THROW_EXCEPTION("index out of range");
+  }
+
   u32 offset = header->meta[index].offset;
   entry.size = header->meta[index].size;
   entry.data = entry.size > 0 ? (char*) header + headerLen + offset : nullptr;
