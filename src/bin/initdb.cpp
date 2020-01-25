@@ -2,6 +2,7 @@
 #include<unistd.h>
 #include <litedb/utils/env.h>
 #include <litedb/catalog/catalog.h>
+#include <litedb/catalog/sys_class.h>
 #include <sys/stat.h>
 #include <lmdb.h>
 
@@ -20,30 +21,7 @@ void InitCatalog() {
 
   TransactionPtr txn = CatalogDB->Begin();
 
-  Table* tbl = txn->Open("sys_class", MDB_CREATE);
-  const char* test_key = "test_key";
-  Entry key(test_key, strlen(test_key));
-
-  const char* test_data = "test_data";
-  Entry data(test_data, strlen(test_data));
-
-  tbl->Put(&key, &data, DB_DEFAULT_FLAG);
-  fprintf(stderr, "put ok\n");
-
-  Cursor* cursor = tbl->Open();
-
-  key.size = 0;
-  key.data = nullptr;
-  data.size = 0;
-  data.data = nullptr;
-
-  while (cursor->Get(&key, &data, MDB_NEXT)) {
-    std::string k((const char*) key.data, key.size);
-    std::string v((const char*) data.data, data.size);
-    printf("key: '%s', value: '%s'\n", k.c_str(), v.c_str());
-  }
-
-  tbl->Close(cursor);
+  SysClass::InsertInitData(txn);
 
   txn->Commit();
 

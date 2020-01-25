@@ -59,6 +59,11 @@ class Tuple {
     return Slice(entry.data, entry.size);
   }
 
+  void GetTupleData(char** tuple, u32* len) const {
+    *tuple = tuple_;
+    *len = len_;
+  }
+
  private:
   char* tuple_;  //tuple data
   u32 len_;      //tuple data size

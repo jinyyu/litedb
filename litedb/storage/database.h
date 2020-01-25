@@ -55,7 +55,7 @@ struct Entry {
   char* data;    /**< address of the data Entry */
 };
 
-typedef int (* TableKeyCompareFunc)(Entry* a, Entry* b);
+typedef int (TableKeyCompareFunc)(Entry* a, Entry* b);
 
 class Table {
  public:
