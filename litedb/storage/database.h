@@ -55,6 +55,8 @@ struct Entry {
   char* data;    /**< address of the data Entry */
 };
 
+typedef int (* TableKeyCompareFunc)(Entry* a, Entry* b);
+
 class Table {
  public:
 
@@ -73,6 +75,9 @@ class Table {
   virtual Cursor* Open() = 0;
 
   virtual void Close(Cursor* cursor) = 0;
+
+  //Set a custom key comparison function for a database
+  virtual void SetCompare(TableKeyCompareFunc* cmp) = 0;
 };
 
 class Cursor {

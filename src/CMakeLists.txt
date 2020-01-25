@@ -18,6 +18,7 @@ set(SRC
         parser/nodes.cpp
         parser/parser.cpp
         storage/databasemdb.cpp
+        storage/relation.cpp
         storage/tuple.cpp
         utils/env.cpp
         utils/elog.cpp

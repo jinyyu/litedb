@@ -1,0 +1,7 @@
+#ifndef LITEDB_STORAGE_RELATION_H_
+#define LITEDB_STORAGE_RELATION_H_
+
+namespace db {
+
+}
+#endif //LITEDB_STORAGE_RELATION_H_

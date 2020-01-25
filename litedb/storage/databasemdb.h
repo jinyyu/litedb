@@ -75,10 +75,11 @@ class TableMdb : public Table {
 
   bool Del(Entry* key, Entry* value) final;
 
-
   Cursor* Open() final;
 
   void Close(Cursor* cursor) final;
+
+  void SetCompare(TableKeyCompareFunc* cmp) final;
 
   TransactionMdb* trans_;
   MDB_dbi dbi_;

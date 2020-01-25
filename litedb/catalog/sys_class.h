@@ -12,7 +12,8 @@ struct SysClass {
   char relkind;
 };
 
-#define SysClassRelationId 1
+#define SysClassRelationId 1259
+
 
 }
 
