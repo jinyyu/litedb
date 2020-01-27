@@ -134,10 +134,14 @@ void TableMdb::Close(Cursor* cursor) {
 }
 
 void TableMdb::SetCompare(TableKeyCompareFunc* cmp) {
+  if (!set_compare_) {
+    return;
+  }
   int rc = mdb_set_compare(trans_->txn_, dbi_, (MDB_cmp_func*) cmp);
   if (rc) {
     CHECK_LMDB_ERROR(rc);
   }
+  set_compare_ = true;
 }
 
 CursorMdb::~CursorMdb() {

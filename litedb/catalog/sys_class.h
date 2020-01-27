@@ -14,18 +14,18 @@ struct SysClass {
 
   static TuplePtr ToTuple(const SysClass& self);
 
-  static void InsertInitData(TransactionPtr trans);
+  static void InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& tuples);
 };
 
 #define  RELKIND_RELATION     'r'    /* ordinary table */
 #define  RELKIND_INDEX        'i'    /* secondary index */
 
-#define SysClassRelationName "SysClass"
+#define SysClassRelationName "sys_class"
 #define SysClassRelationId 1259
-#define Anum_pg_class_id 1
-#define Anum_pg_class_relname 2
-#define Anum_pg_class_relhasindex 3
-#define Anum_pg_class_relkind 4
+#define Anum_sys_class_id 0
+#define Anum_sys_class_relname 1
+#define Anum_sys_class_relhasindex 2
+#define Anum_sys_class_relkind 3
 
 }
 

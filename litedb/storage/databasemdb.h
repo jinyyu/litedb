@@ -62,7 +62,8 @@ class TransactionMdb : public Transaction {
 class TableMdb : public Table {
  public:
   explicit TableMdb(TransactionMdb* trans, MDB_dbi dbi)
-      : trans_(trans),
+      : set_compare_(false),
+        trans_(trans),
         dbi_(dbi) {
 
   }
@@ -81,6 +82,7 @@ class TableMdb : public Table {
 
   void SetCompare(TableKeyCompareFunc* cmp) final;
 
+  bool set_compare_;
   TransactionMdb* trans_;
   MDB_dbi dbi_;
   std::list<Cursor*> cursors_;

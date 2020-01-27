@@ -12,6 +12,7 @@ set(SRC
         bin/server.cpp
         bin/session.cpp
         catalog/catalog.cpp
+        catalog/sys_attribute.cpp
         catalog/sys_class.cpp
         parser/analyze.cpp
         parser/keywords.cpp
