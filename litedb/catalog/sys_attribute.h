@@ -1,7 +1,8 @@
 #ifndef LITEDB_CATALOG_SYS_ATTRIBUTE_H_
 #define LITEDB_CATALOG_SYS_ATTRIBUTE_H_
-
 #include <litedb/int.h>
+#include <litedb/storage/tuple.h>
+
 namespace db {
 
 struct SysAttribute {
@@ -9,6 +10,9 @@ struct SysAttribute {
   u32 atttypid;                /*the id of the instance*/
   char attname[NAMEDATALEN];   /*name of attribute*/
   u16 attnum;                  /*attnum is the "attribute number" for the attribute*/
+
+  static TuplePtr ToTuple(const SysAttribute& self);
+  static void InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& tuples);
 };
 
 

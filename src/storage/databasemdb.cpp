@@ -1,6 +1,7 @@
 #include <litedb/storage/database.h>
 #include "litedb/storage/databasemdb.h"
 #include <assert.h>
+#include <lmdb.h>
 
 namespace db {
 
@@ -89,24 +90,43 @@ TableMdb::~TableMdb() {
   }
 }
 
-bool TableMdb::Put(Entry* key, Entry* value, u32 flags) {
-  int rc = mdb_put(trans_->txn_, dbi_, (MDB_val*) key, (MDB_val*) value, flags);
+bool TableMdb::Put(const Slice& key, const Slice& value, u32 flags) {
+  ::MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
+  ::MDB_val value_val = {.mv_size = value.size(), .mv_data = (char*) value.data(),};
+
+  int rc = mdb_put(trans_->txn_, dbi_, &key_val, &value_val, flags);
   if (rc != MDB_SUCCESS && rc != MDB_KEYEXIST) {
     CHECK_LMDB_ERROR(rc);
   }
   return (rc == MDB_SUCCESS);
 }
 
-bool TableMdb::Get(Entry* key, Entry* value) {
-  int rc = mdb_get(trans_->txn_, dbi_, (MDB_val*) key, (MDB_val*) value);
+bool TableMdb::Get(const Slice& key, Slice& value) {
+  ::MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
+  ::MDB_val value_val;
+
+  int rc = mdb_get(trans_->txn_, dbi_, &key_val, &value_val);
   if (rc != MDB_SUCCESS && rc != MDB_KEYEXIST) {
     CHECK_LMDB_ERROR(rc);
+  }
+  if (rc == MDB_SUCCESS) {
+    value = Slice((char*) value_val.mv_data, value_val.mv_size);
   }
   return (rc == MDB_SUCCESS);
 }
 
-bool TableMdb::Del(Entry* key, Entry* value) {
-  int rc = mdb_del(trans_->txn_, dbi_, (MDB_val*) key, (MDB_val*) value);
+bool TableMdb::Del(const Slice& key, Slice* value) {
+  ::MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
+  ::MDB_val value_val;
+  ::MDB_val* value_ptr;
+  if (value) {
+    value_val.mv_data = (void*) value->data();
+    value_val.mv_size = value->size();
+    value_ptr = &value_val;
+  } else {
+    value_ptr = nullptr;
+  }
+  int rc = mdb_del(trans_->txn_, dbi_, &key_val, value_ptr);
   if (rc != MDB_SUCCESS && rc != MDB_KEYEXIST) {
     CHECK_LMDB_ERROR(rc);
   }
@@ -148,16 +168,25 @@ CursorMdb::~CursorMdb() {
   mdb_cursor_close(cursor_);
 }
 
-bool CursorMdb::Get(Entry* key, Entry* value, u32 op) {
-  int rc = mdb_cursor_get(cursor_, (MDB_val*) key, (MDB_val*) value, static_cast<MDB_cursor_op>(op));
+bool CursorMdb::Get(const Slice& key, Slice& value, u32 op) {
+  ::MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
+  ::MDB_val value_val = {.mv_size = value.size(), .mv_data = (char*) value.data(),};
+
+  int rc = mdb_cursor_get(cursor_, &key_val, &value_val, static_cast<MDB_cursor_op>(op));
   if (rc != MDB_SUCCESS && rc != MDB_NOTFOUND) {
     CHECK_LMDB_ERROR(rc);
+  }
+  if (rc == MDB_SUCCESS) {
+    value = Slice((char*) value_val.mv_data, value_val.mv_size);
   }
   return rc == MDB_SUCCESS;
 }
 
-bool CursorMdb::Put(Entry* key, Entry* value, u32 flags) {
-  int rc = mdb_cursor_put(cursor_, (MDB_val*) key, (MDB_val*) value, flags);
+bool CursorMdb::Put(const Slice& key, const Slice& value, u32 flags) {
+  ::MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
+  ::MDB_val value_val = {.mv_size = value.size(), .mv_data = (char*) value.data(),};
+
+  int rc = mdb_cursor_put(cursor_, &key_val, &value_val, flags);
   if (rc != MDB_SUCCESS && rc != MDB_NOTFOUND) {
     CHECK_LMDB_ERROR(rc);
   }

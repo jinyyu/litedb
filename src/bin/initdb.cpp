@@ -3,6 +3,7 @@
 #include <litedb/utils/env.h>
 #include <litedb/catalog/catalog.h>
 #include <litedb/catalog/sys_class.h>
+#include <litedb/catalog/sys_attribute.h>
 #include <litedb/storage/relation.h>
 #include <sys/stat.h>
 #include <lmdb.h>
@@ -24,6 +25,7 @@ void InitCatalog() {
   std::vector<TuplePtr> tuples;
 
   SysClass::InitCatalogs(relations, tuples);
+  SysAttribute::InitCatalogs(relations, tuples);
 
   assert(relations.size() == tuples.size());
 
@@ -32,11 +34,15 @@ void InitCatalog() {
   for (size_t i = 0; i < relations.size(); ++i) {
     u64 relID = relations[i];
     TuplePtr tuple = tuples[i];
-    u64 tupleID = tuple->GetInt<u64>(0);
-
     RelationPtr rel = Relation::OpenTable(txn, relations[i]);
-    rel->InsertTuple(tupleID, *tuple);
-    LOG_INFO("insert tuple (%lu, %lu)", relID, tupleID);
+    if (tuple->ContainsID()) {
+      u64 tupleID = tuple->GetID();
+      rel->InsertTuple(tupleID, *tuple);
+      LOG_INFO("insert tuple (%lu, %lu)", relID, tupleID);
+    } else {
+      u64 tupleID = rel->Append(*tuple);
+      LOG_INFO("append tuple (%lu, %lu)", relID, tupleID);
+    }
   }
 
   txn->Commit();

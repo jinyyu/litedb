@@ -13,7 +13,6 @@ struct SysClass {
   char relkind;
 
   static TuplePtr ToTuple(const SysClass& self);
-
   static void InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& tuples);
 };
 

@@ -4,6 +4,9 @@
 #include <string>
 #include <memory>
 #include <litedb/int.h>
+#include <litedb/utils/slice.h>
+
+struct MDB_val;
 
 namespace db {
 
@@ -47,15 +50,7 @@ class Transaction {
 
 };
 
-struct Entry {
-  explicit Entry() = default;
-  explicit Entry(const void* data, size_t size) : size(size), data((char*) data) {}
-  explicit Entry(const char* data, size_t size) : size(size), data((char*) data) {}
-  size_t size;    /**< size of the data item */
-  char* data;    /**< address of the data Entry */
-};
-
-typedef int (TableKeyCompareFunc)(Entry* a, Entry* b);
+typedef int (TableKeyCompareFunc)(MDB_val* a, MDB_val* b);
 
 class Table {
  public:
@@ -63,13 +58,13 @@ class Table {
   virtual ~Table() = default;
 
   //Store items into the table
-  virtual bool Put(Entry* key, Entry* value, u32 flags) = 0;
+  virtual bool Put(const Slice& key, const Slice& value, u32 flags) = 0;
 
   //Get items from the table
-  virtual bool Get(Entry* key, Entry* value) = 0;
+  virtual bool Get(const Slice& key, Slice& value) = 0;
 
   //Delete items from the table
-  virtual bool Del(Entry* key, Entry* value = nullptr) = 0;
+  virtual bool Del(const Slice& key, Slice* value = nullptr) = 0;
 
   //Create a cursor
   virtual Cursor* Open() = 0;
@@ -86,10 +81,10 @@ class Cursor {
   virtual ~Cursor() = default;
 
   //Retrieve by cursor
-  virtual bool Get(Entry* key, Entry* value, u32 op) = 0;
+  virtual bool Get(const Slice& key, Slice& value, u32 op) = 0;
 
   //Store by cursor
-  virtual bool Put(Entry* key, Entry* value, u32 flags) = 0;
+  virtual bool Put(const Slice& key, const Slice& value, u32 flags) = 0;
 
   //Delete current key/data pair
   virtual void Del(u32 flags) = 0;

@@ -5,14 +5,14 @@
 
 namespace db {
 
-TuplePtr Tuple::Construct(const std::vector<Entry>& entries) {
+TuplePtr Tuple::Construct(const std::vector<Slice>& entries) {
   if (entries.empty()) {
     THROW_EXCEPTION("invalid entries");
   }
   u32 headerLen = sizeof(TupleHeaderData) + entries.size() * sizeof(TupleDataMeta);
   u32 totalLen = headerLen;
-  for (const Entry& entry: entries) {
-    totalLen += entry.size;
+  for (const Slice& entry: entries) {
+    totalLen += entry.size();
   }
 
   TupleHeaderData* header = (TupleHeaderData*) malloc(totalLen);
@@ -20,13 +20,13 @@ TuplePtr Tuple::Construct(const std::vector<Entry>& entries) {
   u32 dataOffset = 0;
 
   for (size_t i = 0; i < entries.size(); ++i) {
-    const Entry& entry = entries[i];
+    const Slice& entry = entries[i];
 
     header->meta[i].offset = dataOffset;
-    header->meta[i].size = entry.size;
-    memcpy(((char*) header) + headerLen + dataOffset, entry.data, entry.size);
+    header->meta[i].size = entry.size();
+    memcpy(((char*) header) + headerLen + dataOffset, entry.data(), entry.size());
 
-    dataOffset += entry.size;
+    dataOffset += entry.size();
   }
 
   TuplePtr tuple(new Tuple((char*) header, totalLen));
@@ -34,7 +34,7 @@ TuplePtr Tuple::Construct(const std::vector<Entry>& entries) {
   return tuple;
 }
 
-void Tuple::Get(int index, Entry& entry) const {
+void Tuple::Get(int index, Slice& entry) const {
   TupleHeaderData* header = (TupleHeaderData*) tuple_;
   u32 headerLen = header->headerSize;
 
@@ -43,8 +43,10 @@ void Tuple::Get(int index, Entry& entry) const {
   }
 
   u32 offset = header->meta[index].offset;
-  entry.size = header->meta[index].size;
-  entry.data = entry.size > 0 ? (char*) header + headerLen + offset : nullptr;
+
+  size_t entrySize = header->meta[index].size;
+  const char* entryData = entrySize > 0 ? (char*) header + headerLen + offset : nullptr;
+  entry = Slice(entryData, entrySize);
 }
 
 }

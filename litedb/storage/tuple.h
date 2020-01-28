@@ -28,12 +28,13 @@ typedef std::shared_ptr<Tuple> TuplePtr;
 class Tuple {
  public:
   explicit Tuple(char* tuple, u32 len)
-      : tuple_(tuple),
+      : id_(0),
+        tuple_(tuple),
         len_(len),
         copied_(false) {
   }
 
-  static TuplePtr Construct(const std::vector<Entry>& entries);
+  static TuplePtr Construct(const std::vector<Slice>& entries);
 
   ~Tuple() {
     if (copied_) {
@@ -41,30 +42,34 @@ class Tuple {
     }
   }
 
-  void Get(int index, Entry& entry) const;
+  void Get(int index, Slice& entry) const;
 
   template<typename T>
   T GetInt(int index) const {
-    Entry entry;
+    Slice entry;
     Get(index, entry);
-    if (sizeof(T) != entry.size) {
+    if (sizeof(T) != entry.size()) {
       THROW_EXCEPTION("invalid tuple")
     }
-    return *(T*) entry.data;
+    return *(T*) entry.data();
   }
 
   Slice GetSlice(int index) const {
-    Entry entry;
+    Slice entry;
     Get(index, entry);
-    return Slice(entry.data, entry.size);
+    return entry;
   }
 
-  void GetTupleData(char** tuple, u32* len) const {
-    *tuple = tuple_;
-    *len = len_;
+  void GetTupleData(Slice& slice) const {
+    slice = Slice(tuple_, len_);
   }
+
+  bool ContainsID() const { return id_ > 0; }
+  void SetID(u64 id) { id_ = id; }
+  u64 GetID() const { return id_; }
 
  private:
+  u64 id_;
   char* tuple_;  //tuple data
   u32 len_;      //tuple data size
   bool copied_;  //is tuple copied?

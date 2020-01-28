@@ -1,13 +1,14 @@
 #include <litedb/storage/relation.h>
+#include <lmdb.h>
 #include <assert.h>
 
 namespace db {
 
-static int IntCompareFunc(Entry* a, Entry* b) {
-  assert(a->size == sizeof(u64));
-  assert(b->size == sizeof(u64));
-  u64 keya = *(u64*) a->data;
-  u64 keyb = *(u64*) b->data;
+static int IntCompareFunc(MDB_val* a, MDB_val* b) {
+  assert(a->mv_size == sizeof(u64));
+  assert(b->mv_size == sizeof(u64));
+  u64 keya = *(u64*) a->mv_data;
+  u64 keyb = *(u64*) b->mv_data;
   if (keya == keyb) {
     return 0;
   }
@@ -31,40 +32,16 @@ Relation::Relation(Table* table) :
 }
 
 void Relation::InsertTuple(u64 id, const Tuple& tuple) {
-  Entry key;
-  key.data = (char*) &id;
-  key.size = sizeof(u64);
-
-  Entry value;
-  u32 valueLen;
-  tuple.GetTupleData(&value.data, &valueLen);
-  value.size = valueLen;
-
-  table_->Put(&key, &value, 0);
+  Slice key((char*) &id, sizeof(u64));
+  Slice value;
+  tuple.GetTupleData(value);
+  table_->Put(key, value, 0);
 }
 
 u64 Relation::Append(const Tuple& tuple) {
   Cursor* cursor = table_->Open();
-  Entry key;
-  Entry value;
-  u64 id = 0;
-  if (cursor->Get(&key, &value, MDB_LAST)) {
-    assert(key.size == sizeof(u64));
-    id = *(u64*) key.data;
-  }
-  ++id;
-
-  key.size = sizeof(u64);
-  key.data = (char*) id;
-
-  u32 valueLen;
-  tuple.GetTupleData(&value.data, &valueLen);
-  value.size = valueLen;
-
-  if (!cursor->Put(&key, &value, 0)) {
-    THROW_EXCEPTION("put tuple error");
-  }
-  return id;
+  assert(false);
+  return 0;
 }
 
 }

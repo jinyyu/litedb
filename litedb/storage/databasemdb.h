@@ -6,7 +6,7 @@
 #include <memory>
 #include <list>
 #include <unordered_map>
-#include "litedb/utils/exception.h"
+#include <litedb/utils/exception.h>
 
 namespace db {
 
@@ -70,11 +70,11 @@ class TableMdb : public Table {
 
   virtual ~TableMdb() final;
 
-  bool Put(Entry* key, Entry* value, u32 flags) final;
+  bool Put(const Slice& key, const Slice& value, u32 flags) final;
 
-  bool Get(Entry* key, Entry* value) final;
+  bool Get(const Slice& key, Slice& value) final;
 
-  bool Del(Entry* key, Entry* value) final;
+  bool Del(const Slice& key, Slice* value = nullptr) final;
 
   Cursor* Open() final;
 
@@ -94,9 +94,9 @@ class CursorMdb : public Cursor {
 
   ~CursorMdb() final;
 
-  bool Get(Entry* key, Entry* value, u32 op) final;
+  bool Get(const Slice& key, Slice& value, u32 op) final;
 
-  bool Put(Entry* key, Entry* value, u32 flags) final;
+  bool Put(const Slice& key, const Slice& value, u32 flags) final;
 
   void Del(u32 flags) final;
 
