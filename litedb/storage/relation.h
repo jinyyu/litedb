@@ -16,6 +16,10 @@ class Relation {
 
   ~Relation() {}
 
+  Table* GetTable() {
+    return table_;
+  }
+
   void InsertTuple(u64 id, const Tuple& tuple);
 
   u64 Append(const Tuple& tuple);

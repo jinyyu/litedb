@@ -70,6 +70,11 @@ class Slice {
         (memcmp(data_, x.data_, x.size_) == 0));
   }
 
+  void assign(const char* data, size_t size) {
+    data_ = data;
+    size_ = size;
+  }
+
  private:
   const char* data_;
   size_t size_;

@@ -91,8 +91,8 @@ TableMdb::~TableMdb() {
 }
 
 bool TableMdb::Put(const Slice& key, const Slice& value, u32 flags) {
-  ::MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
-  ::MDB_val value_val = {.mv_size = value.size(), .mv_data = (char*) value.data(),};
+  MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
+  MDB_val value_val = {.mv_size = value.size(), .mv_data = (char*) value.data(),};
 
   int rc = mdb_put(trans_->txn_, dbi_, &key_val, &value_val, flags);
   if (rc != MDB_SUCCESS && rc != MDB_KEYEXIST) {
@@ -110,15 +110,15 @@ bool TableMdb::Get(const Slice& key, Slice& value) {
     CHECK_LMDB_ERROR(rc);
   }
   if (rc == MDB_SUCCESS) {
-    value = Slice((char*) value_val.mv_data, value_val.mv_size);
+    value.assign((char*) value_val.mv_data, value_val.mv_size);
   }
   return (rc == MDB_SUCCESS);
 }
 
 bool TableMdb::Del(const Slice& key, Slice* value) {
-  ::MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
-  ::MDB_val value_val;
-  ::MDB_val* value_ptr;
+  MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
+  MDB_val value_val;
+  MDB_val* value_ptr;
   if (value) {
     value_val.mv_data = (void*) value->data();
     value_val.mv_size = value->size();
@@ -168,23 +168,24 @@ CursorMdb::~CursorMdb() {
   mdb_cursor_close(cursor_);
 }
 
-bool CursorMdb::Get(const Slice& key, Slice& value, u32 op) {
-  ::MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
-  ::MDB_val value_val = {.mv_size = value.size(), .mv_data = (char*) value.data(),};
+bool CursorMdb::Get(Slice& key, Slice& value, u32 op) {
+  MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
+  MDB_val value_val = {.mv_size = value.size(), .mv_data = (char*) value.data(),};
 
   int rc = mdb_cursor_get(cursor_, &key_val, &value_val, static_cast<MDB_cursor_op>(op));
   if (rc != MDB_SUCCESS && rc != MDB_NOTFOUND) {
     CHECK_LMDB_ERROR(rc);
   }
   if (rc == MDB_SUCCESS) {
-    value = Slice((char*) value_val.mv_data, value_val.mv_size);
+    key.assign((char*) key_val.mv_data, key_val.mv_size);
+    value.assign((char*) value_val.mv_data, value_val.mv_size);
   }
   return rc == MDB_SUCCESS;
 }
 
 bool CursorMdb::Put(const Slice& key, const Slice& value, u32 flags) {
-  ::MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
-  ::MDB_val value_val = {.mv_size = value.size(), .mv_data = (char*) value.data(),};
+  MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
+  MDB_val value_val = {.mv_size = value.size(), .mv_data = (char*) value.data(),};
 
   int rc = mdb_cursor_put(cursor_, &key_val, &value_val, flags);
   if (rc != MDB_SUCCESS && rc != MDB_NOTFOUND) {

@@ -94,7 +94,7 @@ class CursorMdb : public Cursor {
 
   ~CursorMdb() final;
 
-  bool Get(const Slice& key, Slice& value, u32 op) final;
+  bool Get(Slice& key, Slice& value, u32 op) final;
 
   bool Put(const Slice& key, const Slice& value, u32 flags) final;
 

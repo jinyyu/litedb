@@ -81,7 +81,7 @@ class Cursor {
   virtual ~Cursor() = default;
 
   //Retrieve by cursor
-  virtual bool Get(const Slice& key, Slice& value, u32 op) = 0;
+  virtual bool Get(Slice& key, Slice& value, u32 op) = 0;
 
   //Store by cursor
   virtual bool Put(const Slice& key, const Slice& value, u32 flags) = 0;

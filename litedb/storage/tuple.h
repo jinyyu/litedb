@@ -61,7 +61,7 @@ class Tuple {
   }
 
   void GetTupleData(Slice& slice) const {
-    slice = Slice(tuple_, len_);
+    slice.assign(tuple_, len_);
   }
 
   bool ContainsID() const { return id_ > 0; }
