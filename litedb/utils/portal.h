@@ -14,8 +14,6 @@ struct Portal {
 
   ~Portal() {
 
-    fprintf(stderr, "------------hi\n");
-
   }
 
   void Start() {}

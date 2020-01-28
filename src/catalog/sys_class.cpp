@@ -28,8 +28,8 @@ void SysClass::InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& 
     item.relhasindex = true;
     item.relkind = RELKIND_RELATION;
 
-    //relations.push_back(SysClassRelationId);
-    //tuples.push_back(SysClass::ToTuple(item));
+    relations.push_back(SysClassRelationId);
+    tuples.push_back(SysClass::ToTuple(item));
   }
 
   int attnum = 0;
