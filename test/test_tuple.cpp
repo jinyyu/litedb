@@ -6,47 +6,57 @@ using namespace db;
 
 TEST(tuple, construct) {
 
-  std::vector<Slice> entries;
+  std::vector<TupleMeta> entries;
 
   u8 v1 = std::numeric_limits<u8>::max();
-  entries.emplace_back((char*)&v1, sizeof(v1));
+  entries.emplace_back(CHAROID, (char*) &v1, sizeof(v1));
 
   u16 v2 = std::numeric_limits<u16>::max();
-  entries.emplace_back((char*)&v2, sizeof(v2));
+  entries.emplace_back(INT2OID, (char*) &v2, sizeof(v2));
 
   u32 v3 = std::numeric_limits<u32>::max();
-  entries.emplace_back((char*)&v3, sizeof(v3));
+  entries.emplace_back(INT4OID, (char*) &v3, sizeof(v3));
 
   u64 v4 = std::numeric_limits<u64>::max();
-  entries.emplace_back((char*)&v4, sizeof(v4));
+  entries.emplace_back(INT8OID, (char*) &v4, sizeof(v4));
 
   std::string v5 = "i am v5";
-  entries.emplace_back(v5.c_str(), v5.size());
+  entries.emplace_back(TEXTOID, v5.c_str(), v5.size());
 
   std::string v6 = "i am v6";
-  entries.emplace_back(v6.c_str(), v6.size());
+  entries.emplace_back(TEXTOID, v6.c_str(), v6.size());
 
   TuplePtr tuple = Tuple::Construct(entries);
   ASSERT_EQ(v1, tuple->GetInt<u8>(0));
+  ASSERT_EQ(CHAROID, tuple->GetType(0));
+
   ASSERT_EQ(v2, tuple->GetInt<u16>(1));
+  ASSERT_EQ(INT2OID, tuple->GetType(1));
+
   ASSERT_EQ(v3, tuple->GetInt<u32>(2));
+  ASSERT_EQ(INT4OID, tuple->GetType(2));
+
   ASSERT_EQ(v4, tuple->GetInt<u64>(3));
+  ASSERT_EQ(INT8OID, tuple->GetType(3));
 
   ASSERT_EQ(v5, tuple->GetSlice(4).to_string());
+  ASSERT_EQ(TEXTOID, tuple->GetType(4));
+
   ASSERT_EQ(v6, tuple->GetSlice(5).to_string());
+  ASSERT_EQ(TEXTOID, tuple->GetType(4));
 }
 
 TEST(tuple, construct_null) {
-  std::vector<Slice> entries;
+  std::vector<TupleMeta> entries;
   u8 v1 = std::numeric_limits<u8>::max();
-  entries.emplace_back((char*)&v1, sizeof(v1));
+  entries.emplace_back(CHAROID, (char*) &v1, sizeof(v1));
 
-  entries.emplace_back((char*)nullptr, 0);
-  entries.emplace_back((char*)nullptr, 0);
+  entries.emplace_back(TEXTOID, (char*) nullptr, 0);
+  entries.emplace_back(TEXTOID, (char*) nullptr, 0);
 
   std::string v4 = "i am v4";
-  entries.emplace_back(v4.c_str(), v4.size());
-  entries.emplace_back((char*)nullptr, 0);
+  entries.emplace_back(TEXTOID, v4.c_str(), v4.size());
+  entries.emplace_back(TEXTOID, (char*) nullptr, 0);
 
   TuplePtr tuple = Tuple::Construct(entries);
 
@@ -66,7 +76,6 @@ TEST(tuple, construct_null) {
   ASSERT_ANY_THROW(tuple->GetSlice(5));
 
 }
-
 
 int main(int argc, char* argv[]) {
   testing::InitGoogleTest(&argc, argv);

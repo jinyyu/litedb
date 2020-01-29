@@ -5,13 +5,11 @@
 #include <memory>
 #include <litedb/int.h>
 #include <litedb/utils/slice.h>
+#include <litedb/utils/compare.h>
 
 struct MDB_val;
 
 namespace db {
-
-#define DB_DEFAULT_FLAG (0)
-#define DB_DEFAULT_OP (0)
 
 class Table;
 class Transaction;
@@ -50,8 +48,6 @@ class Transaction {
 
 };
 
-typedef int (TableKeyCompareFunc)(MDB_val* a, MDB_val* b);
-
 class Table {
  public:
 
@@ -72,7 +68,7 @@ class Table {
   virtual void Close(Cursor* cursor) = 0;
 
   //Set a custom key comparison function for a database
-  virtual void SetCompare(TableKeyCompareFunc* cmp) = 0;
+  virtual void SetCompare(TypeCmpCallback cmp) = 0;
 };
 
 class Cursor {

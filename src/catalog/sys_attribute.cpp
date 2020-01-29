@@ -5,11 +5,11 @@
 namespace db {
 
 TuplePtr SysAttribute::ToTuple(const SysAttribute& self) {
-  std::vector<Slice> entries;
-  entries.emplace_back((char*)&self.attrelid, sizeof(self.attrelid));
-  entries.emplace_back((char*)&self.atttypid, sizeof(self.atttypid));
-  entries.emplace_back((char*)self.attname, sizeof(self.attname));
-  entries.emplace_back((char*)&self.attnum, sizeof(self.attnum));
+  std::vector<TupleMeta> entries;
+  entries.emplace_back(INT8OID, (char*) &self.attrelid, sizeof(self.attrelid));
+  entries.emplace_back(INT4OID, (char*) &self.atttypid, sizeof(self.atttypid));
+  entries.emplace_back(NAMEOID, (char*) self.attname, sizeof(self.attname));
+  entries.emplace_back(INT2OID, (char*) &self.attnum, sizeof(self.attnum));
 
   return Tuple::Construct(entries);
 }

@@ -153,10 +153,8 @@ void TableMdb::Close(Cursor* cursor) {
   assert(false);
 }
 
-void TableMdb::SetCompare(TableKeyCompareFunc* cmp) {
-  if (!set_compare_) {
-    return;
-  }
+void TableMdb::SetCompare(TypeCmpCallback cmp) {
+  assert(!set_compare_);
   int rc = mdb_set_compare(trans_->txn_, dbi_, (MDB_cmp_func*) cmp);
   if (rc) {
     CHECK_LMDB_ERROR(rc);

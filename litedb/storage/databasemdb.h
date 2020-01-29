@@ -80,7 +80,11 @@ class TableMdb : public Table {
 
   void Close(Cursor* cursor) final;
 
-  void SetCompare(TableKeyCompareFunc* cmp) final;
+  void SetCompare(TypeCmpCallback cmp) final;
+
+  bool SetCompare() const {
+    return set_compare_;
+  }
 
   bool set_compare_;
   TransactionMdb* trans_;

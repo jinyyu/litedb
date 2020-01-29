@@ -21,6 +21,7 @@ set(SRC
         storage/databasemdb.cpp
         storage/relation.cpp
         storage/tuple.cpp
+        utils/compare.cpp
         utils/env.cpp
         utils/elog.cpp
         utils/portal.cpp

@@ -5,11 +5,13 @@
 #include <litedb/utils/env.h>
 #include <litedb/utils/slice.h>
 #include <litedb/storage/database.h>
+#include <litedb/catalog/sys_type.h>
 
 namespace db {
 
 #pragma pack(push, 1)
-struct TupleDataMeta {
+struct TypeMeta {
+  u32 type;      //type of the data, little endian
   u32 offset;    //offset of the data, little endian
   u32 size;      //size of data, little endian
 };
@@ -18,9 +20,26 @@ struct TupleDataMeta {
 // | headerSize | TupleDataMeta1 | TupleDataMeta2| .... | TupleDataMetaN | TupleData1 | TupleData2 | .... | TupleDataN |
 struct TupleHeaderData {
   u32 headerSize;
-  TupleDataMeta meta[0];
+  TypeMeta meta[0];
 };
 #pragma pack(pop)
+
+struct TupleMeta {
+  explicit TupleMeta(u32 type, const char* data, u32 size)
+      : type(type),
+        data(data),
+        size(size) {}
+
+  explicit TupleMeta() = default;
+
+  explicit TupleMeta(u16* u) : type(INT2OID), data((const char*) u), size(sizeof(u)) {}
+  explicit TupleMeta(u32* u) : type(INT4OID), data((const char*) u), size(sizeof(u)) {}
+  explicit TupleMeta(u64* u) : type(INT8OID), data((const char*) u), size(sizeof(u)) {}
+
+  u32 type;   //type of the data;
+  const char* data; //address of the data
+  u32 size;   //size of the data
+};
 
 class Tuple;
 typedef std::shared_ptr<Tuple> TuplePtr;
@@ -34,7 +53,7 @@ class Tuple {
         copied_(false) {
   }
 
-  static TuplePtr Construct(const std::vector<Slice>& entries);
+  static TuplePtr Construct(const std::vector<TupleMeta>& entries);
 
   ~Tuple() {
     if (copied_) {
@@ -42,7 +61,9 @@ class Tuple {
     }
   }
 
-  void Get(int index, Slice& entry) const;
+  u32 GetType(int index) const;
+
+  u32 Get(int index, Slice& entry) const;
 
   template<typename T>
   T GetInt(int index) const {
@@ -69,6 +90,8 @@ class Tuple {
   u64 GetID() const { return id_; }
 
  private:
+  TupleHeaderData* GetHeader(int index) const;
+
   u64 id_;
   char* tuple_;  //tuple data
   u32 len_;      //tuple data size

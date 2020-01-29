@@ -6,12 +6,12 @@
 namespace db {
 
 TuplePtr SysClass::ToTuple(const SysClass& self) {
-  std::vector<Slice> entries;
+  std::vector<TupleMeta> entries;
 
-  entries.emplace_back((char*)&self.id, sizeof(self.id));
-  entries.emplace_back(self.relname, sizeof(self.relname));
-  entries.emplace_back((char*)&self.relhasindex, sizeof(self.relhasindex));
-  entries.emplace_back((char*)&self.relkind, sizeof(self.relkind));
+  entries.emplace_back(INT8OID, (char*) &self.id, sizeof(self.id));
+  entries.emplace_back(NAMEOID, self.relname, sizeof(self.relname));
+  entries.emplace_back(BOOLOID, (char*) &self.relhasindex, sizeof(self.relhasindex));
+  entries.emplace_back(CHAROID, (char*) &self.relkind, sizeof(self.relkind));
 
   TuplePtr tuple = Tuple::Construct(entries);
   tuple->SetID(self.id);

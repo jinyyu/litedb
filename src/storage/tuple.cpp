@@ -5,14 +5,14 @@
 
 namespace db {
 
-TuplePtr Tuple::Construct(const std::vector<Slice>& entries) {
+TuplePtr Tuple::Construct(const std::vector<TupleMeta>& entries) {
   if (entries.empty()) {
     THROW_EXCEPTION("invalid entries");
   }
-  u32 headerLen = sizeof(TupleHeaderData) + entries.size() * sizeof(TupleDataMeta);
+  u32 headerLen = sizeof(TupleHeaderData) + entries.size() * sizeof(TypeMeta);
   u32 totalLen = headerLen;
-  for (const Slice& entry: entries) {
-    totalLen += entry.size();
+  for (const TupleMeta& meta: entries) {
+    totalLen += meta.size;
   }
 
   TupleHeaderData* header = (TupleHeaderData*) malloc(totalLen);
@@ -20,13 +20,14 @@ TuplePtr Tuple::Construct(const std::vector<Slice>& entries) {
   u32 dataOffset = 0;
 
   for (size_t i = 0; i < entries.size(); ++i) {
-    const Slice& entry = entries[i];
+    const TupleMeta& entry = entries[i];
 
+    header->meta[i].type = entry.type;
     header->meta[i].offset = dataOffset;
-    header->meta[i].size = entry.size();
-    memcpy(((char*) header) + headerLen + dataOffset, entry.data(), entry.size());
+    header->meta[i].size = entry.size;
+    memcpy(((char*) header) + headerLen + dataOffset, entry.data, entry.size);
 
-    dataOffset += entry.size();
+    dataOffset += entry.size;
   }
 
   TuplePtr tuple(new Tuple((char*) header, totalLen));
@@ -34,19 +35,27 @@ TuplePtr Tuple::Construct(const std::vector<Slice>& entries) {
   return tuple;
 }
 
-void Tuple::Get(int index, Slice& entry) const {
-  TupleHeaderData* header = (TupleHeaderData*) tuple_;
-  u32 headerLen = header->headerSize;
+u32 Tuple::GetType(int index) const {
+  return GetHeader(index)->meta[index].type;
+}
 
-  if (headerLen < sizeof(TupleHeaderData) + (index + 1) * sizeof(TupleDataMeta)) {
-    THROW_EXCEPTION("index out of range");
-  }
-
+u32 Tuple::Get(int index, Slice& entry) const {
+  TupleHeaderData* header = GetHeader(index);
   u32 offset = header->meta[index].offset;
 
   size_t entrySize = header->meta[index].size;
-  const char* entryData = entrySize > 0 ? (char*) header + headerLen + offset : nullptr;
-  entry = Slice(entryData, entrySize);
+  const char* entryData = entrySize > 0 ? (char*) header + header->headerSize + offset : nullptr;
+  entry.assign(entryData, entrySize);
+  return header->meta[index].type;
+}
+
+TupleHeaderData* Tuple::GetHeader(int index) const {
+  TupleHeaderData* header = (TupleHeaderData*) tuple_;
+
+  if (header->headerSize < sizeof(TupleHeaderData) + (index + 1) * sizeof(TypeMeta)) {
+    THROW_EXCEPTION("index out of range");
+  }
+  return header;
 }
 
 }

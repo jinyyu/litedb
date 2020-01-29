@@ -42,9 +42,9 @@ TEST(database, cursur_get) {
 }
 
 TEST(relation, insert) {
-  std::vector<Slice> entries;
+  std::vector<TupleMeta> entries;
   u8 v1 = std::numeric_limits<u8>::max();
-  entries.emplace_back((char*) &v1, sizeof(v1));
+  entries.emplace_back(100, (char*) &v1, sizeof(v1));
   TuplePtr tuple = Tuple::Construct(entries);
 
   TransactionPtr txn = test_db->Begin();
@@ -69,9 +69,9 @@ TEST(relation, insert) {
 }
 
 TEST(relation, append) {
-  std::vector<Slice> entries;
+  std::vector<TupleMeta> entries;
   u8 v1 = std::numeric_limits<u8>::max();
-  entries.emplace_back((char*) &v1, sizeof(v1));
+  entries.emplace_back(CHAROID, (char*) &v1, sizeof(v1));
   TuplePtr tuple = Tuple::Construct(entries);
 
   TransactionPtr txn = test_db->Begin();

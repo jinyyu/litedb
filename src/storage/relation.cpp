@@ -1,10 +1,21 @@
 #include <litedb/storage/relation.h>
+#include <litedb/storage/databasemdb.h>
 #include <lmdb.h>
 #include <assert.h>
 
 namespace db {
 
 RelationPtr Relation::OpenTable(TransactionPtr tran, u64 id) {
+  std::string name = std::to_string(id);
+  Table* table = tran->Open(name, MDB_CREATE);
+  TableMdb* mdb = static_cast<TableMdb*>(table);
+  if (!mdb->SetCompare()) {
+    mdb->SetCompare(u64_cmp);
+  }
+  return RelationPtr(new Relation(table));
+}
+
+RelationPtr Relation::OpenIndex(TransactionPtr tran, u64 id) {
   std::string name = std::to_string(id);
   Table* table = tran->Open(name, MDB_CREATE | MDB_INTEGERKEY);
   return RelationPtr(new Relation(table));

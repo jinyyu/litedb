@@ -14,6 +14,8 @@ class Relation {
  public:
   static RelationPtr OpenTable(TransactionPtr tran, u64 id);
 
+  static RelationPtr OpenIndex(TransactionPtr tran, u64 id);
+
   ~Relation() {}
 
   Table* GetTable() {
