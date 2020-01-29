@@ -30,6 +30,7 @@ class Relation {
   explicit Relation(Table* table);
 
   Table* table_;
+  char relkind_;
 };
 
 }

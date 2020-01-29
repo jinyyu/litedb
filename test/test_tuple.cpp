@@ -44,6 +44,12 @@ TEST(tuple, construct) {
 
   ASSERT_EQ(v6, tuple->GetSlice(5).to_string());
   ASSERT_EQ(TEXTOID, tuple->GetType(4));
+
+  ASSERT_EQ(tuple->columns(), entries.size());
+
+  entries.resize(1);
+  tuple = Tuple::Construct(entries);
+  ASSERT_EQ(tuple->columns(), entries.size());
 }
 
 TEST(tuple, construct_null) {

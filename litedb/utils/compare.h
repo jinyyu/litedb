@@ -14,6 +14,8 @@ typedef int (TypeCmpCallback)(Entry* a, Entry* b);
 
 int u64_cmp(Entry* a, Entry* b);
 
+int index_cmp(Entry* a, Entry* b);
+
 }
 
 #endif //LITEDB_UTILS_COMPARE_H_

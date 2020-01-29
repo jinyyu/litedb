@@ -5,6 +5,8 @@
 
 namespace db {
 
+#define MAX_COLUMNS (128)
+
 TuplePtr Tuple::Construct(const std::vector<TupleMeta>& entries) {
   if (entries.empty()) {
     THROW_EXCEPTION("invalid entries");
@@ -35,27 +37,26 @@ TuplePtr Tuple::Construct(const std::vector<TupleMeta>& entries) {
   return tuple;
 }
 
-u32 Tuple::GetType(int index) const {
-  return GetHeader(index)->meta[index].type;
+u32 Tuple::columns() const {
+  TupleHeaderData* header = (TupleHeaderData*) tuple_;
+  size_t n = (header->headerSize - sizeof(TupleHeaderData)) / sizeof(TypeMeta);
+  assert(n > 0);
+  return n;
 }
 
-u32 Tuple::Get(int index, Slice& entry) const {
-  TupleHeaderData* header = GetHeader(index);
-  u32 offset = header->meta[index].offset;
-
-  size_t entrySize = header->meta[index].size;
-  const char* entryData = entrySize > 0 ? (char*) header + header->headerSize + offset : nullptr;
-  entry.assign(entryData, entrySize);
-  return header->meta[index].type;
-}
-
-TupleHeaderData* Tuple::GetHeader(int index) const {
+void Tuple::Get(int index, TupleMeta& entry) const {
   TupleHeaderData* header = (TupleHeaderData*) tuple_;
 
   if (header->headerSize < sizeof(TupleHeaderData) + (index + 1) * sizeof(TypeMeta)) {
     THROW_EXCEPTION("index out of range");
   }
-  return header;
+
+  u32 offset = header->meta[index].offset;
+
+  size_t entrySize = header->meta[index].size;
+  entry.type = header->meta[index].type;
+  entry.size = entrySize;
+  entry.data = entrySize > 0 ? (char*) header + header->headerSize + offset : nullptr;
 }
 
 }

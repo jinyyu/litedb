@@ -16,6 +16,12 @@ int u64_cmp(Entry* a, Entry* b) {
   }
 }
 
+int index_cmp(Entry* a, Entry* b)
+{
+  return 0;
+
+}
+
 }
 
 

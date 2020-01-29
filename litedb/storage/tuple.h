@@ -30,7 +30,7 @@ struct TupleMeta {
         data(data),
         size(size) {}
 
-  explicit TupleMeta() = default;
+  TupleMeta() = default;
 
   explicit TupleMeta(u16* u) : type(INT2OID), data((const char*) u), size(sizeof(u)) {}
   explicit TupleMeta(u32* u) : type(INT4OID), data((const char*) u), size(sizeof(u)) {}
@@ -61,24 +61,30 @@ class Tuple {
     }
   }
 
-  u32 GetType(int index) const;
+  u32 columns() const;
 
-  u32 Get(int index, Slice& entry) const;
+  u32 GetType(int index) const {
+    TupleMeta entry;
+    Get(index, entry);
+    return entry.type;
+  }
+
+  void Get(int index, TupleMeta& entry) const;
 
   template<typename T>
   T GetInt(int index) const {
-    Slice entry;
+    TupleMeta entry;
     Get(index, entry);
-    if (sizeof(T) != entry.size()) {
+    if (sizeof(T) != entry.size) {
       THROW_EXCEPTION("invalid tuple")
     }
-    return *(T*) entry.data();
+    return *(T*) entry.data;
   }
 
   Slice GetSlice(int index) const {
-    Slice entry;
+    TupleMeta entry;
     Get(index, entry);
-    return entry;
+    return Slice(entry.data, entry.size);
   }
 
   void GetTupleData(Slice& slice) const {
@@ -90,8 +96,6 @@ class Tuple {
   u64 GetID() const { return id_; }
 
  private:
-  TupleHeaderData* GetHeader(int index) const;
-
   u64 id_;
   char* tuple_;  //tuple data
   u32 len_;      //tuple data size
