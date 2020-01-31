@@ -15,7 +15,7 @@ TuplePtr SysIndex::ToTuple(const SysIndex& self) {
   entries.emplace_back(BOOLOID, (char*) &self.indisprimary, sizeof(self.indisprimary));
 
   TuplePtr tuple = Tuple::Construct(entries);
-  tuple->SetID(self.indexrelid);
+  tuple->SetRowID(self.indexrelid);
   return tuple;
 }
 

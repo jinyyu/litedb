@@ -7,12 +7,13 @@
 namespace db {
 
 struct SysClass {
-  u64 id;
+  i64 id;
   char relname[NAMEDATALEN];  /* class name */
   bool relhasindex;           /* true if has (or has had) any indexes */
   char relkind;               /* see RELKIND_xxx constants below */
   i16 relnatts;               /* number of user attributes */
 
+  static void FromTuple(const Tuple& tuple, SysClass& self);
   static TuplePtr ToTuple(const SysClass& self);
   static void InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& tuples);
 };

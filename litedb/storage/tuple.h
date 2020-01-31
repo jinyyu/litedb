@@ -47,7 +47,7 @@ typedef std::shared_ptr<Tuple> TuplePtr;
 class Tuple {
  public:
   explicit Tuple(char* tuple, u32 len)
-      : id_(0),
+      : rowID_(0),
         tuple_(tuple),
         len_(len),
         copied_(false) {
@@ -91,12 +91,12 @@ class Tuple {
     slice.assign(tuple_, len_);
   }
 
-  bool ContainsID() const { return id_ > 0; }
-  void SetID(u64 id) { id_ = id; }
-  u64 GetID() const { return id_; }
+  bool ContainsRowID() const { return rowID_ > 0; }
+  void SetRowID(u64 id) { rowID_ = id; }
+  u64 GetRowID() const { return rowID_; }
 
  private:
-  u64 id_;
+  i64 rowID_;
   char* tuple_;  //tuple data
   u32 len_;      //tuple data size
   bool copied_;  //is tuple copied?

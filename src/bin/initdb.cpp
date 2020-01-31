@@ -38,8 +38,8 @@ void InitCatalog() {
     u64 relID = relations[i];
     TuplePtr tuple = tuples[i];
     RelationPtr rel = Relation::OpenTable(txn, relations[i]);
-    if (tuple->ContainsID()) {
-      u64 tupleID = tuple->GetID();
+    if (tuple->ContainsRowID()) {
+      u64 tupleID = tuple->GetRowID();
       rel->TableInsert(tupleID, *tuple);
       LOG_INFO("insert tuple (%lu, %lu)", relID, tupleID);
     } else {

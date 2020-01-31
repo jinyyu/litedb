@@ -22,6 +22,7 @@ set(SRC
         storage/databasemdb.cpp
         storage/relation_index.cpp
         storage/relation_table.cpp
+        storage/scan_key.cpp
         storage/tuple.cpp
         utils/compare.cpp
         utils/env.cpp

@@ -4,8 +4,11 @@
 #include <litedb/int.h>
 #include <litedb/storage/database.h>
 #include <litedb/storage/tuple.h>
+#include <litedb/storage/scan_key.h>
 
 namespace db {
+class TableScanDesc;
+typedef std::shared_ptr<TableScanDesc> TableScanDescPtr;
 
 class Relation;
 typedef std::shared_ptr<Relation> RelationPtr;
@@ -31,6 +34,10 @@ class Relation {
    * append a tuple
    */
   u64 TableAppend(const Tuple& tuple);
+
+  TableScanDescPtr TableBeginScan(ScanKey* scanKey, int nkeys);
+  TuplePtr TableGetNext(TableScanDescPtr& scan);
+  void TableEndScan(TableScanDescPtr& scan);
 
  private:
   explicit Relation(Table* table);

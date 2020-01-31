@@ -5,6 +5,27 @@
 
 namespace db {
 
+void SysClass::FromTuple(const Tuple& tuple, SysClass& self)
+{
+  assert(tuple.columns() == Natts_sys_class);
+
+  assert(tuple.GetType(Anum_sys_class_id -1) == INT8OID);
+  self.id = tuple.GetBasicType<i64>(Anum_sys_class_id -1);
+
+  assert(tuple.GetType(Anum_sys_class_relname -1) == NAMEOID);
+  Slice relname = tuple.GetSlice(Anum_sys_class_relname -1);
+  strcpy(self.relname, relname.data());
+
+  assert(tuple.GetType(Anum_sys_class_relhasindex -1) == BOOLOID);
+  self.relhasindex = tuple.GetBasicType<bool>(Anum_sys_class_relhasindex -1);
+
+  assert(tuple.GetType(Anum_sys_class_relkind -1) == CHAROID);
+  self.relkind = tuple.GetBasicType<i8>(Anum_sys_class_relkind -1);
+
+  assert(tuple.GetType(Anum_sys_class_relnatts -1) == INT2OID);
+  self.relnatts = tuple.GetBasicType<i16>(Anum_sys_class_relnatts -1);
+}
+
 TuplePtr SysClass::ToTuple(const SysClass& self) {
   std::vector<TupleMeta> entries;
 
@@ -15,7 +36,7 @@ TuplePtr SysClass::ToTuple(const SysClass& self) {
   entries.emplace_back(INT2OID, (char*) &self.relnatts, sizeof(self.relnatts));
 
   TuplePtr tuple = Tuple::Construct(entries);
-  tuple->SetID(self.id);
+  tuple->SetRowID(self.id);
   return tuple;
 }
 
