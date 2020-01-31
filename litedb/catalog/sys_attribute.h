@@ -7,21 +7,23 @@ namespace db {
 
 struct SysAttribute {
   u64 attrelid;                /*relation containing this attribute*/
-  u32 atttypid;                /*the id of the instance*/
+  i32 atttypid;                /*the id of the instance*/
   char attname[NAMEDATALEN];   /*name of attribute*/
-  u16 attnum;                  /*attnum is the "attribute number" for the attribute*/
+  i16 attnum;                  /*attnum is the "attribute number" for the attribute*/
 
   static TuplePtr ToTuple(const SysAttribute& self);
   static void InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& tuples);
 };
 
-
 #define SysAttributeRelationName "sys_attribute"
 #define SysAttributeRelationId 1249
+
 #define Anum_sys_attribute_attrelid 1
 #define Anum_sys_attribute_atttypid 2
 #define Anum_sys_attribute_attname 3
 #define Anum_sys_attribute_attnum 4
+
+#define Natts_sys_attribute 4
 
 }
 

@@ -49,9 +49,9 @@ TEST(relation, insert) {
 
   TransactionPtr txn = test_db->Begin();
   RelationPtr rel = Relation::OpenTable(txn, 100);
-  rel->InsertTuple(99, *tuple);
-  rel->InsertTuple(101, *tuple);
-  rel->InsertTuple(100, *tuple);
+  rel->TableInsert(99, *tuple);
+  rel->TableInsert(101, *tuple);
+  rel->TableInsert(100, *tuple);
 
   Cursor* cursor = rel->GetTable()->Open();
   int get = 0;
@@ -77,7 +77,7 @@ TEST(relation, append) {
   TransactionPtr txn = test_db->Begin();
   RelationPtr rel = Relation::OpenTable(txn, 889);
   for (int i = 1; i <= 10001; ++i) {
-    ASSERT_EQ(rel->Append(*tuple), i);
+    ASSERT_EQ(rel->TableAppend(*tuple), i);
   }
 
   Slice key;

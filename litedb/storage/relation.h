@@ -16,15 +16,21 @@ class Relation {
 
   static RelationPtr OpenIndex(TransactionPtr tran, u64 id);
 
-  ~Relation() {}
+  ~Relation() = default;
 
   Table* GetTable() {
     return table_;
   }
 
-  void InsertTuple(u64 id, const Tuple& tuple);
+  /*
+   * insert a tuple
+   */
+  void TableInsert(u64 id, const Tuple& tuple);
 
-  u64 Append(const Tuple& tuple);
+  /*
+   * append a tuple
+   */
+  u64 TableAppend(const Tuple& tuple);
 
  private:
   explicit Relation(Table* table);

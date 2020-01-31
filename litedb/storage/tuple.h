@@ -72,7 +72,7 @@ class Tuple {
   void Get(int index, TupleMeta& entry) const;
 
   template<typename T>
-  T GetInt(int index) const {
+  T GetBasicType(int index) const {
     TupleMeta entry;
     Get(index, entry);
     if (sizeof(T) != entry.size) {

@@ -12,6 +12,12 @@ struct Entry {
 
 typedef int (TypeCmpCallback)(Entry* a, Entry* b);
 
+TypeCmpCallback* GetCmpFunction(u32 type);
+
+int i8_cmp(Entry* a, Entry* b);
+int i16_cmp(Entry* a, Entry* b);
+int i32_cmp(Entry* a, Entry* b);
+int i64_cmp(Entry* a, Entry* b);
 int u64_cmp(Entry* a, Entry* b);
 
 int index_cmp(Entry* a, Entry* b);

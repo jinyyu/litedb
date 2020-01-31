@@ -23,6 +23,7 @@ void SysAttribute::InitCatalogs(std::vector<u64>& relations, std::vector<TuplePt
     strcpy(item.relname, SysAttributeRelationName);
     item.relhasindex = true;
     item.relkind = RELKIND_RELATION;
+    item.relnatts = Natts_sys_attribute;
 
     relations.push_back(SysClassRelationId);
     tuples.push_back(SysClass::ToTuple(item));

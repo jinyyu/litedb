@@ -4,9 +4,11 @@
 #include <litedb/catalog/catalog.h>
 #include <litedb/catalog/sys_class.h>
 #include <litedb/catalog/sys_attribute.h>
+#include <litedb/catalog/sys_index.h>
 #include <litedb/storage/relation.h>
 #include <sys/stat.h>
 #include <lmdb.h>
+
 
 namespace db {
 
@@ -26,6 +28,7 @@ void InitCatalog() {
 
   SysClass::InitCatalogs(relations, tuples);
   SysAttribute::InitCatalogs(relations, tuples);
+  SysIndex::InitCatalogs(relations, tuples);
 
   assert(relations.size() == tuples.size());
 
@@ -37,10 +40,10 @@ void InitCatalog() {
     RelationPtr rel = Relation::OpenTable(txn, relations[i]);
     if (tuple->ContainsID()) {
       u64 tupleID = tuple->GetID();
-      rel->InsertTuple(tupleID, *tuple);
+      rel->TableInsert(tupleID, *tuple);
       LOG_INFO("insert tuple (%lu, %lu)", relID, tupleID);
     } else {
-      u64 tupleID = rel->Append(*tuple);
+      u64 tupleID = rel->TableAppend(*tuple);
       LOG_INFO("append tuple (%lu, %lu)", relID, tupleID);
     }
   }

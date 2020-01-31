@@ -14,12 +14,14 @@ set(SRC
         catalog/catalog.cpp
         catalog/sys_attribute.cpp
         catalog/sys_class.cpp
+        catalog/sys_index.cpp
         parser/analyze.cpp
         parser/keywords.cpp
         parser/nodes.cpp
         parser/parser.cpp
         storage/databasemdb.cpp
-        storage/relation.cpp
+        storage/relation_index.cpp
+        storage/relation_table.cpp
         storage/tuple.cpp
         utils/compare.cpp
         utils/env.cpp

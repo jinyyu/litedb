@@ -12,6 +12,7 @@ TuplePtr SysClass::ToTuple(const SysClass& self) {
   entries.emplace_back(NAMEOID, self.relname, sizeof(self.relname));
   entries.emplace_back(BOOLOID, (char*) &self.relhasindex, sizeof(self.relhasindex));
   entries.emplace_back(CHAROID, (char*) &self.relkind, sizeof(self.relkind));
+  entries.emplace_back(INT2OID, (char*) &self.relnatts, sizeof(self.relnatts));
 
   TuplePtr tuple = Tuple::Construct(entries);
   tuple->SetID(self.id);
@@ -27,6 +28,7 @@ void SysClass::InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& 
     strcpy(item.relname, SysClassRelationName);
     item.relhasindex = true;
     item.relkind = RELKIND_RELATION;
+    item.relnatts = Natts_sys_class;
 
     relations.push_back(SysClassRelationId);
     tuples.push_back(SysClass::ToTuple(item));
@@ -80,6 +82,19 @@ void SysClass::InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& 
     relations.push_back(SysAttributeRelationId);
     tuples.push_back(SysAttribute::ToTuple(item));
   }
+
+  {
+    SysAttribute item;
+    memset(&item, 0, sizeof(item));
+
+    item.attrelid = SysClassRelationId;
+    item.atttypid = INT2OID;
+    strcpy(item.attname, "relnatts");
+    item.attnum = attnum++;
+    relations.push_back(SysAttributeRelationId);
+    tuples.push_back(SysAttribute::ToTuple(item));
+  }
+
 }
 
 }

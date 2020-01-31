@@ -27,16 +27,16 @@ TEST(tuple, construct) {
   entries.emplace_back(TEXTOID, v6.c_str(), v6.size());
 
   TuplePtr tuple = Tuple::Construct(entries);
-  ASSERT_EQ(v1, tuple->GetInt<u8>(0));
+  ASSERT_EQ(v1, tuple->GetBasicType<u8>(0));
   ASSERT_EQ(CHAROID, tuple->GetType(0));
 
-  ASSERT_EQ(v2, tuple->GetInt<u16>(1));
+  ASSERT_EQ(v2, tuple->GetBasicType<u16>(1));
   ASSERT_EQ(INT2OID, tuple->GetType(1));
 
-  ASSERT_EQ(v3, tuple->GetInt<u32>(2));
+  ASSERT_EQ(v3, tuple->GetBasicType<u32>(2));
   ASSERT_EQ(INT4OID, tuple->GetType(2));
 
-  ASSERT_EQ(v4, tuple->GetInt<u64>(3));
+  ASSERT_EQ(v4, tuple->GetBasicType<u64>(3));
   ASSERT_EQ(INT8OID, tuple->GetType(3));
 
   ASSERT_EQ(v5, tuple->GetSlice(4).to_string());
@@ -66,7 +66,7 @@ TEST(tuple, construct_null) {
 
   TuplePtr tuple = Tuple::Construct(entries);
 
-  ASSERT_EQ(v1, tuple->GetInt<u8>(0));
+  ASSERT_EQ(v1, tuple->GetBasicType<u8>(0));
 
   ASSERT_EQ(0, tuple->GetSlice(1).size());
   ASSERT_EQ(nullptr, tuple->GetSlice(1).data());

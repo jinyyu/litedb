@@ -1,25 +1,105 @@
 #include <litedb/utils/compare.h>
 #include <assert.h>
+#include <litedb/catalog/sys_type.h>
+#include <litedb/storage/tuple.h>
 
 namespace db {
 
-int u64_cmp(Entry* a, Entry* b) {
-  assert(a->size == sizeof(u64) && b->size == sizeof(u64));
-  u64 va = *(u64*) a->data;
-  u64 vb = *(u64*) b->data;
-  if (va == vb) {
-    return 0;
+template<typename T>
+int BasicTypeCmp(T* t1, size_t size1, T* t2, size_t size2) {
+  assert(size1 == sizeof(T) && size2 == sizeof(T));
+  T va = *(T*) t1;
+  T vb = *(T*) t2;
+  if (va < vb) {
+    return -1;
   } else if (va > vb) {
     return 1;
   } else {
-    return -1;
+    return 0;
   }
 }
 
-int index_cmp(Entry* a, Entry* b)
-{
-  return 0;
+TypeCmpCallback* GetCmpFunction(u32 type) {
+  TypeCmpCallback* ret;
+  switch (type) {
+    case CHAROID:
+    case BOOLOID: {
+      ret = i8_cmp;
+      break;
+    }
+    case INT2OID: {
+      ret = i16_cmp;
+      break;
+    }
+    case INT4OID: {
+      ret = i32_cmp;
+      break;
+    }
+    case INT8OID: {
+      ret = i64_cmp;
+      break;
+    }
+    default: {
+      assert(false);
+      ret = nullptr;
+    }
+  }
+  return ret;
+}
 
+int i8_cmp(Entry* a, Entry* b) {
+  return BasicTypeCmp<i8>((i8*) a->data, a->size, (i8*) b->data, b->size);
+}
+
+int i16_cmp(Entry* a, Entry* b) {
+  return BasicTypeCmp<i16>((i16*) a->data, a->size, (i16*) b->data, b->size);
+}
+
+int i32_cmp(Entry* a, Entry* b) {
+  return BasicTypeCmp<i32>((i32*) a->data, a->size, (i32*) b->data, b->size);
+}
+
+int i64_cmp(Entry* a, Entry* b) {
+  return BasicTypeCmp<i64>((i64*) a->data, a->size, (i64*) b->data, b->size);
+}
+
+int u64_cmp(Entry* a, Entry* b) {
+  return BasicTypeCmp<u64>((u64*) a->data, a->size, (u64*) b->data, b->size);
+}
+
+int index_cmp(Entry* a, Entry* b) {
+  Tuple tuple1((char*) a->data, a->size);
+  u32 column1 = tuple1.columns();
+
+  Tuple tuple2((char*) b->data, a->size);
+
+  assert(column1 == tuple2.columns());
+
+  for (u32 i = 0; i < column1; ++i) {
+    TupleMeta meta1;
+    TupleMeta meta2;
+    Entry entry1;
+    Entry entry2;
+
+    tuple1.Get(i, meta1);
+    tuple2.Get(i, meta2);
+
+    assert(meta1.type == meta2.type);
+
+    entry1.size = meta1.size;
+    entry1.data = (void*) meta1.data;
+    entry2.size = meta2.size;
+    entry2.data = (void*) meta2.data;
+
+    TypeCmpCallback* cb = GetCmpFunction(meta1.type);
+    assert(cb);
+
+    int ret = cb(&entry1, &entry2);
+    if (ret != 0) {
+      return ret;
+    }
+  }
+  return 0;
 }
 
 }

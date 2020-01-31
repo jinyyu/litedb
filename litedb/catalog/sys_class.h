@@ -8,9 +8,10 @@ namespace db {
 
 struct SysClass {
   u64 id;
-  char relname[NAMEDATALEN];
-  bool relhasindex;
-  char relkind;
+  char relname[NAMEDATALEN];  /* class name */
+  bool relhasindex;           /* true if has (or has had) any indexes */
+  char relkind;               /* see RELKIND_xxx constants below */
+  i16 relnatts;               /* number of user attributes */
 
   static TuplePtr ToTuple(const SysClass& self);
   static void InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& tuples);
@@ -21,10 +22,14 @@ struct SysClass {
 
 #define SysClassRelationName "sys_class"
 #define SysClassRelationId 1259
-#define Anum_sys_class_id 0
-#define Anum_sys_class_relname 1
-#define Anum_sys_class_relhasindex 2
-#define Anum_sys_class_relkind 3
+
+#define Anum_sys_class_id 1
+#define Anum_sys_class_relname 2
+#define Anum_sys_class_relhasindex 3
+#define Anum_sys_class_relkind 4
+#define Anum_sys_class_relnatts 5
+
+#define Natts_sys_class 5
 
 }
 
