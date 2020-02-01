@@ -20,15 +20,15 @@ set(SRC
         parser/nodes.cpp
         parser/parser.cpp
         storage/databasemdb.cpp
-        storage/relation_index.cpp
-        storage/relation_table.cpp
+        storage/relation.cpp
         storage/scan_key.cpp
         storage/tuple.cpp
         utils/compare.cpp
         utils/env.cpp
         utils/elog.cpp
         utils/portal.cpp
-        utils/pq.cpp)
+        utils/pq.cpp
+        utils/vector.cpp)
 
 add_library(litedb++ ${SRC})
 target_link_libraries(litedb++ ${LIBS})

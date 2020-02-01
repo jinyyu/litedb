@@ -3,6 +3,7 @@
 #include <litedb/int.h>
 #include <litedb/catalog/catalog.h>
 #include <litedb/storage/tuple.h>
+#include <litedb/utils/vector.h>
 
 namespace db {
 
@@ -13,6 +14,10 @@ struct SysIndex {
   i16 indnkeyatts;     /* number of key columns in index */
   bool indisunique;    /* is this a unique index? */
   bool indisprimary;   /* is this index for primary key? */
+
+  /* variable-length fields */
+  Vector indkey;      /* column numbers of indexed cols*/
+
 
   static TuplePtr ToTuple(const SysIndex& self);
   static void InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& tuples);
@@ -27,6 +32,7 @@ struct SysIndex {
 #define Anum_sys_index_indnkeyatts 4
 #define Anum_sys_index_indisunique 5
 #define Anum_sys_index_indisprimary 6
+#define Anum_sys_index_indkey 7
 
 #define Natts_sys_index 6
 
