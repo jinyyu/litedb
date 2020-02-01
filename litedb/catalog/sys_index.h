@@ -20,7 +20,7 @@ struct SysIndex {
 
 
   static TuplePtr ToTuple(const SysIndex& self);
-  static void InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& tuples);
+  static void InitCatalogs(TransactionPtr txn);
 };
 
 #define SysIndexRelationName "sys_index"

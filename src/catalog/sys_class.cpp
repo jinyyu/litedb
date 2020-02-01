@@ -5,25 +5,24 @@
 
 namespace db {
 
-void SysClass::FromTuple(const Tuple& tuple, SysClass& self)
-{
+void SysClass::FromTuple(const Tuple& tuple, SysClass& self) {
   assert(tuple.columns() == Natts_sys_class);
 
-  assert(tuple.GetType(Anum_sys_class_id -1) == INT8OID);
-  self.id = tuple.GetBasicType<i64>(Anum_sys_class_id -1);
+  assert(tuple.GetType(Anum_sys_class_id - 1) == INT8OID);
+  self.id = tuple.GetBasicType<i64>(Anum_sys_class_id - 1);
 
-  assert(tuple.GetType(Anum_sys_class_relname -1) == NAMEOID);
-  Slice relname = tuple.GetSlice(Anum_sys_class_relname -1);
+  assert(tuple.GetType(Anum_sys_class_relname - 1) == NAMEOID);
+  Slice relname = tuple.GetSlice(Anum_sys_class_relname - 1);
   strcpy(self.relname, relname.data());
 
-  assert(tuple.GetType(Anum_sys_class_relhasindex -1) == BOOLOID);
-  self.relhasindex = tuple.GetBasicType<bool>(Anum_sys_class_relhasindex -1);
+  assert(tuple.GetType(Anum_sys_class_relhasindex - 1) == BOOLOID);
+  self.relhasindex = tuple.GetBasicType<bool>(Anum_sys_class_relhasindex - 1);
 
-  assert(tuple.GetType(Anum_sys_class_relkind -1) == CHAROID);
-  self.relkind = tuple.GetBasicType<i8>(Anum_sys_class_relkind -1);
+  assert(tuple.GetType(Anum_sys_class_relkind - 1) == CHAROID);
+  self.relkind = tuple.GetBasicType<i8>(Anum_sys_class_relkind - 1);
 
-  assert(tuple.GetType(Anum_sys_class_relnatts -1) == INT2OID);
-  self.relnatts = tuple.GetBasicType<i16>(Anum_sys_class_relnatts -1);
+  assert(tuple.GetType(Anum_sys_class_relnatts - 1) == INT2OID);
+  self.relnatts = tuple.GetBasicType<i16>(Anum_sys_class_relnatts - 1);
 }
 
 TuplePtr SysClass::ToTuple(const SysClass& self) {
@@ -40,81 +39,34 @@ TuplePtr SysClass::ToTuple(const SysClass& self) {
   return tuple;
 }
 
-void SysClass::InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& tuples) {
-  {
-    SysClass item;
-    memset(&item, 0, sizeof(item));
+void SysClass::CreateEntry(TransactionPtr txn,
+    i64 id,
+    const char* relname,
+    bool relhasindex,
+    char relkind,
+    i16 relnatts) {
+  SysClass entry;
+  memset(&entry, 0, sizeof(entry));
 
-    item.id = SysClassRelationId;
-    strcpy(item.relname, SysClassRelationName);
-    item.relhasindex = true;
-    item.relkind = RELKIND_RELATION;
-    item.relnatts = Natts_sys_class;
+  entry.id = id;
+  strcpy(entry.relname, relname);
+  entry.relhasindex = relhasindex;
+  entry.relkind = relkind;
+  entry.relnatts = relnatts;
 
-    relations.push_back(SysClassRelationId);
-    tuples.push_back(SysClass::ToTuple(item));
-  }
+  TuplePtr tuple = SysClass::ToTuple(entry);
+  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+  rel->TableInsert(id, *tuple);
+}
 
-  int attnum = 0;
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
+void SysClass::InitCatalogs(TransactionPtr txn) {
+  SysClass::CreateEntry(txn, SysClassRelationId, SysClassRelationName, true, RELKIND_RELATION, Natts_sys_class);
 
-    item.attrelid = SysClassRelationId;
-    item.atttypid = INT8OID;
-    strcpy(item.attname, "id");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
-
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
-
-    item.attrelid = SysClassRelationId;
-    item.atttypid = NAMEOID;
-    strcpy(item.attname, "relname");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
-
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
-
-    item.attrelid = SysClassRelationId;
-    item.atttypid = BOOLOID;
-    strcpy(item.attname, "relhasindex");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
-
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
-
-    item.attrelid = SysClassRelationId;
-    item.atttypid = CHAROID;
-    strcpy(item.attname, "relkind");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
-
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
-
-    item.attrelid = SysClassRelationId;
-    item.atttypid = INT2OID;
-    strcpy(item.attname, "relnatts");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
+  SysAttribute::CreateEntry(txn, SysClassRelationId, INT8OID, "id", Anum_sys_class_id -1);
+  SysAttribute::CreateEntry(txn, SysClassRelationId, NAMEOID, "relname", Anum_sys_class_relname -1);
+  SysAttribute::CreateEntry(txn, SysClassRelationId, BOOLOID, "relhasindex", Anum_sys_class_relhasindex -1);
+  SysAttribute::CreateEntry(txn, SysClassRelationId, CHAROID, "relkind", Anum_sys_class_relkind -1);
+  SysAttribute::CreateEntry(txn, SysClassRelationId, INT2OID, "relnatts", Anum_sys_class_relnatts -1);
 
 }
 

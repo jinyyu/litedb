@@ -19,93 +19,15 @@ TuplePtr SysIndex::ToTuple(const SysIndex& self) {
   return tuple;
 }
 
-void SysIndex::InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& tuples) {
-  {
-    SysClass item;
-    memset(&item, 0, sizeof(item));
+void SysIndex::InitCatalogs(TransactionPtr txn) {
+  SysClass::CreateEntry(txn, SysIndexRelationId, SysIndexRelationName, true, RELKIND_RELATION, Natts_sys_index);
 
-    item.id = SysIndexRelationId;
-    strcpy(item.relname, SysIndexRelationName);
-    item.relhasindex = true;
-    item.relkind = RELKIND_RELATION;
-    item.relnatts = Natts_sys_index;
-
-    relations.push_back(SysClassRelationId);
-    tuples.push_back(SysClass::ToTuple(item));
-  }
-
-  int attnum = 0;
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
-
-    item.attrelid = SysIndexRelationId;
-    item.atttypid = INT8OID;
-    strcpy(item.attname, "indexrelid");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
-
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
-
-    item.attrelid = SysIndexRelationId;
-    item.atttypid = INT8OID;
-    strcpy(item.attname, "indrelid");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
-
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
-
-    item.attrelid = SysIndexRelationId;
-    item.atttypid = INT2OID;
-    strcpy(item.attname, "indnatts");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
-
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
-
-    item.attrelid = SysIndexRelationId;
-    item.atttypid = INT2OID;
-    strcpy(item.attname, "indnkeyatts");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
-
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
-
-    item.attrelid = SysIndexRelationId;
-    item.atttypid = BOOLOID;
-    strcpy(item.attname, "indisunique");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
-
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
-
-    item.attrelid = SysIndexRelationId;
-    item.atttypid = BOOLOID;
-    strcpy(item.attname, "indisprimary");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
+  SysAttribute::CreateEntry(txn, SysIndexRelationId, INT8OID, "indexrelid", Anum_sys_index_indexrelid - 1);
+  SysAttribute::CreateEntry(txn, SysIndexRelationId, INT8OID, "indrelid", Anum_sys_index_indrelid - 1);
+  SysAttribute::CreateEntry(txn, SysIndexRelationId, INT2OID, "indnatts", Anum_sys_index_indnatts - 1);
+  SysAttribute::CreateEntry(txn, SysIndexRelationId, INT2OID, "indnkeyatts", Anum_sys_index_indnkeyatts - 1);
+  SysAttribute::CreateEntry(txn, SysIndexRelationId, BOOLOID, "indisunique", Anum_sys_index_indisunique - 1);
+  SysAttribute::CreateEntry(txn, SysIndexRelationId, BOOLOID, "indisprimary", Anum_sys_index_indisprimary - 1);
 }
 
 }

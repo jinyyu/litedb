@@ -12,7 +12,12 @@ struct SysAttribute {
   i16 attnum;                  /*attnum is the "attribute number" for the attribute*/
 
   static TuplePtr ToTuple(const SysAttribute& self);
-  static void InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& tuples);
+  static void InitCatalogs(TransactionPtr txn);
+  static void CreateEntry(TransactionPtr txn,
+                          i64 attrelid,
+                          i32 atttypid,
+                          const char* attname,
+                          i16 attnum);
 };
 
 #define SysAttributeRelationName "sys_attribute"

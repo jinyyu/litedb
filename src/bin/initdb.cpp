@@ -7,8 +7,6 @@
 #include <litedb/catalog/sys_index.h>
 #include <litedb/storage/relation.h>
 #include <sys/stat.h>
-#include <lmdb.h>
-
 
 namespace db {
 
@@ -23,30 +21,11 @@ void InitCatalog() {
 
   CatalogDB = Database::Open("catalog");
 
-  std::vector<u64> relations;
-  std::vector<TuplePtr> tuples;
-
-  SysClass::InitCatalogs(relations, tuples);
-  SysAttribute::InitCatalogs(relations, tuples);
-  SysIndex::InitCatalogs(relations, tuples);
-
-  assert(relations.size() == tuples.size());
-
   TransactionPtr txn = CatalogDB->Begin();
 
-  for (size_t i = 0; i < relations.size(); ++i) {
-    u64 relID = relations[i];
-    TuplePtr tuple = tuples[i];
-    RelationPtr rel = Relation::OpenTable(txn, relations[i]);
-    if (tuple->ContainsRowID()) {
-      u64 tupleID = tuple->GetRowID();
-      rel->TableInsert(tupleID, *tuple);
-      LOG_INFO("insert tuple (%lu, %lu)", relID, tupleID);
-    } else {
-      u64 tupleID = rel->TableAppend(*tuple);
-      LOG_INFO("append tuple (%lu, %lu)", relID, tupleID);
-    }
-  }
+  SysClass::InitCatalogs(txn);
+  SysAttribute::InitCatalogs(txn);
+  SysIndex::InitCatalogs(txn);
 
   txn->Commit();
 

@@ -1,6 +1,7 @@
 #include <litedb/catalog/sys_attribute.h>
 #include <litedb/catalog/sys_class.h>
 #include <litedb/catalog/sys_type.h>
+#include <litedb/storage/relation.h>
 
 namespace db {
 
@@ -14,70 +15,36 @@ TuplePtr SysAttribute::ToTuple(const SysAttribute& self) {
   return Tuple::Construct(entries);
 }
 
-void SysAttribute::InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& tuples) {
-  {
-    SysClass item;
-    memset(&item, 0, sizeof(item));
+void SysAttribute::CreateEntry(TransactionPtr txn,
+                               i64 attrelid,
+                               i32 atttypid,
+                               const char* attname,
+                               i16 attnum) {
+  SysAttribute entry;
+  memset(&entry, 0, sizeof(entry));
 
-    item.id = SysAttributeRelationId;
-    strcpy(item.relname, SysAttributeRelationName);
-    item.relhasindex = true;
-    item.relkind = RELKIND_RELATION;
-    item.relnatts = Natts_sys_attribute;
+  entry.attrelid = attrelid;
+  entry.atttypid = atttypid;
+  strcpy(entry.attname, attname);
+  entry.attnum = attnum;
 
-    relations.push_back(SysClassRelationId);
-    tuples.push_back(SysClass::ToTuple(item));
-  }
+  TuplePtr tuple = SysAttribute::ToTuple(entry);
+  RelationPtr rel = Relation::OpenTable(txn, SysAttributeRelationId);
+  rel->TableAppend(*tuple);
+}
 
-  int attnum = 0;
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
+void SysAttribute::InitCatalogs(TransactionPtr txn) {
+  SysClass::CreateEntry(txn,
+                        SysAttributeRelationId,
+                        SysAttributeRelationName,
+                        true,
+                        RELKIND_RELATION,
+                        Natts_sys_attribute);
 
-    item.attrelid = SysAttributeRelationId;
-    item.atttypid = INT8OID;
-    strcpy(item.attname, "attrelid");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
-
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
-
-    item.attrelid = SysAttributeRelationId;
-    item.atttypid = INT4OID;
-    strcpy(item.attname, "atttypid");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
-
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
-
-    item.attrelid = SysAttributeRelationId;
-    item.atttypid = NAMEOID;
-    strcpy(item.attname, "attname");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
-
-  {
-    SysAttribute item;
-    memset(&item, 0, sizeof(item));
-
-    item.attrelid = SysAttributeRelationId;
-    item.atttypid = INT2OID;
-    strcpy(item.attname, "attnum");
-    item.attnum = attnum++;
-    relations.push_back(SysAttributeRelationId);
-    tuples.push_back(SysAttribute::ToTuple(item));
-  }
-
+  SysAttribute::CreateEntry(txn, SysAttributeRelationId, INT8OID, "attrelid", Anum_sys_attribute_attrelid -1);
+  SysAttribute::CreateEntry(txn, SysAttributeRelationId, INT4OID, "atttypid", Anum_sys_attribute_atttypid -1);
+  SysAttribute::CreateEntry(txn, SysAttributeRelationId, NAMEOID, "attname", Anum_sys_attribute_attname -1);
+  SysAttribute::CreateEntry(txn, SysAttributeRelationId, INT2OID, "attnum", Anum_sys_attribute_attnum -1);
 }
 
 }

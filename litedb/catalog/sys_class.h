@@ -15,7 +15,13 @@ struct SysClass {
 
   static void FromTuple(const Tuple& tuple, SysClass& self);
   static TuplePtr ToTuple(const SysClass& self);
-  static void InitCatalogs(std::vector<u64>& relations, std::vector<TuplePtr>& tuples);
+  static void InitCatalogs(TransactionPtr txn);
+  static void CreateEntry(TransactionPtr txn,
+                          i64 id,
+                          const char* relname,
+                          bool relhasindex,
+                          char relkind,
+                          i16 relnatts);
 };
 
 #define  RELKIND_RELATION     'r'    /* ordinary table */
