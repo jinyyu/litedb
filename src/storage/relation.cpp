@@ -58,14 +58,29 @@ void Relation::TableInsert(u64 id, const Tuple& tuple) {
   table_->Put(key, value, 0);
 }
 
-u64 Relation::TableAppend(const Tuple& tuple) {
+i64 Relation::TableNextID() {
   Cursor* cursor = table_->Open();
   Slice key;
   Slice value;
   u64 id;
   if (cursor->Get(key, value, MDB_LAST)) {
-    assert(key.size() == sizeof(u64));
-    id = *(u64*) key.data() + 1;
+    assert(key.size() == sizeof(i64));
+    id = *(i64*) key.data() + 1;
+  } else {
+    id = 1;
+  }
+  table_->Close(cursor);
+  return id;
+}
+
+i64 Relation::TableAppend(const Tuple& tuple) {
+  Cursor* cursor = table_->Open();
+  Slice key;
+  Slice value;
+  i64 id;
+  if (cursor->Get(key, value, MDB_LAST)) {
+    assert(key.size() == sizeof(i64));
+    id = *(i64*) key.data() + 1;
   } else {
     id = 1;
   }

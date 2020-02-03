@@ -13,7 +13,7 @@ struct SysAttribute {
 
   static TuplePtr ToTuple(const SysAttribute& self);
   static void InitCatalogs(TransactionPtr txn);
-  static void CreateEntry(TransactionPtr txn,
+  static i64 CreateEntry(TransactionPtr txn,
                           i64 attrelid,
                           i32 atttypid,
                           const char* attname,

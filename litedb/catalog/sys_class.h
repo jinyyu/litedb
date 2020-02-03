@@ -16,7 +16,7 @@ struct SysClass {
   static void FromTuple(const Tuple& tuple, SysClass& self);
   static TuplePtr ToTuple(const SysClass& self);
   static void InitCatalogs(TransactionPtr txn);
-  static void CreateEntry(TransactionPtr txn,
+  static i64 CreateEntry(TransactionPtr txn,
                           i64 id,
                           const char* relname,
                           bool relhasindex,

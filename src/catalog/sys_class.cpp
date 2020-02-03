@@ -39,7 +39,7 @@ TuplePtr SysClass::ToTuple(const SysClass& self) {
   return tuple;
 }
 
-void SysClass::CreateEntry(TransactionPtr txn,
+i64 SysClass::CreateEntry(TransactionPtr txn,
     i64 id,
     const char* relname,
     bool relhasindex,
@@ -48,15 +48,23 @@ void SysClass::CreateEntry(TransactionPtr txn,
   SysClass entry;
   memset(&entry, 0, sizeof(entry));
 
-  entry.id = id;
+  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+
+  if (id > 0) {
+    entry.id = id;
+  } else {
+    entry.id = rel->TableNextID();
+  }
+
   strcpy(entry.relname, relname);
   entry.relhasindex = relhasindex;
   entry.relkind = relkind;
   entry.relnatts = relnatts;
 
   TuplePtr tuple = SysClass::ToTuple(entry);
-  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
-  rel->TableInsert(id, *tuple);
+
+  rel->TableInsert(entry.id, *tuple);
+  return entry.id;
 }
 
 void SysClass::InitCatalogs(TransactionPtr txn) {

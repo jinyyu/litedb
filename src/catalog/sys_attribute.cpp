@@ -15,7 +15,7 @@ TuplePtr SysAttribute::ToTuple(const SysAttribute& self) {
   return Tuple::Construct(entries);
 }
 
-void SysAttribute::CreateEntry(TransactionPtr txn,
+i64 SysAttribute::CreateEntry(TransactionPtr txn,
                                i64 attrelid,
                                i32 atttypid,
                                const char* attname,
@@ -30,7 +30,7 @@ void SysAttribute::CreateEntry(TransactionPtr txn,
 
   TuplePtr tuple = SysAttribute::ToTuple(entry);
   RelationPtr rel = Relation::OpenTable(txn, SysAttributeRelationId);
-  rel->TableAppend(*tuple);
+  return rel->TableAppend(*tuple);
 }
 
 void SysAttribute::InitCatalogs(TransactionPtr txn) {

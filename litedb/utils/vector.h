@@ -14,6 +14,8 @@ struct Vector {
 
 u32 VectorDataSize(u32 element_num, u32 element_size);
 
+u32 VectorSize(Vector* vector);
+
 Vector* VectorAlloc(u32 element_type, u32 element_num, u32 element_size);
 
 void VectorFree(Vector* vector);

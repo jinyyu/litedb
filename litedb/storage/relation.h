@@ -33,7 +33,9 @@ class Relation {
   /*
    * append a tuple
    */
-  u64 TableAppend(const Tuple& tuple);
+  i64 TableAppend(const Tuple& tuple);
+
+  i64 TableNextID();
 
   TableScanDescPtr TableBeginScan(ScanKey* scanKey, int nkeys);
   TuplePtr TableGetNext(TableScanDescPtr& scan);

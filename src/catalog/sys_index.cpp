@@ -13,6 +13,7 @@ TuplePtr SysIndex::ToTuple(const SysIndex& self) {
   entries.emplace_back(INT2OID, (char*) &self.indnkeyatts, sizeof(self.indnkeyatts));
   entries.emplace_back(BOOLOID, (char*) &self.indisunique, sizeof(self.indisunique));
   entries.emplace_back(BOOLOID, (char*) &self.indisprimary, sizeof(self.indisprimary));
+  entries.emplace_back(INT2VECTOROID, (char*) &self.indkey, VectorSize((Vector*) &self.indkey));
 
   TuplePtr tuple = Tuple::Construct(entries);
   tuple->SetRowID(self.indexrelid);
@@ -28,6 +29,7 @@ void SysIndex::InitCatalogs(TransactionPtr txn) {
   SysAttribute::CreateEntry(txn, SysIndexRelationId, INT2OID, "indnkeyatts", Anum_sys_index_indnkeyatts - 1);
   SysAttribute::CreateEntry(txn, SysIndexRelationId, BOOLOID, "indisunique", Anum_sys_index_indisunique - 1);
   SysAttribute::CreateEntry(txn, SysIndexRelationId, BOOLOID, "indisprimary", Anum_sys_index_indisprimary - 1);
+  SysAttribute::CreateEntry(txn, SysIndexRelationId, INT2VECTOROID, "indkey", Anum_sys_index_indkey - 1);
 }
 
 }

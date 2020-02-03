@@ -7,6 +7,10 @@ u32 VectorDataSize(u32 element_num, u32 element_size) {
   return element_num * element_size;
 }
 
+u32 VectorSize(Vector* vector) {
+  return VectorDataSize(vector->element_num, vector->element_size) + sizeof(Vector);
+}
+
 Vector* VectorAlloc(u32 element_type, u32 element_num, u32 element_size) {
   u32 vLen = VectorDataSize(element_num, element_size);
   Vector* vector = (Vector*) SessionEnv->Malloc0(sizeof(Vector) + vLen);
