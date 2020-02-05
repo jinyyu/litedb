@@ -23,8 +23,6 @@ struct ScanKey {
   u32 type;         /* type of the argument*/
   Slice argument;   /* argument to compare */
 
-  ScanKey() = default;
-
   static void Init(ScanKey* entry, i16 attno, StrategyNumber strategy, u32 typeID, const Slice& argument) {
     entry->flags = 0;
     entry->attno = attno;
@@ -33,7 +31,7 @@ struct ScanKey {
     entry->argument = argument;
   }
 
-  bool PerformCompare(TypeCmpCallback* cmp, const Slice& column);
+  static bool PerformCompare(ScanKey* entry, TypeCmpCallback* cmp, const Slice& column);
 };
 
 }

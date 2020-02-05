@@ -20,6 +20,7 @@ set(SRC
         parser/nodes.cpp
         parser/parser.cpp
         storage/databasemdb.cpp
+        storage/index.cpp
         storage/relation.cpp
         storage/scan_key.cpp
         storage/tuple.cpp

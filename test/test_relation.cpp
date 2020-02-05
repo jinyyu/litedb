@@ -39,6 +39,23 @@ TEST(relation, table_scan) {
   rel->TableEndScan(scan);
 }
 
+TEST(relation, table_scan2) {
+  TransactionPtr txn = CatalogDB->Begin();
+  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+
+
+  int matched = 0;
+  TableScanDescPtr scan = rel->TableBeginScan(nullptr, 0);
+  TuplePtr tuple;
+  while ((tuple = rel->TableGetNext(scan)) != nullptr) {
+    SysClass item;
+    SysClass::FromTuple(*tuple, item);
+    fprintf(stderr, "%lu, %s\n", item.id, item.relname);
+    matched++;
+  }
+  rel->TableEndScan(scan);
+}
+
 int main(int argc, char* argv[]) {
   system(("rm -rf " + test_db_dir).c_str());
 

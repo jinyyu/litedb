@@ -3,10 +3,10 @@
 
 namespace db {
 
-bool ScanKey::PerformCompare(TypeCmpCallback* cmp, const Slice& column) {
+bool ScanKey::PerformCompare(ScanKey* self, TypeCmpCallback* cmp, const Slice& column) {
   Entry entryArg;
-  entryArg.data = (void*) argument.data();
-  entryArg.size = argument.size();
+  entryArg.data = (void*) self->argument.data();
+  entryArg.size = self->argument.size();
 
   Entry entryColumn;
   entryColumn.data = (void*) column.data();
@@ -14,7 +14,7 @@ bool ScanKey::PerformCompare(TypeCmpCallback* cmp, const Slice& column) {
 
   int ret = cmp(&entryArg, &entryColumn);
 
-  switch (strategy) {
+  switch (self->strategy) {
     case BTLessStrategyNumber: {
       return ret < 0;
     }
@@ -31,7 +31,7 @@ bool ScanKey::PerformCompare(TypeCmpCallback* cmp, const Slice& column) {
       return ret > 0;
     }
     default: {
-      elog(ERROR, "invalid strategy %d", strategy);
+      elog(ERROR, "invalid strategy %d", self->strategy);
     }
   }
   return false;

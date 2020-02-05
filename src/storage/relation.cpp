@@ -34,7 +34,7 @@ RelationPtr Relation::OpenTable(TransactionPtr tran, u64 id) {
 
 RelationPtr Relation::OpenIndex(TransactionPtr tran, u64 id) {
   std::string name = std::to_string(id);
-  Table* table = tran->Open(name, MDB_CREATE);
+  Table* table = tran->Open(name, MDB_CREATE | MDB_DUPSORT);
   TableMdb* mdb = static_cast<TableMdb*>(table);
   if (!mdb->SetCompare()) {
     mdb->SetCompare(index_cmp);
@@ -43,7 +43,6 @@ RelationPtr Relation::OpenIndex(TransactionPtr tran, u64 id) {
   rel->relkind_ = RELKIND_INDEX;
   return rel;
 }
-
 
 Relation::Relation(Table* table) :
     table_(table),
@@ -99,11 +98,16 @@ TableScanDescPtr Relation::TableBeginScan(ScanKey* scanKey, int nkeys) {
   desc->nkeys = nkeys;
   desc->scanKey = scanKey;
   desc->totalFetch = 0;
-  TypeCmpCallback* cmp = GetCmpFunction(scanKey->type);
-  if (!cmp) {
-    elog(ERROR, "not supported type %d", scanKey->type);
+  if (scanKey) {
+    TypeCmpCallback* cmp = GetCmpFunction(scanKey->type);
+    if (!cmp) {
+      elog(ERROR, "not supported type %d", scanKey->type);
+    }
+    desc->cmp = cmp;
+  } else {
+    desc->cmp = nullptr;
   }
-  desc->cmp = cmp;
+
   return desc;
 }
 
@@ -133,7 +137,7 @@ TuplePtr Relation::TableGetNext(TableScanDescPtr& scan) {
         column.assign(entry.data, entry.size);
       }
 
-      matched = scanKey->PerformCompare(scan->cmp, column);
+      matched = ScanKey::PerformCompare(scanKey, scan->cmp, column);
       if (!matched) {
         //just one column not matched
         break;

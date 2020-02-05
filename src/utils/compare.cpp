@@ -72,10 +72,11 @@ int index_cmp(Entry* a, Entry* b) {
   u32 column1 = tuple1.columns();
 
   Tuple tuple2((char*) b->data, a->size);
+  u32 column2 = tuple2.columns();
 
-  assert(column1 == tuple2.columns());
+  u32 minColumn = std::min(column1, column2);
 
-  for (u32 i = 0; i < column1; ++i) {
+  for (u32 i = 0; i < minColumn; ++i) {
     TupleMeta meta1;
     TupleMeta meta2;
     Entry entry1;
@@ -99,7 +100,14 @@ int index_cmp(Entry* a, Entry* b) {
       return ret;
     }
   }
-  return 0;
+
+  if (column1 == column2) {
+    return 0;
+  } else if (column1 < column2) {
+    return -1;
+  } else {
+    return 1;
+  }
 }
 
 }
