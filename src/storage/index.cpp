@@ -2,15 +2,17 @@
 #include <litedb/utils/elog.h>
 #include <stdlib.h>
 
+#include <memory>
+
 namespace db {
 
 void IndexAmBuild(RelationPtr tableRel, RelationPtr index, IndexInfo* info) {
-  TableScanDescPtr scan = tableRel->TableBeginScan(nullptr, 0);
+  TableScanDescPtr scan = TableBeginScan(tableRel, nullptr, 0);
   TuplePtr tuple;
-  while ((tuple = tableRel->TableGetNext(scan)) != nullptr) {
+  while ((tuple = TableGetNext(scan)) != nullptr) {
     IndexAmInsert(index, tuple, info);
   }
-  tableRel->TableEndScan(scan);
+  TableEndScan(scan);
 }
 
 void IndexAmInsert(RelationPtr index, TuplePtr tuple, IndexInfo* info) {
@@ -146,13 +148,7 @@ IndexScanDescPtr IndexBeginScan(RelationPtr tableRel, RelationPtr index,
       desc->scanFlag = MDB_PREV_DUP;
       break;
     }
-    case BTEqualStrategyNumber: {
-      if (!isSeek) {
-        desc->finished = true;
-      }
-      desc->scanFlag = MDB_NEXT_DUP;
-      break;
-    }
+    case BTEqualStrategyNumber:
     case BTGreaterStrategyNumber:
     case BTGreaterEqualStrategyNumber: {
       if (!isSeek) {
@@ -187,7 +183,8 @@ TuplePtr IndexGetNext(IndexScanDescPtr desc) {
       break;
     }
 
-    desc->tuple = TuplePtr(new Tuple((char*) tupleData.data(), tupleData.size()));
+    desc->tuple = std::make_shared<Tuple>((char*) tupleData.data(), tupleData.size());
+
     break;
   }
 

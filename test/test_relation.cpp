@@ -19,9 +19,9 @@ TEST(relation, table_scan) {
       INT8OID, Slice((char*) &id, sizeof(id)));
 
   int matched = 0;
-  TableScanDescPtr scan = rel->TableBeginScan(&key, 1);
+  TableScanDescPtr scan = TableBeginScan(rel, &key, 1);
   TuplePtr tuple;
-  while ((tuple = rel->TableGetNext(scan)) != nullptr) {
+  while ((tuple = TableGetNext(scan)) != nullptr) {
     SysClass item;
     SysClass::FromTuple(*tuple, item);
     fprintf(stderr, "%lu, %s\n", item.id, item.relname);
@@ -36,7 +36,7 @@ TEST(relation, table_scan) {
 
   ASSERT_EQ(matched, 1);
 
-  rel->TableEndScan(scan);
+  TableEndScan(scan);
 }
 
 TEST(relation, table_scan2) {
@@ -45,15 +45,15 @@ TEST(relation, table_scan2) {
 
 
   int matched = 0;
-  TableScanDescPtr scan = rel->TableBeginScan(nullptr, 0);
+  TableScanDescPtr scan = TableBeginScan(rel, nullptr, 0);
   TuplePtr tuple;
-  while ((tuple = rel->TableGetNext(scan)) != nullptr) {
+  while ((tuple = TableGetNext(scan)) != nullptr) {
     SysClass item;
     SysClass::FromTuple(*tuple, item);
     fprintf(stderr, "%lu, %s\n", item.id, item.relname);
     matched++;
   }
-  rel->TableEndScan(scan);
+  TableEndScan(scan);
 }
 
 int main(int argc, char* argv[]) {

@@ -91,10 +91,10 @@ i64 Relation::TableAppend(const Tuple& tuple) {
   return id;
 }
 
-TableScanDescPtr Relation::TableBeginScan(ScanKey* scanKey, int nkeys) {
+TableScanDescPtr TableBeginScan(RelationPtr rel, ScanKey* scanKey, int nkeys) {
   TableScanDescPtr desc(new TableScanDesc());
-  desc->rel = this;
-  desc->cursor = table_->Open();
+  desc->rel = rel.get();
+  desc->cursor = rel->GetTable()->Open();
   desc->nkeys = nkeys;
   desc->scanKey = scanKey;
   desc->totalFetch = 0;
@@ -111,7 +111,7 @@ TableScanDescPtr Relation::TableBeginScan(ScanKey* scanKey, int nkeys) {
   return desc;
 }
 
-TuplePtr Relation::TableGetNext(TableScanDescPtr& scan) {
+TuplePtr TableGetNext(TableScanDescPtr& scan) {
   Slice key;
   Slice value;
   while (scan->cursor->Get(key, value, MDB_NEXT)) {
@@ -158,8 +158,7 @@ TuplePtr Relation::TableGetNext(TableScanDescPtr& scan) {
   return nullptr;
 }
 
-void Relation::TableEndScan(TableScanDescPtr& scan) {
-  assert(scan->rel == this);
+void TableEndScan(TableScanDescPtr& scan) {
   scan->rel->GetTable()->Close(scan->cursor);
   scan = nullptr;
 }
