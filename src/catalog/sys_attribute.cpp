@@ -9,7 +9,7 @@ TuplePtr SysAttribute::ToTuple(const SysAttribute& self) {
   std::vector<TupleMeta> entries;
   entries.emplace_back(INT8OID, (char*) &self.attrelid, sizeof(self.attrelid));
   entries.emplace_back(INT4OID, (char*) &self.atttypid, sizeof(self.atttypid));
-  entries.emplace_back(NAMEOID, (char*) self.attname, sizeof(self.attname));
+  entries.emplace_back(NAMEOID, (char*) &self.attname, sizeof(self.attname));
   entries.emplace_back(INT2OID, (char*) &self.attnum, sizeof(self.attnum));
 
   return Tuple::Construct(entries);
@@ -25,7 +25,7 @@ i64 SysAttribute::CreateEntry(TransactionPtr txn,
 
   entry.attrelid = attrelid;
   entry.atttypid = atttypid;
-  strcpy(entry.attname, attname);
+  NameDataSetStr(&entry.attname, attname);
   entry.attnum = attnum;
 
   TuplePtr tuple = SysAttribute::ToTuple(entry);

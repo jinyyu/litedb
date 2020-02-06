@@ -27,7 +27,7 @@ TEST(relation, table_scan) {
     fprintf(stderr, "%lu, %s\n", item.id, item.relname);
 
     ASSERT_EQ(item.id, SysClassRelationId);
-    ASSERT_TRUE(strcmp(item.relname, SysClassRelationName) == 0);
+    ASSERT_TRUE(strcmp(item.relname.data, SysClassRelationName) == 0);
     ASSERT_EQ(item.relhasindex, true);
     ASSERT_EQ(item.relkind, RELKIND_RELATION);
     ASSERT_EQ(item.relnatts, Natts_sys_class);

@@ -1,5 +1,6 @@
 #include <litedb/storage/index.h>
 #include <litedb/utils/elog.h>
+#include <litedb/catalog/sys_class.h>
 #include <stdlib.h>
 
 #include <memory>
@@ -16,10 +17,8 @@ void IndexAmBuild(RelationPtr tableRel, RelationPtr index, IndexInfo* info) {
 }
 
 void IndexAmInsert(RelationPtr index, TuplePtr tuple, IndexInfo* info) {
-  Table* table = index->GetTable();
   assert(tuple->ContainsRowID());
   u64 rowID = tuple->GetRowID();
-  Slice key;
   Slice value;
   std::vector<TupleMeta> columns(info->ii_NumIndexKeyAttrs);
 
@@ -42,12 +41,13 @@ void IndexAmInsert(RelationPtr index, TuplePtr tuple, IndexInfo* info) {
   int flags = 0;
 
   if (info->ii_Unique) {
-    if (table->Get(tupleData, value)) {
+    if (index->kvstore->Get(tupleData, value)) {
       elog(ERROR, "duplicate key value");
     }
   }
   value.assign((char*) &rowID, sizeof(rowID));
-  table->Put(key, value, flags);
+  assert(index->relkind == RELKIND_INDEX);
+  index->kvstore->Put(tupleData, value, flags);
 }
 
 class IndexScanDesc {
@@ -56,12 +56,10 @@ class IndexScanDesc {
       : tableRel(nullptr),
         indexRel(nullptr),
         numberOfKeys(0),
-        numberOfOrderBys(0),
         keyData(nullptr),
-        orderByData(nullptr),
         cursor(nullptr),
-        commonKey(0),
-        scanFlag(0),
+        commonKeys(0),
+        scanFlag((MDB_cursor_op)0),
         finished(false) {
 
   }
@@ -70,63 +68,52 @@ class IndexScanDesc {
     if (keyData) {
       free(keyData);
     }
-    if (orderByData) {
-      free(orderByData);
-    }
     if (cursor) {
-      indexRel->GetTable()->Close(cursor);
+      indexRel->kvstore->Close(cursor);
     }
   }
 
   Relation* tableRel;
   Relation* indexRel;
   int numberOfKeys;         /* number of index qualifier conditions */
-  int numberOfOrderBys;     /* number of ordering operators */
   ScanKey* keyData;          /* array of index qualifier descriptors */
-  ScanKey* orderByData;      /* array of ordering op descriptors */
   Cursor* cursor;
-  int commonKey;
+  int commonKeys;
   StrategyNumber commonStrategy{};
   TuplePtr indexTuple;
   TuplePtr tuple;
-  int scanFlag;
+  MDB_cursor_op scanFlag;
   bool finished;
 };
 
 IndexScanDescPtr IndexBeginScan(RelationPtr tableRel, RelationPtr index,
-                                ScanKey* scanKey, int nkeys,
-                                ScanKey* orderbys, int norderbys) {
+                                ScanKey* scanKey, int nkeys) {
+  assert(index->relkind == RELKIND_INDEX);
+  assert(nkeys > 0);
+  assert(scanKey);
+
   IndexScanDescPtr desc(new IndexScanDesc());
   desc->tableRel = tableRel.get();
   desc->indexRel = index.get();
-  if (scanKey && nkeys) {
-    size_t size = sizeof(ScanKey) * nkeys;
-    desc->keyData = (ScanKey*) malloc(size);
-    memcpy(desc->keyData, scanKey, size);
-  }
+  desc->numberOfKeys = nkeys;
 
-  if (orderbys && norderbys) {
-    size_t size = sizeof(ScanKey) * norderbys;
-    desc->orderByData = (ScanKey*) malloc(size);
-    memcpy(desc->orderByData, orderbys, size);
-  }
+  desc->keyData = (ScanKey*) malloc(sizeof(ScanKey) * nkeys);
+  memcpy(desc->keyData, scanKey, sizeof(ScanKey) * nkeys);
+  desc->cursor = index->kvstore->Open();
 
-  desc->cursor = index->GetTable()->Open();
-
-  assert(desc->numberOfKeys > 0);
-  desc->commonKey = 1;
-  desc->commonStrategy = scanKey[1].strategy;
+  desc->commonKeys = 1;
+  desc->commonStrategy = scanKey[0].strategy;
   for (int i = 2; i <= desc->numberOfKeys; ++i) {
     StrategyNumber strategy = desc->keyData[i].strategy;
     if (strategy != desc->commonStrategy) {
       break;
     }
-    desc->commonKey = i;
+    desc->commonKeys = i;
     desc->commonStrategy = strategy;
   }
 
-  std::vector<TupleMeta> commonIndex(desc->commonKey);
-  for (int i = 0; i < desc->commonKey; ++i) {
+  std::vector<TupleMeta> commonIndex(desc->commonKeys);
+  for (int i = 0; i < desc->commonKeys; ++i) {
     ScanKey& key = desc->keyData[i];
     commonIndex[i] = TupleMeta(key.type, key.argument.data(), key.argument.size());
   }
@@ -154,7 +141,7 @@ IndexScanDescPtr IndexBeginScan(RelationPtr tableRel, RelationPtr index,
       if (!isSeek) {
         desc->finished = true;
       }
-      desc->scanFlag = MDB_NEXT_DUP;
+      desc->scanFlag = MDB_NEXT;
       break;
     }
     default: {
@@ -171,18 +158,19 @@ TuplePtr IndexGetNext(IndexScanDescPtr desc) {
     return nullptr;
   }
 
+  desc->tuple = nullptr;
+  desc->indexTuple = nullptr;
   Slice key;
   Slice value;
-  while (!desc->cursor->Get(key, value, desc->scanFlag)) {
+  while (desc->cursor->Get(key, value, desc->scanFlag)) {
     assert(value.size() == sizeof(i64));
     i64 rowID = *(i64*) value.data();
     Slice tupleData;
-    if (!desc->tableRel->GetTable()->Get(value, tupleData)) {
+    if (!desc->tableRel->kvstore->Get(value, tupleData)) {
       elog(ERROR, "get tuple error %d", rowID);
       desc->finished = true;
       break;
     }
-
     desc->tuple = std::make_shared<Tuple>((char*) tupleData.data(), tupleData.size());
 
     break;

@@ -27,6 +27,7 @@ set(SRC
         utils/compare.cpp
         utils/env.cpp
         utils/elog.cpp
+        utils/misc.cpp
         utils/portal.cpp
         utils/pq.cpp
         utils/vector.cpp)

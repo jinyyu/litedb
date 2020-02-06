@@ -23,3 +23,7 @@ gtest_add_tests(TARGET test_relation)
 add_executable(test_vector test_vector.cpp)
 target_link_libraries(test_vector ${test_LIBS})
 gtest_add_tests(TARGET test_vector)
+
+add_executable(test_index test_index.cpp)
+target_link_libraries(test_index ${test_LIBS})
+gtest_add_tests(TARGET test_index)

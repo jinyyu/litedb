@@ -48,7 +48,7 @@ class TransactionMdb : public Transaction {
   ~TransactionMdb() final;
 
   //Opens thd table
-  Table* Open(const std::string& name, u32 flags) final;
+  KVStore* Open(const std::string& name, u32 flags) final;
 
   void Commit() final;
 
@@ -56,19 +56,19 @@ class TransactionMdb : public Transaction {
 
   DatabaseMdb* mdb_;
   MDB_txn* txn_;
-  std::unordered_map<std::string, Table*> tables_;
+  std::unordered_map<std::string, KVStore*> tables_;
 };
 
-class TableMdb : public Table {
+class KVStoreMdb : public KVStore {
  public:
-  explicit TableMdb(TransactionMdb* trans, MDB_dbi dbi)
+  explicit KVStoreMdb(TransactionMdb* trans, MDB_dbi dbi)
       : set_compare_(false),
         trans_(trans),
         dbi_(dbi) {
 
   }
 
-  virtual ~TableMdb() final;
+  virtual ~KVStoreMdb() final;
 
   bool Put(const Slice& key, const Slice& value, u32 flags) final;
 

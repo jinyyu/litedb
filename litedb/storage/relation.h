@@ -21,10 +21,6 @@ class Relation {
 
   ~Relation() = default;
 
-  Table* GetTable() {
-    return table_;
-  }
-
   /*
    * insert a tuple
    */
@@ -37,15 +33,14 @@ class Relation {
 
   i64 TableNextID();
 
- private:
-  explicit Relation(Table* table);
+  explicit Relation(KVStore* table);
 
-  Table* table_;
-  char relkind_;
+  KVStore* kvstore;
+  char relkind;
 };
 
 TableScanDescPtr TableBeginScan(RelationPtr rel, ScanKey* scanKey, int nkeys);
-TuplePtr TableGetNext(TableScanDescPtr& scan);
+TuplePtr TableGetNext(TableScanDescPtr scan);
 void TableEndScan(TableScanDescPtr& scan);
 
 

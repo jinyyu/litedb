@@ -59,7 +59,7 @@ TransactionMdb::~TransactionMdb() {
   }
 }
 
-Table* TransactionMdb::Open(const std::string& name, u32 flags) {
+KVStore* TransactionMdb::Open(const std::string& name, u32 flags) {
   auto it = tables_.find(name);
   if (it != tables_.end()) {
     return it->second;
@@ -68,7 +68,7 @@ Table* TransactionMdb::Open(const std::string& name, u32 flags) {
   MDB_dbi dbi;
   int rc = mdb_dbi_open(txn_, name.c_str(), flags, &dbi);
   CHECK_LMDB_ERROR(rc);
-  TableMdb* tbl = new TableMdb(this, dbi);
+  KVStoreMdb* tbl = new KVStoreMdb(this, dbi);
   tables_[name] = tbl;
   return tbl;
 }
@@ -84,13 +84,13 @@ void TransactionMdb::Abort() {
   txn_ = nullptr;
 }
 
-TableMdb::~TableMdb() {
+KVStoreMdb::~KVStoreMdb() {
   for (Cursor* cursor: cursors_) {
     delete (cursor);
   }
 }
 
-bool TableMdb::Put(const Slice& key, const Slice& value, u32 flags) {
+bool KVStoreMdb::Put(const Slice& key, const Slice& value, u32 flags) {
   MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
   MDB_val value_val = {.mv_size = value.size(), .mv_data = (char*) value.data(),};
 
@@ -101,21 +101,27 @@ bool TableMdb::Put(const Slice& key, const Slice& value, u32 flags) {
   return (rc == MDB_SUCCESS);
 }
 
-bool TableMdb::Get(const Slice& key, Slice& value) {
+bool KVStoreMdb::Get(const Slice& key, Slice& value) {
   ::MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
   ::MDB_val value_val;
 
   int rc = mdb_get(trans_->txn_, dbi_, &key_val, &value_val);
-  if (rc != MDB_SUCCESS && rc != MDB_KEYEXIST) {
-    CHECK_LMDB_ERROR(rc);
+  switch (rc) {
+    case MDB_SUCCESS: {
+      value.assign((char*) value_val.mv_data, value_val.mv_size);
+      return true;
+    }
+    case MDB_NOTFOUND: {
+      return false;
+    }
+    default: {
+      CHECK_LMDB_ERROR(rc);
+      return false;
+    }
   }
-  if (rc == MDB_SUCCESS) {
-    value.assign((char*) value_val.mv_data, value_val.mv_size);
-  }
-  return (rc == MDB_SUCCESS);
 }
 
-bool TableMdb::Del(const Slice& key, Slice* value) {
+bool KVStoreMdb::Del(const Slice& key, Slice* value) {
   MDB_val key_val = {.mv_size = key.size(), .mv_data = (char*) key.data(),};
   MDB_val value_val;
   MDB_val* value_ptr;
@@ -127,13 +133,24 @@ bool TableMdb::Del(const Slice& key, Slice* value) {
     value_ptr = nullptr;
   }
   int rc = mdb_del(trans_->txn_, dbi_, &key_val, value_ptr);
-  if (rc != MDB_SUCCESS && rc != MDB_KEYEXIST) {
-    CHECK_LMDB_ERROR(rc);
+  switch (rc) {
+    case MDB_SUCCESS: {
+      if (value) {
+        value->assign((char*) value_val.mv_data, value_val.mv_size);
+      }
+      return true;
+    }
+    case MDB_NOTFOUND: {
+      return false;
+    }
+    default: {
+      CHECK_LMDB_ERROR(rc);
+      return false;
+    }
   }
-  return (rc == MDB_SUCCESS);
 }
 
-Cursor* TableMdb::Open() {
+Cursor* KVStoreMdb::Open() {
   MDB_cursor* mdb_cursor;
   int rc = mdb_cursor_open(trans_->txn_, dbi_, &mdb_cursor);
   CHECK_LMDB_ERROR(rc);
@@ -142,7 +159,7 @@ Cursor* TableMdb::Open() {
   return cursor;
 }
 
-void TableMdb::Close(Cursor* cursor) {
+void KVStoreMdb::Close(Cursor* cursor) {
   for (auto it = cursors_.begin(); it != cursors_.end(); ++it) {
     if (cursor == *it) {
       it = cursors_.erase(it);
@@ -153,7 +170,7 @@ void TableMdb::Close(Cursor* cursor) {
   assert(false);
 }
 
-void TableMdb::SetCompare(TypeCmpCallback cmp) {
+void KVStoreMdb::SetCompare(TypeCmpCallback cmp) {
   assert(!set_compare_);
   int rc = mdb_set_compare(trans_->txn_, dbi_, (MDB_cmp_func*) cmp);
   if (rc) {
@@ -171,14 +188,20 @@ bool CursorMdb::Get(Slice& key, Slice& value, u32 op) {
   MDB_val value_val = {.mv_size = value.size(), .mv_data = (char*) value.data(),};
 
   int rc = mdb_cursor_get(cursor_, &key_val, &value_val, static_cast<MDB_cursor_op>(op));
-  if (rc != MDB_SUCCESS && rc != MDB_NOTFOUND) {
-    CHECK_LMDB_ERROR(rc);
+  switch (rc) {
+    case MDB_SUCCESS: {
+      key.assign((char*) key_val.mv_data, key_val.mv_size);
+      value.assign((char*) value_val.mv_data, value_val.mv_size);
+      return true;
+    }
+    case MDB_NOTFOUND: {
+      return false;
+    }
+    default: {
+      CHECK_LMDB_ERROR(rc);
+      return false;
+    }
   }
-  if (rc == MDB_SUCCESS) {
-    key.assign((char*) key_val.mv_data, key_val.mv_size);
-    value.assign((char*) value_val.mv_data, value_val.mv_size);
-  }
-  return rc == MDB_SUCCESS;
 }
 
 bool CursorMdb::Put(const Slice& key, const Slice& value, u32 flags) {
@@ -186,10 +209,18 @@ bool CursorMdb::Put(const Slice& key, const Slice& value, u32 flags) {
   MDB_val value_val = {.mv_size = value.size(), .mv_data = (char*) value.data(),};
 
   int rc = mdb_cursor_put(cursor_, &key_val, &value_val, flags);
-  if (rc != MDB_SUCCESS && rc != MDB_NOTFOUND) {
-    CHECK_LMDB_ERROR(rc);
+  switch (rc) {
+    case MDB_SUCCESS: {
+      return true;
+    }
+    case MDB_KEYEXIST: {
+      return false;
+    }
+    default: {
+      CHECK_LMDB_ERROR(rc);
+      return false;
+    }
   }
-  return rc == MDB_SUCCESS;
 }
 
 void CursorMdb::Del(u32 flags) {

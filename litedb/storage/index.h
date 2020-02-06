@@ -8,7 +8,6 @@ namespace db {
 #define INDEX_MAX_KEYS 32
 
 struct IndexInfo {
-  int ii_NumIndexAttrs;       /* total number of columns in index */
   int ii_NumIndexKeyAttrs;    /* number of key columns in index */
   i16 ii_IndexAttrNumbers[INDEX_MAX_KEYS];
   bool ii_Unique;
@@ -22,8 +21,7 @@ void IndexAmBuild(RelationPtr tableRel, RelationPtr index, IndexInfo* info);
 void IndexAmInsert(RelationPtr index, TuplePtr tuple, IndexInfo* info);
 
 IndexScanDescPtr IndexBeginScan(RelationPtr tableRel, RelationPtr index,
-                                ScanKey* scanKey, int nkeys,
-                                ScanKey* orderbys, int norderbys);
+                                ScanKey* scanKey, int nkeys);
 
 TuplePtr IndexGetNext(IndexScanDescPtr desc);
 

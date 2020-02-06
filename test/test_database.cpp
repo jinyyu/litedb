@@ -8,7 +8,7 @@ static std::string test_db_dir = "test_database_dir";
 
 TEST(database, commit) {
   TransactionPtr txn = test_db->Begin();
-  Table* tbl = txn->Open("test1", MDB_CREATE);
+  KVStore* tbl = txn->Open("test1", MDB_CREATE);
   Slice key("test key");
 
   Slice value("test_data");
@@ -27,7 +27,7 @@ TEST(database, commit) {
 
 TEST(database, cursur_get) {
   TransactionPtr txn = test_db->Begin();
-  Table* tbl = txn->Open("test2", MDB_CREATE);
+  KVStore* tbl = txn->Open("test2", MDB_CREATE);
 
   Cursor* cursor = tbl->Open();
   Slice key;
@@ -53,7 +53,7 @@ TEST(relation, insert) {
   rel->TableInsert(101, *tuple);
   rel->TableInsert(100, *tuple);
 
-  Cursor* cursor = rel->GetTable()->Open();
+  Cursor* cursor = rel->kvstore->Open();
   int get = 0;
   Slice key;
   Slice value;
@@ -65,7 +65,7 @@ TEST(relation, insert) {
   ASSERT_EQ(get, 3);
   ASSERT_EQ(cursor->Get(key, value, MDB_NEXT), false);
 
-  rel->GetTable()->Close(cursor);
+  rel->kvstore->Close(cursor);
 }
 
 TEST(relation, append) {
@@ -82,7 +82,7 @@ TEST(relation, append) {
 
   Slice key;
   Slice value;
-  Cursor* cursor = rel->GetTable()->Open();
+  Cursor* cursor = rel->kvstore->Open();
   int get = 0;
   for (int i = 1; cursor->Get(key, value, MDB_NEXT) ; ++i) {
     ASSERT_EQ(i , *(u64*) key.data());

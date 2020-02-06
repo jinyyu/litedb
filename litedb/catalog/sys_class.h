@@ -3,12 +3,13 @@
 #include <litedb/int.h>
 #include <litedb/catalog/catalog.h>
 #include <litedb/storage/tuple.h>
+#include <litedb/utils/misc.h>
 
 namespace db {
 
 struct SysClass {
   i64 id;
-  char relname[NAMEDATALEN];  /* class name */
+  NameData relname;  /* class name */
   bool relhasindex;           /* true if has (or has had) any indexes */
   char relkind;               /* see RELKIND_xxx constants below */
   i16 relnatts;               /* number of user attributes */

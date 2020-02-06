@@ -13,7 +13,7 @@ void SysClass::FromTuple(const Tuple& tuple, SysClass& self) {
 
   assert(tuple.GetType(Anum_sys_class_relname - 1) == NAMEOID);
   Slice relname = tuple.GetSlice(Anum_sys_class_relname - 1);
-  strcpy(self.relname, relname.data());
+  NameDataSetStr(&self.relname, relname.data());
 
   assert(tuple.GetType(Anum_sys_class_relhasindex - 1) == BOOLOID);
   self.relhasindex = tuple.GetBasicType<bool>(Anum_sys_class_relhasindex - 1);
@@ -29,7 +29,7 @@ TuplePtr SysClass::ToTuple(const SysClass& self) {
   std::vector<TupleMeta> entries;
 
   entries.emplace_back(INT8OID, (char*) &self.id, sizeof(self.id));
-  entries.emplace_back(NAMEOID, self.relname, sizeof(self.relname));
+  entries.emplace_back(NAMEOID, (char*)&self.relname, sizeof(self.relname));
   entries.emplace_back(BOOLOID, (char*) &self.relhasindex, sizeof(self.relhasindex));
   entries.emplace_back(CHAROID, (char*) &self.relkind, sizeof(self.relkind));
   entries.emplace_back(INT2OID, (char*) &self.relnatts, sizeof(self.relnatts));
@@ -56,7 +56,7 @@ i64 SysClass::CreateEntry(TransactionPtr txn,
     entry.id = rel->TableNextID();
   }
 
-  strcpy(entry.relname, relname);
+  NameDataSetStr(&entry.relname, relname);
   entry.relhasindex = relhasindex;
   entry.relkind = relkind;
   entry.relnatts = relnatts;

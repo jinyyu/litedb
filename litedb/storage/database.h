@@ -11,7 +11,7 @@ struct MDB_val;
 
 namespace db {
 
-class Table;
+class KVStore;
 class Transaction;
 typedef std::shared_ptr<Transaction> TransactionPtr;
 class Cursor;
@@ -37,8 +37,8 @@ class Transaction {
 
   virtual ~Transaction() = default;
 
-  //Opens or create a Table
-  virtual Table* Open(const std::string& name, u32 flags) = 0;
+  //Opens or create a KVStore
+  virtual KVStore* Open(const std::string& name, u32 flags) = 0;
 
   //Commit all the operations of a transaction into the database
   virtual void Commit() = 0;
@@ -48,18 +48,18 @@ class Transaction {
 
 };
 
-class Table {
+class KVStore {
  public:
 
-  virtual ~Table() = default;
+  virtual ~KVStore() = default;
 
-  //Store items into the table
+  //Store items into the KVStore
   virtual bool Put(const Slice& key, const Slice& value, u32 flags) = 0;
 
-  //Get items from the table
+  //Get items from the KVStore
   virtual bool Get(const Slice& key, Slice& value) = 0;
 
-  //Delete items from the table
+  //Delete items from the KVStore
   virtual bool Del(const Slice& key, Slice* value = nullptr) = 0;
 
   //Create a cursor

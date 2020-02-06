@@ -47,5 +47,9 @@ typedef uint64_t u64;          /* 8-byte unsigned integer */
 
 #define NAMEDATALEN 64
 
+struct NameData {
+  char data[NAMEDATALEN];
+};
+
 }
 #endif //LITEDB_INT_H_

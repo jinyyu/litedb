@@ -21,44 +21,46 @@ class TableScanDesc {
 
 RelationPtr Relation::OpenTable(TransactionPtr tran, u64 id) {
   std::string name = std::to_string(id);
-  Table* table = tran->Open(name, MDB_CREATE);
-  TableMdb* mdb = static_cast<TableMdb*>(table);
+  KVStore* table = tran->Open(name, MDB_CREATE);
+  KVStoreMdb* mdb = static_cast<KVStoreMdb*>(table);
   if (!mdb->SetCompare()) {
     mdb->SetCompare(u64_cmp);
   }
   RelationPtr rel(new Relation(table));
-  rel->relkind_ = RELKIND_RELATION;
+  rel->relkind = RELKIND_RELATION;
 
   return rel;
 }
 
 RelationPtr Relation::OpenIndex(TransactionPtr tran, u64 id) {
   std::string name = std::to_string(id);
-  Table* table = tran->Open(name, MDB_CREATE | MDB_DUPSORT);
-  TableMdb* mdb = static_cast<TableMdb*>(table);
+  KVStore* table = tran->Open(name, MDB_CREATE | MDB_DUPSORT);
+  KVStoreMdb* mdb = static_cast<KVStoreMdb*>(table);
   if (!mdb->SetCompare()) {
     mdb->SetCompare(index_cmp);
   }
   RelationPtr rel(new Relation(table));
-  rel->relkind_ = RELKIND_INDEX;
+  rel->relkind = RELKIND_INDEX;
   return rel;
 }
 
-Relation::Relation(Table* table) :
-    table_(table),
-    relkind_(0) {
+Relation::Relation(KVStore* table) :
+    kvstore(table),
+    relkind(0) {
 
 }
 
 void Relation::TableInsert(u64 id, const Tuple& tuple) {
+  assert(relkind == RELKIND_RELATION);
   Slice key((char*) &id, sizeof(u64));
   Slice value;
   tuple.GetTupleData(value);
-  table_->Put(key, value, 0);
+  kvstore->Put(key, value, 0);
 }
 
 i64 Relation::TableNextID() {
-  Cursor* cursor = table_->Open();
+  assert(relkind == RELKIND_RELATION);
+  Cursor* cursor = kvstore->Open();
   Slice key;
   Slice value;
   u64 id;
@@ -68,12 +70,13 @@ i64 Relation::TableNextID() {
   } else {
     id = 1;
   }
-  table_->Close(cursor);
+  kvstore->Close(cursor);
   return id;
 }
 
 i64 Relation::TableAppend(const Tuple& tuple) {
-  Cursor* cursor = table_->Open();
+  assert(relkind == RELKIND_RELATION);
+  Cursor* cursor = kvstore->Open();
   Slice key;
   Slice value;
   i64 id;
@@ -87,14 +90,15 @@ i64 Relation::TableAppend(const Tuple& tuple) {
   key.assign((char*) &id, sizeof(id));
   tuple.GetTupleData(value);
   cursor->Put(key, value, MDB_APPEND);
-  table_->Close(cursor);
+  kvstore->Close(cursor);
   return id;
 }
 
 TableScanDescPtr TableBeginScan(RelationPtr rel, ScanKey* scanKey, int nkeys) {
+  assert(rel->relkind == RELKIND_RELATION);
   TableScanDescPtr desc(new TableScanDesc());
   desc->rel = rel.get();
-  desc->cursor = rel->GetTable()->Open();
+  desc->cursor = rel->kvstore->Open();
   desc->nkeys = nkeys;
   desc->scanKey = scanKey;
   desc->totalFetch = 0;
@@ -111,7 +115,8 @@ TableScanDescPtr TableBeginScan(RelationPtr rel, ScanKey* scanKey, int nkeys) {
   return desc;
 }
 
-TuplePtr TableGetNext(TableScanDescPtr& scan) {
+TuplePtr TableGetNext(TableScanDescPtr scan) {
+  assert(scan->rel->relkind == RELKIND_RELATION);
   Slice key;
   Slice value;
   while (scan->cursor->Get(key, value, MDB_NEXT)) {
@@ -159,7 +164,8 @@ TuplePtr TableGetNext(TableScanDescPtr& scan) {
 }
 
 void TableEndScan(TableScanDescPtr& scan) {
-  scan->rel->GetTable()->Close(scan->cursor);
+  assert(scan->rel->relkind == RELKIND_RELATION);
+  scan->rel->kvstore->Close(scan->cursor);
   scan = nullptr;
 }
 

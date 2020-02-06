@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <litedb/catalog/sys_type.h>
 #include <litedb/storage/tuple.h>
+#include <litedb/utils/elog.h>
 
 namespace db {
 
@@ -39,6 +40,10 @@ TypeCmpCallback* GetCmpFunction(u32 type) {
       ret = i64_cmp;
       break;
     }
+    case NAMEOID: {
+      ret = name_cmp;
+      break;
+    }
     default: {
       assert(false);
       ret = nullptr;
@@ -67,6 +72,11 @@ int u64_cmp(Entry* a, Entry* b) {
   return BasicTypeCmp<u64>((u64*) a->data, a->size, (u64*) b->data, b->size);
 }
 
+int name_cmp(Entry* a, Entry* b) {
+  assert(a->size == NAMEDATALEN && b->size == NAMEDATALEN);
+  return strncmp((char*) a->data, (char*) b->data, NAMEDATALEN);
+}
+
 int index_cmp(Entry* a, Entry* b) {
   Tuple tuple1((char*) a->data, a->size);
   u32 column1 = tuple1.columns();
@@ -84,7 +94,6 @@ int index_cmp(Entry* a, Entry* b) {
 
     tuple1.Get(i, meta1);
     tuple2.Get(i, meta2);
-
     assert(meta1.type == meta2.type);
 
     entry1.size = meta1.size;
