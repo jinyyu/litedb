@@ -9,14 +9,26 @@ namespace db {
 
 class TableScanDesc {
  public:
-  TableScanDesc() = default;
+  TableScanDesc()
+      : rel(nullptr),
+        cursor(nullptr),
+        scanKey(nullptr),
+        nkeys(0),
+        totalFetch(0) {
+
+  }
+
+  ~TableScanDesc() {
+    if (scanKey) {
+      free(scanKey);
+    }
+  }
 
   Relation* rel;
   Cursor* cursor;
   ScanKey* scanKey;
   int nkeys;
   u64 totalFetch;
-  TypeCmpCallback* cmp;
 };
 
 RelationPtr Relation::OpenTable(TransactionPtr tran, u64 id) {
@@ -99,19 +111,12 @@ TableScanDescPtr TableBeginScan(RelationPtr rel, ScanKey* scanKey, int nkeys) {
   TableScanDescPtr desc(new TableScanDesc());
   desc->rel = rel.get();
   desc->cursor = rel->kvstore->Open();
-  desc->nkeys = nkeys;
-  desc->scanKey = scanKey;
-  desc->totalFetch = 0;
-  if (scanKey) {
-    TypeCmpCallback* cmp = GetCmpFunction(scanKey->type);
-    if (!cmp) {
-      elog(ERROR, "not supported type %d", scanKey->type);
-    }
-    desc->cmp = cmp;
-  } else {
-    desc->cmp = nullptr;
+  if (scanKey && nkeys) {
+    desc->nkeys = nkeys;
+    size_t bytes = sizeof(ScanKey) * nkeys;
+    desc->scanKey = (ScanKey*) malloc(bytes);
+    memcpy(desc->scanKey, scanKey, bytes);
   }
-
   return desc;
 }
 
@@ -142,7 +147,7 @@ TuplePtr TableGetNext(TableScanDescPtr scan) {
         column.assign(entry.data, entry.size);
       }
 
-      matched = ScanKey::PerformCompare(scanKey, scan->cmp, column);
+      matched = ScanKey::CheckSatisfy(scanKey, column);
       if (!matched) {
         //just one column not matched
         break;

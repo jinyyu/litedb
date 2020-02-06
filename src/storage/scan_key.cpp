@@ -1,9 +1,10 @@
 #include <litedb/storage/scan_key.h>
 #include <litedb/utils/elog.h>
+#include <litedb/utils/compare.h>
 
 namespace db {
 
-bool ScanKey::PerformCompare(ScanKey* self, TypeCmpCallback* cmp, const Slice& column) {
+int ScanKey::PerformCompare(ScanKey* self, const Slice& column) {
   Entry entryArg;
   entryArg.data = (void*) self->argument.data();
   entryArg.size = self->argument.size();
@@ -12,8 +13,15 @@ bool ScanKey::PerformCompare(ScanKey* self, TypeCmpCallback* cmp, const Slice& c
   entryColumn.data = (void*) column.data();
   entryColumn.size = column.size();
 
-  int ret = cmp(&entryArg, &entryColumn);
+  TypeCmpCallback* cmp = GetCmpFunction(self->type);
+  assert(cmp);
 
+  return cmp(&entryArg, &entryColumn);
+
+}
+
+bool ScanKey::CheckSatisfy(ScanKey* self, const Slice& column) {
+  int ret = ScanKey::PerformCompare(self, column);
   switch (self->strategy) {
     case BTLessStrategyNumber: {
       return ret < 0;

@@ -59,8 +59,11 @@ class IndexScanDesc {
         keyData(nullptr),
         cursor(nullptr),
         commonKeys(0),
-        scanFlag((MDB_cursor_op)0),
-        finished(false) {
+        commonStrategy(0),
+        scanFlag((MDB_cursor_op) 0),
+        finished(false),
+        rowID(0),
+        firstIndexTuple(false) {
 
   }
 
@@ -68,22 +71,68 @@ class IndexScanDesc {
     if (keyData) {
       free(keyData);
     }
-    if (cursor) {
-      indexRel->kvstore->Close(cursor);
+  }
+
+  bool FetchNextIndexTuple() {
+    bool fetched;
+    if (!firstIndexTuple) {
+      Slice key;
+      Slice value;
+      fetched = cursor->Get(key, value, scanFlag);
+      if (fetched) {
+        rowID = *(i64*) value.data();
+        indexTuple = std::make_shared<Tuple>((char*) key.data(), key.size());
+      } else {
+        finished = true;
+      }
+    } else {
+      fetched = true;
+      assert(rowID);
     }
+
+    firstIndexTuple = false;
+    return fetched;
+  }
+
+  bool IsIndexTupleSatisfyCommonStrategy() {
+    assert(indexTuple);
+    for (int i = 0; i < commonKeys; ++i) {
+      TupleMeta meta;
+      indexTuple->Get(i, meta);
+      assert(meta.type = keyData[i].type);
+      Slice column(meta.data, meta.size);
+      if (ScanKey::PerformCompare(keyData + i, column) != 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void GetTableTuple() {
+    assert(rowID);
+    Slice key((char*) &rowID, sizeof(rowID));
+    Slice value;
+    bool ok = tableRel->kvstore->Get(key, value);
+    if (!ok) {
+      elog(ERROR, "no such tuple error %lu", rowID);
+    }
+    tuple = std::make_shared<Tuple>((char*) value.data(), value.size());
   }
 
   Relation* tableRel;
   Relation* indexRel;
   int numberOfKeys;         /* number of index qualifier conditions */
-  ScanKey* keyData;          /* array of index qualifier descriptors */
+  ScanKey* keyData;         /* array of index qualifier descriptors */
   Cursor* cursor;
   int commonKeys;
-  StrategyNumber commonStrategy{};
-  TuplePtr indexTuple;
+  StrategyNumber commonStrategy;
   TuplePtr tuple;
   MDB_cursor_op scanFlag;
-  bool finished;
+  bool finished;            /* is scan finished? */
+
+  TuplePtr indexTuple;
+  i64 rowID;
+  bool firstIndexTuple;          /**/
 };
 
 IndexScanDescPtr IndexBeginScan(RelationPtr tableRel, RelationPtr index,
@@ -124,24 +173,29 @@ IndexScanDescPtr IndexBeginScan(RelationPtr tableRel, RelationPtr index,
   indexTuple->GetTupleData(tupleData);
 
   //Position at first key greater than or equal to specified key
-  bool isSeek = desc->cursor->Get(tupleData, indexVal, MDB_SET_RANGE);
+  bool seek = desc->cursor->Get(tupleData, indexVal, MDB_SET_RANGE);
 
   switch (desc->commonStrategy) {
     case BTLessStrategyNumber:
     case BTLessEqualStrategyNumber: {
-      if (!isSeek) {
-        desc->finished = true;
-      }
-      desc->scanFlag = MDB_PREV_DUP;
+      elog(ERROR, "not supported Strategy %d", desc->commonStrategy);
       break;
     }
-    case BTEqualStrategyNumber:
-    case BTGreaterStrategyNumber:
-    case BTGreaterEqualStrategyNumber: {
-      if (!isSeek) {
+    case BTEqualStrategyNumber: {
+      if (seek) {
+        desc->firstIndexTuple = true;
+        desc->scanFlag = MDB_NEXT;
+        assert(indexVal.size() == sizeof(i64));
+        desc->rowID = *(i64*) indexVal.data();
+        desc->indexTuple = std::make_shared<Tuple>((char*) tupleData.data(), tupleData.size());
+      } else {
         desc->finished = true;
       }
-      desc->scanFlag = MDB_NEXT;
+      break;
+    }
+    case BTGreaterEqualStrategyNumber:
+    case BTGreaterStrategyNumber: {
+      elog(ERROR, "not supported Strategy %d", desc->commonStrategy);
       break;
     }
     default: {
@@ -158,31 +212,62 @@ TuplePtr IndexGetNext(IndexScanDescPtr desc) {
     return nullptr;
   }
 
-  desc->tuple = nullptr;
-  desc->indexTuple = nullptr;
-  Slice key;
-  Slice value;
-  while (desc->cursor->Get(key, value, desc->scanFlag)) {
-    assert(value.size() == sizeof(i64));
-    i64 rowID = *(i64*) value.data();
-    Slice tupleData;
-    if (!desc->tableRel->kvstore->Get(value, tupleData)) {
-      elog(ERROR, "get tuple error %d", rowID);
-      desc->finished = true;
-      break;
-    }
-    desc->tuple = std::make_shared<Tuple>((char*) tupleData.data(), tupleData.size());
+  while (desc->FetchNextIndexTuple()) {
+    switch (desc->commonStrategy) {
+      case BTLessStrategyNumber:
+      case BTLessEqualStrategyNumber: {
+        elog(ERROR, "not supported Strategy %d", desc->commonStrategy);
+        break;
+      }
+      case BTEqualStrategyNumber: {
+        //前缀只要有一个不匹配，扫描结束
+        if (!desc->IsIndexTupleSatisfyCommonStrategy()) {
+          desc->finished = true;
+          goto fetchFinished;
+        }
 
-    break;
+        for (int i = desc->commonKeys; i < desc->numberOfKeys; ++i) {
+          TupleMeta meta;
+          desc->indexTuple->Get(i, meta);
+          Slice column(meta.data, meta.size);
+
+          if (!ScanKey::PerformCompare(desc->keyData + i, column)) {
+            //有一个不匹配，继续fetch
+            goto continueFetchTuple;
+          }
+        }
+
+        //all keys satisfy
+        desc->GetTableTuple();
+        goto fetchFinished;
+      }
+      case BTGreaterEqualStrategyNumber:
+      case BTGreaterStrategyNumber: {
+        elog(ERROR, "not supported Strategy %d", desc->commonStrategy);
+        break;
+      }
+      default: {
+        elog(ERROR, "invalid strategy %d", desc->commonStrategy);
+        break;
+      }
+    }
+
+continueFetchTuple:
+    {}
   }
 
+fetchFinished:
   if (desc->finished) {
     return nullptr;
   } else {
     return desc->tuple;
   }
 }
+
 void IndexEndScan(IndexScanDescPtr& scan) {
+  if (scan->cursor) {
+    scan->indexRel->kvstore->Close(scan->cursor);
+  }
   scan = nullptr;
 }
 

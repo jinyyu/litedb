@@ -31,7 +31,8 @@ struct ScanKey {
     entry->argument = argument;
   }
 
-  static bool PerformCompare(ScanKey* entry, TypeCmpCallback* cmp, const Slice& column);
+  static int PerformCompare(ScanKey* self, const Slice& column);
+  static bool CheckSatisfy(ScanKey* self, const Slice& column);
 };
 
 }
