@@ -16,10 +16,10 @@ TuplePtr SysAttribute::ToTuple(const SysAttribute& self) {
 }
 
 i64 SysAttribute::CreateEntry(TransactionPtr txn,
-                               i64 attrelid,
-                               i32 atttypid,
-                               const char* attname,
-                               i16 attnum) {
+                              i64 attrelid,
+                              i32 atttypid,
+                              const char* attname,
+                              i16 attnum) {
   SysAttribute entry;
   memset(&entry, 0, sizeof(entry));
 
@@ -34,6 +34,8 @@ i64 SysAttribute::CreateEntry(TransactionPtr txn,
 }
 
 void SysAttribute::InitCatalogs(TransactionPtr txn) {
+  Relation::Create(txn, SysAttributeRelationId);
+
   SysClass::CreateEntry(txn,
                         SysAttributeRelationId,
                         SysAttributeRelationName,
@@ -41,10 +43,10 @@ void SysAttribute::InitCatalogs(TransactionPtr txn) {
                         RELKIND_RELATION,
                         Natts_sys_attribute);
 
-  SysAttribute::CreateEntry(txn, SysAttributeRelationId, INT8OID, "attrelid", Anum_sys_attribute_attrelid -1);
-  SysAttribute::CreateEntry(txn, SysAttributeRelationId, INT4OID, "atttypid", Anum_sys_attribute_atttypid -1);
-  SysAttribute::CreateEntry(txn, SysAttributeRelationId, NAMEOID, "attname", Anum_sys_attribute_attname -1);
-  SysAttribute::CreateEntry(txn, SysAttributeRelationId, INT2OID, "attnum", Anum_sys_attribute_attnum -1);
+  SysAttribute::CreateEntry(txn, SysAttributeRelationId, INT8OID, "attrelid", Anum_sys_attribute_attrelid - 1);
+  SysAttribute::CreateEntry(txn, SysAttributeRelationId, INT4OID, "atttypid", Anum_sys_attribute_atttypid - 1);
+  SysAttribute::CreateEntry(txn, SysAttributeRelationId, NAMEOID, "attname", Anum_sys_attribute_attname - 1);
+  SysAttribute::CreateEntry(txn, SysAttributeRelationId, INT2OID, "attnum", Anum_sys_attribute_attnum - 1);
 }
 
 }

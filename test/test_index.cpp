@@ -36,17 +36,15 @@ TEST(relation, index_scan) {
   ScanKey::Init(&key, Anum_sys_class_relname, BTEqualStrategyNumber, NAMEOID, NameDataGetSlice(&name));
   IndexScanDescPtr desc = IndexBeginScan(rel, index, &key, 1);
   TuplePtr tuple;
-  int i = 0;
+  int matched = 0;
   while ((tuple = IndexGetNext(desc)) != nullptr) {
     TupleMeta meta;
     tuple->Get(Anum_sys_class_relname - 1, meta);
     fprintf(stderr, "type = %d, size = %d, str = %s\n", meta.type, meta.size, meta.data);
-    ++i;
-    if (i > 4) {
-      break;
-    }
+    ++matched;
   }
   IndexEndScan(desc);
+  ASSERT_EQ(matched , 1);
 
 }
 

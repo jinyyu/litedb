@@ -1,7 +1,7 @@
 #include <litedb/catalog/sys_index.h>
 #include <litedb/catalog/sys_class.h>
 #include <litedb/catalog/sys_attribute.h>
-
+#include <litedb/storage/relation.h>
 namespace db {
 
 TuplePtr SysIndex::ToTuple(const SysIndex& self) {
@@ -21,6 +21,7 @@ TuplePtr SysIndex::ToTuple(const SysIndex& self) {
 }
 
 void SysIndex::InitCatalogs(TransactionPtr txn) {
+  Relation::Create(txn, SysIndexRelationId);
   SysClass::CreateEntry(txn, SysIndexRelationId, SysIndexRelationName, true, RELKIND_RELATION, Natts_sys_index);
 
   SysAttribute::CreateEntry(txn, SysIndexRelationId, INT8OID, "indexrelid", Anum_sys_index_indexrelid - 1);

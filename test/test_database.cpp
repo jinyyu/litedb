@@ -48,7 +48,7 @@ TEST(relation, insert) {
   TuplePtr tuple = Tuple::Construct(entries);
 
   TransactionPtr txn = test_db->Begin();
-  RelationPtr rel = Relation::OpenTable(txn, 100);
+  RelationPtr rel = Relation::Create(txn, 100);
   rel->TableInsert(99, *tuple);
   rel->TableInsert(101, *tuple);
   rel->TableInsert(100, *tuple);
@@ -75,7 +75,7 @@ TEST(relation, append) {
   TuplePtr tuple = Tuple::Construct(entries);
 
   TransactionPtr txn = test_db->Begin();
-  RelationPtr rel = Relation::OpenTable(txn, 889);
+  RelationPtr rel = Relation::Create(txn, 889);
   for (int i = 1; i <= 10001; ++i) {
     ASSERT_EQ(rel->TableAppend(*tuple), i);
   }

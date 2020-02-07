@@ -53,9 +53,7 @@ void IndexAmInsert(RelationPtr index, TuplePtr tuple, IndexInfo* info) {
 class IndexScanDesc {
  public:
   IndexScanDesc()
-      : tableRel(nullptr),
-        indexRel(nullptr),
-        numberOfKeys(0),
+      : numberOfKeys(0),
         keyData(nullptr),
         cursor(nullptr),
         commonKeys(0),
@@ -119,8 +117,8 @@ class IndexScanDesc {
     tuple = std::make_shared<Tuple>((char*) value.data(), value.size());
   }
 
-  Relation* tableRel;
-  Relation* indexRel;
+  RelationPtr tableRel;
+  RelationPtr indexRel;
   int numberOfKeys;         /* number of index qualifier conditions */
   ScanKey* keyData;         /* array of index qualifier descriptors */
   Cursor* cursor;
@@ -142,8 +140,8 @@ IndexScanDescPtr IndexBeginScan(RelationPtr tableRel, RelationPtr index,
   assert(scanKey);
 
   IndexScanDescPtr desc(new IndexScanDesc());
-  desc->tableRel = tableRel.get();
-  desc->indexRel = index.get();
+  desc->tableRel = tableRel;
+  desc->indexRel = index;
   desc->numberOfKeys = nkeys;
 
   desc->keyData = (ScanKey*) malloc(sizeof(ScanKey) * nkeys);

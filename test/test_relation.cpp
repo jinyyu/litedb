@@ -24,7 +24,7 @@ TEST(relation, table_scan) {
   while ((tuple = TableGetNext(scan)) != nullptr) {
     SysClass item;
     SysClass::FromTuple(*tuple, item);
-    fprintf(stderr, "%lu, %s\n", item.id, item.relname);
+    fprintf(stderr, "%lu, %s\n", item.id, item.relname.data);
 
     ASSERT_EQ(item.id, SysClassRelationId);
     ASSERT_TRUE(strcmp(item.relname.data, SysClassRelationName) == 0);
@@ -50,7 +50,7 @@ TEST(relation, table_scan2) {
   while ((tuple = TableGetNext(scan)) != nullptr) {
     SysClass item;
     SysClass::FromTuple(*tuple, item);
-    fprintf(stderr, "%lu, %s\n", item.id, item.relname);
+    fprintf(stderr, "%lu, %s\n", item.id, item.relname.data);
     matched++;
   }
   TableEndScan(scan);

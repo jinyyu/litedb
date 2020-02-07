@@ -1,5 +1,6 @@
 #include <litedb/storage/relation.h>
 #include <litedb/storage/databasemdb.h>
+#include <litedb/storage/index.h>
 #include <litedb/catalog/sys_class.h>
 #include <lmdb.h>
 #include <litedb/utils/elog.h>
@@ -10,8 +11,7 @@ namespace db {
 class TableScanDesc {
  public:
   TableScanDesc()
-      : rel(nullptr),
-        cursor(nullptr),
+      : cursor(nullptr),
         scanKey(nullptr),
         nkeys(0),
         totalFetch(0) {
@@ -24,12 +24,25 @@ class TableScanDesc {
     }
   }
 
-  Relation* rel;
+  RelationPtr rel;
   Cursor* cursor;
   ScanKey* scanKey;
   int nkeys;
   u64 totalFetch;
 };
+
+RelationPtr Relation::Create(TransactionPtr tran, u64 id) {
+  std::string name = std::to_string(id);
+  KVStore* table = tran->Open(name, MDB_CREATE);
+  KVStoreMdb* mdb = static_cast<KVStoreMdb*>(table);
+  if (!mdb->SetCompare()) {
+    mdb->SetCompare(u64_cmp);
+  }
+  RelationPtr rel(new Relation(table));
+  rel->relkind = RELKIND_RELATION;
+
+  return rel;
+}
 
 RelationPtr Relation::OpenTable(TransactionPtr tran, u64 id) {
   std::string name = std::to_string(id);
@@ -109,7 +122,7 @@ i64 Relation::TableAppend(const Tuple& tuple) {
 TableScanDescPtr TableBeginScan(RelationPtr rel, ScanKey* scanKey, int nkeys) {
   assert(rel->relkind == RELKIND_RELATION);
   TableScanDescPtr desc(new TableScanDesc());
-  desc->rel = rel.get();
+  desc->rel = rel;
   desc->cursor = rel->kvstore->Open();
   if (scanKey && nkeys) {
     desc->nkeys = nkeys;
@@ -172,6 +185,30 @@ void TableEndScan(TableScanDescPtr& scan) {
   assert(scan->rel->relkind == RELKIND_RELATION);
   scan->rel->kvstore->Close(scan->cursor);
   scan = nullptr;
+}
+
+class SysScanDesc {
+  RelationPtr 	tableRel;		  /* catalog being scanned */
+  RelationPtr	indexRel;	      /* NULL if doing table scan */
+  TableScanDescPtr relScan;       /* only valid in storage-scan case */
+  IndexScanDescPtr indexScan;     /* only valid in index-scan case */
+};
+
+SysScanDescPtr SysTableBeginScan(RelationPtr tableRel,
+                                 u64 indexId,
+                                 bool indexOK,
+                                 ScanKey* scanKey, int nkeys) {
+  SysScanDescPtr scan(new SysScanDesc());
+
+
+}
+
+TuplePtr SysTableGetNext(SysScanDescPtr scan) {
+  return nullptr;
+}
+
+void SysTableEndScan(TableScanDescPtr& scan) {
+
 }
 
 }
