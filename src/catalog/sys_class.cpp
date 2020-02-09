@@ -68,7 +68,6 @@ i64 SysClass::CreateEntry(TransactionPtr txn,
 }
 
 void SysClass::InitCatalogs(TransactionPtr txn) {
-  Relation::Create(txn, SysClassRelationId);
   SysClass::CreateEntry(txn, SysClassRelationId, SysClassRelationName, true, RELKIND_RELATION, Natts_sys_class);
 
   SysAttribute::CreateEntry(txn, SysClassRelationId, INT8OID, "id", Anum_sys_class_id - 1);

@@ -21,7 +21,6 @@ TuplePtr SysIndex::ToTuple(const SysIndex& self) {
 }
 
 void SysIndex::InitCatalogs(TransactionPtr txn) {
-  Relation::Create(txn, SysIndexRelationId);
   SysClass::CreateEntry(txn, SysIndexRelationId, SysIndexRelationName, true, RELKIND_RELATION, Natts_sys_index);
 
   SysAttribute::CreateEntry(txn, SysIndexRelationId, INT8OID, "indexrelid", Anum_sys_index_indexrelid - 1);

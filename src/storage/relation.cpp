@@ -46,7 +46,7 @@ RelationPtr Relation::Create(TransactionPtr tran, u64 id) {
 
 RelationPtr Relation::OpenTable(TransactionPtr tran, u64 id) {
   std::string name = std::to_string(id);
-  KVStore* table = tran->Open(name, MDB_CREATE);
+  KVStore* table = tran->Open(name, 0);
   KVStoreMdb* mdb = static_cast<KVStoreMdb*>(table);
   if (!mdb->SetCompare()) {
     mdb->SetCompare(u64_cmp);

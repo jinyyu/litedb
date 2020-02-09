@@ -23,6 +23,11 @@ void InitCatalog() {
 
   TransactionPtr txn = CatalogDB->Begin();
 
+
+  Relation::Create(txn, SysClassRelationId);
+  Relation::Create(txn, SysAttributeRelationId);
+  Relation::Create(txn, SysIndexRelationId);
+
   SysClass::InitCatalogs(txn);
   SysAttribute::InitCatalogs(txn);
   SysIndex::InitCatalogs(txn);

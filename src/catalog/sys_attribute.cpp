@@ -34,8 +34,6 @@ i64 SysAttribute::CreateEntry(TransactionPtr txn,
 }
 
 void SysAttribute::InitCatalogs(TransactionPtr txn) {
-  Relation::Create(txn, SysAttributeRelationId);
-
   SysClass::CreateEntry(txn,
                         SysAttributeRelationId,
                         SysAttributeRelationName,
