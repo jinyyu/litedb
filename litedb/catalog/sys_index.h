@@ -14,13 +14,13 @@ struct SysIndex {
   i16 indnkeyatts;     /* number of key columns in index */
   bool indisunique;    /* is this a unique index? */
   bool indisprimary;   /* is this index for primary key? */
-
-  /* variable-length fields */
   Vector indkey;      /* column numbers of indexed cols*/
-
 
   static TuplePtr ToTuple(const SysIndex& self);
   static void InitCatalogs(TransactionPtr txn);
+  static void FromTuple(const Tuple& tuple, SysIndex& self);
+  static void GetIndexList(TransactionPtr txn, i64 indrelid, std::vector<SysIndex>& index);
+  static bool GetIndexTuple(TransactionPtr txn, i64 indexrelid, SysIndex& index);
 };
 
 #define SysIndexRelationName "sys_index"

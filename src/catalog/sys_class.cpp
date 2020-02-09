@@ -2,6 +2,7 @@
 #include <litedb/catalog/sys_attribute.h>
 #include <litedb/catalog/sys_type.h>
 #include <litedb/storage/relation.h>
+#include <litedb/utils/env.h>
 
 namespace db {
 
@@ -23,6 +24,19 @@ void SysClass::FromTuple(const Tuple& tuple, SysClass& self) {
 
   assert(tuple.GetType(Anum_sys_class_relnatts - 1) == INT2OID);
   self.relnatts = tuple.GetBasicType<i16>(Anum_sys_class_relnatts - 1);
+}
+
+bool SysClass::GetCatalog(TransactionPtr txn, i64 relid, SysClass* self) {
+  RelationPtr sys_class = Relation::Create(txn, SysClassRelationId);
+  Slice key((const char*) &relid, sizeof(relid));
+  Slice data;
+  if (!sys_class->kvstore->Get(key, data)) {
+    return false;
+  }
+
+  Tuple tuple((char*) data.data(), (u32) data.size());
+  SysClass::FromTuple(tuple, *self);
+  return true;
 }
 
 TuplePtr SysClass::ToTuple(const SysClass& self) {

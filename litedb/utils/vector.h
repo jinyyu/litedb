@@ -9,16 +9,10 @@ struct Vector {
   u32 element_type;
   u32 element_num;
   u32 element_size;
-  char* data[0];
+  char* data[FLEXIBLE_ARRAY_MEMBER];
 };
 
-u32 VectorDataSize(u32 element_num, u32 element_size);
-
-u32 VectorSize(Vector* vector);
-
-Vector* VectorAlloc(u32 element_type, u32 element_num, u32 element_size);
-
-void VectorFree(Vector* vector);
+void VectorInit(Vector* vec, u32 element_type, u32 element_num, u32 element_size);
 
 template<typename T>
 T VectorGet(Vector* vector, size_t index) {

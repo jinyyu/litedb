@@ -47,6 +47,10 @@ typedef uint64_t u64;          /* 8-byte unsigned integer */
 
 #define NAMEDATALEN 64
 
+#define INDEX_MAX_KEYS 32
+
+#define FLEXIBLE_ARRAY_MEMBER 256
+
 struct NameData {
   char data[NAMEDATALEN];
 };

@@ -2,6 +2,7 @@
 #include <litedb/storage/databasemdb.h>
 #include <litedb/storage/index.h>
 #include <litedb/catalog/sys_class.h>
+#include <litedb/catalog/sys_index.h>
 #include <lmdb.h>
 #include <litedb/utils/elog.h>
 #include <assert.h>
@@ -39,8 +40,8 @@ RelationPtr Relation::Create(TransactionPtr tran, u64 id) {
     mdb->SetCompare(u64_cmp);
   }
   RelationPtr rel(new Relation(table));
-  rel->relkind = RELKIND_RELATION;
-
+  rel->rd_rel.relkind = RELKIND_RELATION;
+  rel->rd_rel.id = id;
   return rel;
 }
 
@@ -52,8 +53,16 @@ RelationPtr Relation::OpenTable(TransactionPtr tran, u64 id) {
     mdb->SetCompare(u64_cmp);
   }
   RelationPtr rel(new Relation(table));
-  rel->relkind = RELKIND_RELATION;
+  rel->rd_rel.id = id;
+  rel->rd_rel.relkind = RELKIND_RELATION;
 
+  if (!SysClass::GetCatalog(tran, id, &rel->rd_rel)) {
+    return rel;
+  }
+
+  if (rel->rd_rel.relhasindex) {
+    SysIndex::GetIndexList(tran, id, rel->rd_index);
+  }
   return rel;
 }
 
@@ -65,18 +74,18 @@ RelationPtr Relation::OpenIndex(TransactionPtr tran, u64 id) {
     mdb->SetCompare(index_cmp);
   }
   RelationPtr rel(new Relation(table));
-  rel->relkind = RELKIND_INDEX;
+  rel->rd_rel.id = id;
+  rel->rd_rel.relkind = RELKIND_INDEX;
   return rel;
 }
 
 Relation::Relation(KVStore* table) :
-    kvstore(table),
-    relkind(0) {
-
+    kvstore(table) {
+  memset(&rd_rel, 0, sizeof(rd_rel));
 }
 
 void Relation::TableInsert(u64 id, const Tuple& tuple) {
-  assert(relkind == RELKIND_RELATION);
+  assert(rd_rel.relkind == RELKIND_RELATION);
   Slice key((char*) &id, sizeof(u64));
   Slice value;
   tuple.GetTupleData(value);
@@ -84,7 +93,7 @@ void Relation::TableInsert(u64 id, const Tuple& tuple) {
 }
 
 i64 Relation::TableNextID() {
-  assert(relkind == RELKIND_RELATION);
+  assert(rd_rel.relkind == RELKIND_RELATION);
   Cursor* cursor = kvstore->Open();
   Slice key;
   Slice value;
@@ -100,7 +109,7 @@ i64 Relation::TableNextID() {
 }
 
 i64 Relation::TableAppend(const Tuple& tuple) {
-  assert(relkind == RELKIND_RELATION);
+  assert(rd_rel.relkind == RELKIND_RELATION);
   Cursor* cursor = kvstore->Open();
   Slice key;
   Slice value;
@@ -120,7 +129,7 @@ i64 Relation::TableAppend(const Tuple& tuple) {
 }
 
 TableScanDescPtr TableBeginScan(RelationPtr rel, ScanKey* scanKey, int nkeys) {
-  assert(rel->relkind == RELKIND_RELATION);
+  assert(rel->rd_rel.relkind == RELKIND_RELATION);
   TableScanDescPtr desc(new TableScanDesc());
   desc->rel = rel;
   desc->cursor = rel->kvstore->Open();
@@ -134,7 +143,7 @@ TableScanDescPtr TableBeginScan(RelationPtr rel, ScanKey* scanKey, int nkeys) {
 }
 
 TuplePtr TableGetNext(TableScanDescPtr scan) {
-  assert(scan->rel->relkind == RELKIND_RELATION);
+  assert(scan->rel->rd_rel.relkind == RELKIND_RELATION);
   Slice key;
   Slice value;
   while (scan->cursor->Get(key, value, MDB_NEXT)) {
@@ -182,33 +191,77 @@ TuplePtr TableGetNext(TableScanDescPtr scan) {
 }
 
 void TableEndScan(TableScanDescPtr& scan) {
-  assert(scan->rel->relkind == RELKIND_RELATION);
+  assert(scan->rel->rd_rel.relkind == RELKIND_RELATION);
   scan->rel->kvstore->Close(scan->cursor);
   scan = nullptr;
 }
 
 class SysScanDesc {
-  RelationPtr 	tableRel;		  /* catalog being scanned */
-  RelationPtr	indexRel;	      /* NULL if doing table scan */
+ public:
+  RelationPtr tableRel;          /* catalog being scanned */
+  RelationPtr indexRel;          /* NULL if doing table scan */
   TableScanDescPtr relScan;       /* only valid in storage-scan case */
   IndexScanDescPtr indexScan;     /* only valid in index-scan case */
 };
 
-SysScanDescPtr SysTableBeginScan(RelationPtr tableRel,
-                                 u64 indexId,
-                                 bool indexOK,
+SysScanDescPtr SysTableBeginScan(TransactionPtr txn,
+                                 RelationPtr tableRel,
+                                 i64 indexId,
                                  ScanKey* scanKey, int nkeys) {
   SysScanDescPtr scan(new SysScanDesc());
+  scan->tableRel = tableRel;
 
+  if (indexId) {
+    scan->indexRel = Relation::OpenIndex(txn, indexId);
+    SysIndex indexTup;
+    if (!SysIndex::GetIndexTuple(txn, indexId, indexTup)) {
+      elog(ERROR, "no such index %lu", indexId);
+    }
 
+    std::vector<ScanKey> indexKeys(nkeys);
+
+    /* Change attribute numbers to be index column numbers. */
+    for (int i = 0; i < nkeys; ++i) {
+      ScanKey* key = scanKey + i;
+
+      size_t j = 0;
+      for (j = 0; j < indexTup.indkey.element_num; ++j) {
+        i16 attno = VectorGet<i16>(&indexTup.indkey, j);
+        if (key->attno == attno) {
+          if (key->type != indexTup.indkey.element_type) {
+            elog(ERROR, "type not matched");
+          }
+          ScanKey::Init(&indexKeys[i], i + 1, key->strategy, key->type, key->argument);
+          break;
+        }
+      }
+
+      if (j == indexTup.indkey.element_num) {
+        elog(ERROR, "column is not in index");
+      }
+    }
+
+    scan->indexScan = IndexBeginScan(tableRel, scan->indexRel, indexKeys.data(), indexKeys.size());
+  } else {
+    scan->relScan = TableBeginScan(tableRel, scanKey, nkeys);
+  }
+  return scan;
 }
 
 TuplePtr SysTableGetNext(SysScanDescPtr scan) {
-  return nullptr;
+  if (scan->indexRel) {
+    return IndexGetNext(scan->indexScan);
+  } else {
+    return TableGetNext(scan->relScan);
+  }
 }
 
-void SysTableEndScan(TableScanDescPtr& scan) {
-
+void SysTableEndScan(SysScanDescPtr& scan) {
+  if (scan->indexScan) {
+    IndexEndScan(scan->indexScan);
+  } else {
+    TableEndScan(scan->relScan);
+  }
 }
 
 }

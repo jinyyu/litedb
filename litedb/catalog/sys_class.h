@@ -18,11 +18,14 @@ struct SysClass {
   static TuplePtr ToTuple(const SysClass& self);
   static void InitCatalogs(TransactionPtr txn);
   static i64 CreateEntry(TransactionPtr txn,
-                          i64 id,
-                          const char* relname,
-                          bool relhasindex,
-                          char relkind,
-                          i16 relnatts);
+                         i64 id,
+                         const char* relname,
+                         bool relhasindex,
+                         char relkind,
+                         i16 relnatts);
+
+  static bool GetCatalog(TransactionPtr txn, i64 relid, SysClass* self);
+
 };
 
 #define  RELKIND_RELATION     'r'    /* ordinary table */

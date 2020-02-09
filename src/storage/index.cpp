@@ -46,7 +46,7 @@ void IndexAmInsert(RelationPtr index, TuplePtr tuple, IndexInfo* info) {
     }
   }
   value.assign((char*) &rowID, sizeof(rowID));
-  assert(index->relkind == RELKIND_INDEX);
+  assert(index->rd_rel.relkind == RELKIND_INDEX);
   index->kvstore->Put(tupleData, value, flags);
 }
 
@@ -135,7 +135,7 @@ class IndexScanDesc {
 
 IndexScanDescPtr IndexBeginScan(RelationPtr tableRel, RelationPtr index,
                                 ScanKey* scanKey, int nkeys) {
-  assert(index->relkind == RELKIND_INDEX);
+  assert(index->rd_rel.relkind == RELKIND_INDEX);
   assert(nkeys > 0);
   assert(scanKey);
 
@@ -235,7 +235,7 @@ TuplePtr IndexGetNext(IndexScanDescPtr desc) {
           }
         }
 
-        //all keys satisfy
+        //all index keys satisfy
         desc->GetTableTuple();
         goto fetchFinished;
       }

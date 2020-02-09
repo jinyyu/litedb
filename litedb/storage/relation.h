@@ -5,6 +5,8 @@
 #include <litedb/storage/database.h>
 #include <litedb/storage/tuple.h>
 #include <litedb/storage/scan_key.h>
+#include <litedb/catalog/sys_index.h>
+#include <litedb/catalog/sys_class.h>
 
 namespace db {
 class Relation;
@@ -34,10 +36,10 @@ class Relation {
 
   explicit Relation(KVStore* table);
 
-  i64 relid;
+  i64 relid;                        /*relation id*/
   KVStore* kvstore;
-  char relkind;
-
+  SysClass rd_rel;                  /* RELATION tuple */
+  std::vector<SysIndex> rd_index;   /* list of indexes on relation */
 };
 
 class TableScanDesc;
@@ -46,15 +48,14 @@ TableScanDescPtr TableBeginScan(RelationPtr rel, ScanKey* scanKey, int nkeys);
 TuplePtr TableGetNext(TableScanDescPtr scan);
 void TableEndScan(TableScanDescPtr& scan);
 
-
 class SysScanDesc;
 typedef std::shared_ptr<SysScanDesc> SysScanDescPtr;
-SysScanDescPtr SysTableBeginScan(RelationPtr tableRel,
-                                 u64 indexId,
-                                 bool indexOK,
+SysScanDescPtr SysTableBeginScan(TransactionPtr txn,
+                                 RelationPtr tableRel,
+                                 i64 indexId,
                                  ScanKey* scanKey, int nkeys);
 TuplePtr SysTableGetNext(SysScanDescPtr scan);
-void SysTableEndScan(TableScanDescPtr& scan);
+void SysTableEndScan(SysScanDescPtr& scan);
 
 }
 #endif //LITEDB_STORAGE_RELATION_H_

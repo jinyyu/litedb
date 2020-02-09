@@ -5,8 +5,6 @@
 
 namespace db {
 
-#define INDEX_MAX_KEYS 32
-
 struct IndexInfo {
   int ii_NumIndexKeyAttrs;    /* number of key columns in index */
   i16 ii_IndexAttrNumbers[INDEX_MAX_KEYS];
