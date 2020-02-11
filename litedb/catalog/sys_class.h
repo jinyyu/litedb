@@ -8,7 +8,7 @@
 namespace db {
 
 struct SysClass {
-  i64 id;
+  i64 relid;
   NameData relname;  /* class name */
   bool relhasindex;           /* true if has (or has had) any indexes */
   char relkind;               /* see RELKIND_xxx constants below */
@@ -16,7 +16,6 @@ struct SysClass {
 
   static void FromTuple(const Tuple& tuple, SysClass& self);
   static TuplePtr ToTuple(const SysClass& self);
-  static void InitCatalogs(TransactionPtr txn);
   static i64 CreateEntry(TransactionPtr txn,
                          i64 id,
                          const char* relname,

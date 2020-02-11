@@ -8,8 +8,8 @@
 namespace db {
 
 struct SysIndex {
-  u64 indexrelid;      /* id of the index */
-  u64 indrelid;        /* id of the relation it indexes */
+  i64 indexrelid;      /* id of the index */
+  i64 indrelid;        /* id of the relation it indexes */
   i16 indnatts;        /* total number of columns in index */
   i16 indnkeyatts;     /* number of key columns in index */
   bool indisunique;    /* is this a unique index? */
@@ -17,10 +17,10 @@ struct SysIndex {
   Vector indkey;      /* column numbers of indexed cols*/
 
   static TuplePtr ToTuple(const SysIndex& self);
-  static void InitCatalogs(TransactionPtr txn);
   static void FromTuple(const Tuple& tuple, SysIndex& self);
   static void GetIndexList(TransactionPtr txn, i64 indrelid, std::vector<SysIndex>& index);
   static bool GetIndexTuple(TransactionPtr txn, i64 indexrelid, SysIndex& index);
+  static void CreateEntry(TransactionPtr txn, const SysIndex& self);
 };
 
 #define SysIndexRelationName "sys_index"

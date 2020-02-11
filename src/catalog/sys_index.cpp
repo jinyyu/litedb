@@ -83,16 +83,10 @@ bool SysIndex::GetIndexTuple(TransactionPtr txn, i64 indexrelid, SysIndex& index
   return true;
 }
 
-void SysIndex::InitCatalogs(TransactionPtr txn) {
-  SysClass::CreateEntry(txn, SysIndexRelationId, SysIndexRelationName, true, RELKIND_RELATION, Natts_sys_index);
-
-  SysAttribute::CreateEntry(txn, SysIndexRelationId, INT8OID, "indexrelid", Anum_sys_index_indexrelid - 1);
-  SysAttribute::CreateEntry(txn, SysIndexRelationId, INT8OID, "indrelid", Anum_sys_index_indrelid - 1);
-  SysAttribute::CreateEntry(txn, SysIndexRelationId, INT2OID, "indnatts", Anum_sys_index_indnatts - 1);
-  SysAttribute::CreateEntry(txn, SysIndexRelationId, INT2OID, "indnkeyatts", Anum_sys_index_indnkeyatts - 1);
-  SysAttribute::CreateEntry(txn, SysIndexRelationId, BOOLOID, "indisunique", Anum_sys_index_indisunique - 1);
-  SysAttribute::CreateEntry(txn, SysIndexRelationId, BOOLOID, "indisprimary", Anum_sys_index_indisprimary - 1);
-  SysAttribute::CreateEntry(txn, SysIndexRelationId, INT2VECTOROID, "indkey", Anum_sys_index_indkey - 1);
+void SysIndex::CreateEntry(TransactionPtr txn, const SysIndex& self) {
+  RelationPtr rel = Relation::OpenTable(txn, SysIndexRelationId);
+  TuplePtr tuple = SysIndex::ToTuple(self);
+  rel->TableInsert(self.indexrelid, *tuple);
 }
 
 }

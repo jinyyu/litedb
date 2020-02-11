@@ -6,13 +6,12 @@
 namespace db {
 
 struct SysAttribute {
-  u64 attrelid;                /*relation containing this attribute*/
+  i64 attrelid;                /*relation containing this attribute*/
   i32 atttypid;                /*the id of the instance*/
   NameData attname;            /*name of attribute*/
   i16 attnum;                  /*attnum is the "attribute number" for the attribute*/
 
   static TuplePtr ToTuple(const SysAttribute& self);
-  static void InitCatalogs(TransactionPtr txn);
   static i64 CreateEntry(TransactionPtr txn,
                           i64 attrelid,
                           i32 atttypid,

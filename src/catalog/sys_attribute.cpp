@@ -33,18 +33,4 @@ i64 SysAttribute::CreateEntry(TransactionPtr txn,
   return rel->TableAppend(*tuple);
 }
 
-void SysAttribute::InitCatalogs(TransactionPtr txn) {
-  SysClass::CreateEntry(txn,
-                        SysAttributeRelationId,
-                        SysAttributeRelationName,
-                        true,
-                        RELKIND_RELATION,
-                        Natts_sys_attribute);
-
-  SysAttribute::CreateEntry(txn, SysAttributeRelationId, INT8OID, "attrelid", Anum_sys_attribute_attrelid - 1);
-  SysAttribute::CreateEntry(txn, SysAttributeRelationId, INT4OID, "atttypid", Anum_sys_attribute_atttypid - 1);
-  SysAttribute::CreateEntry(txn, SysAttributeRelationId, NAMEOID, "attname", Anum_sys_attribute_attname - 1);
-  SysAttribute::CreateEntry(txn, SysAttributeRelationId, INT2OID, "attnum", Anum_sys_attribute_attnum - 1);
-}
-
 }

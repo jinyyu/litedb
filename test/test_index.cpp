@@ -45,7 +45,6 @@ TEST(relation, index_scan) {
   }
   IndexEndScan(desc);
   ASSERT_EQ(matched , 1);
-
 }
 
 int main(int argc, char* argv[]) {

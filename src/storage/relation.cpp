@@ -41,7 +41,7 @@ RelationPtr Relation::Create(TransactionPtr tran, u64 id) {
   }
   RelationPtr rel(new Relation(table));
   rel->rd_rel.relkind = RELKIND_RELATION;
-  rel->rd_rel.id = id;
+  rel->rd_rel.relid = id;
   return rel;
 }
 
@@ -53,7 +53,7 @@ RelationPtr Relation::OpenTable(TransactionPtr tran, u64 id) {
     mdb->SetCompare(u64_cmp);
   }
   RelationPtr rel(new Relation(table));
-  rel->rd_rel.id = id;
+  rel->rd_rel.relid = id;
   rel->rd_rel.relkind = RELKIND_RELATION;
 
   if (!SysClass::GetCatalog(tran, id, &rel->rd_rel)) {
@@ -74,7 +74,7 @@ RelationPtr Relation::OpenIndex(TransactionPtr tran, u64 id) {
     mdb->SetCompare(index_cmp);
   }
   RelationPtr rel(new Relation(table));
-  rel->rd_rel.id = id;
+  rel->rd_rel.relid = id;
   rel->rd_rel.relkind = RELKIND_INDEX;
   return rel;
 }
@@ -231,7 +231,7 @@ SysScanDescPtr SysTableBeginScan(TransactionPtr txn,
           if (key->type != indexTup.indkey.element_type) {
             elog(ERROR, "type not matched");
           }
-          ScanKey::Init(&indexKeys[i], i + 1, key->strategy, key->type, key->argument);
+          ScanKey::Init(&indexKeys[i], attno, key->strategy, key->type, key->argument);
           break;
         }
       }

@@ -15,6 +15,8 @@ set(SRC
         catalog/sys_attribute.cpp
         catalog/sys_class.cpp
         catalog/sys_index.cpp
+        command/indexcmd.cpp
+        nodes/execnodes.cpp
         parser/analyze.cpp
         parser/keywords.cpp
         parser/nodes.cpp

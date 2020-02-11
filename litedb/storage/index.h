@@ -2,14 +2,10 @@
 #define LITEDB_STORAGE_INDEX_H_
 #include <litedb/storage/index.h>
 #include <litedb/storage/relation.h>
+#include <litedb/nodes/execnodes.h>
 
 namespace db {
 
-struct IndexInfo {
-  int ii_NumIndexKeyAttrs;    /* number of key columns in index */
-  i16 ii_IndexAttrNumbers[INDEX_MAX_KEYS];
-  bool ii_Unique;
-};
 
 class IndexScanDesc;
 typedef std::shared_ptr<IndexScanDesc> IndexScanDescPtr;
