@@ -39,7 +39,7 @@ TEST(relation, index_scan) {
   int matched = 0;
   while ((tuple = IndexGetNext(desc)) != nullptr) {
     TupleMeta meta;
-    tuple->Get(Anum_sys_class_relname - 1, meta);
+    tuple->GetTupleMeta(Anum_sys_class_relname, meta);
     fprintf(stderr, "type = %d, size = %d, str = %s\n", meta.type, meta.size, meta.data);
     ++matched;
   }

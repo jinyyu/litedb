@@ -45,7 +45,7 @@ TEST(relation, insert) {
   std::vector<TupleMeta> entries;
   u8 v1 = std::numeric_limits<u8>::max();
   entries.emplace_back(100, (char*) &v1, sizeof(v1));
-  TuplePtr tuple = Tuple::Construct(entries);
+  TuplePtr tuple = Tuple::Construct(0, entries);
 
   TransactionPtr txn = test_db->Begin();
   RelationPtr rel = Relation::Create(txn, 100);
@@ -72,7 +72,7 @@ TEST(relation, append) {
   std::vector<TupleMeta> entries;
   u8 v1 = std::numeric_limits<u8>::max();
   entries.emplace_back(CHAROID, (char*) &v1, sizeof(v1));
-  TuplePtr tuple = Tuple::Construct(entries);
+  TuplePtr tuple = Tuple::Construct(0, entries);
 
   TransactionPtr txn = test_db->Begin();
   RelationPtr rel = Relation::Create(txn, 889);
@@ -84,8 +84,8 @@ TEST(relation, append) {
   Slice value;
   Cursor* cursor = rel->kvstore->Open();
   int get = 0;
-  for (int i = 1; cursor->Get(key, value, MDB_NEXT) ; ++i) {
-    ASSERT_EQ(i , *(u64*) key.data());
+  for (int i = 1; cursor->Get(key, value, MDB_NEXT); ++i) {
+    ASSERT_EQ(i, *(u64*) key.data());
     ++get;
   }
 

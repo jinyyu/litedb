@@ -26,15 +26,15 @@ struct SysIndex {
 #define SysIndexRelationName "sys_index"
 #define SysIndexRelationId 2610
 
-#define Anum_sys_index_indexrelid 1
-#define Anum_sys_index_indrelid 2
-#define Anum_sys_index_indnatts 3
-#define Anum_sys_index_indnkeyatts 4
-#define Anum_sys_index_indisunique 5
-#define Anum_sys_index_indisprimary 6
-#define Anum_sys_index_indkey 7
+#define Anum_sys_index_indexrelid     0
+#define Anum_sys_index_indrelid       1
+#define Anum_sys_index_indnatts       2
+#define Anum_sys_index_indnkeyatts    3
+#define Anum_sys_index_indisunique    4
+#define Anum_sys_index_indisprimary   5
+#define Anum_sys_index_indkey         6
 
-#define Natts_sys_index 6
+#define Natts_sys_index               7
 
 }
 

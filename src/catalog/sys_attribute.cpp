@@ -12,7 +12,7 @@ TuplePtr SysAttribute::ToTuple(const SysAttribute& self) {
   entries.emplace_back(NAMEOID, (char*) &self.attname, sizeof(self.attname));
   entries.emplace_back(INT2OID, (char*) &self.attnum, sizeof(self.attnum));
 
-  return Tuple::Construct(entries);
+  return Tuple::Construct(self.attid, entries);
 }
 
 i64 SysAttribute::CreateEntry(TransactionPtr txn,

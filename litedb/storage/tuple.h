@@ -53,7 +53,7 @@ class Tuple {
         copied_(false) {
   }
 
-  static TuplePtr Construct(const std::vector<TupleMeta>& entries);
+  static TuplePtr Construct(i64 rowID, const std::vector<TupleMeta>& entries);
 
   ~Tuple() {
     if (copied_) {
@@ -65,25 +65,25 @@ class Tuple {
 
   u32 GetType(int index) const {
     TupleMeta entry;
-    Get(index, entry);
+    GetTupleMeta(index, entry);
     return entry.type;
   }
 
-  void Get(int index, TupleMeta& entry) const;
+  void GetTupleMeta(int attno, TupleMeta& entry) const;
 
   template<typename T>
-  T GetBasicType(int index) const {
+  T GetBasicType(int attno) const {
     TupleMeta entry;
-    Get(index, entry);
+    GetTupleMeta(attno, entry);
     if (sizeof(T) != entry.size) {
       THROW_EXCEPTION("invalid tuple")
     }
     return *(T*) entry.data;
   }
 
-  Slice GetSlice(int index) const {
+  Slice GetSlice(int attno) const {
     TupleMeta entry;
-    Get(index, entry);
+    GetTupleMeta(attno, entry);
     return Slice(entry.data, entry.size);
   }
 

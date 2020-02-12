@@ -153,21 +153,20 @@ TuplePtr TableGetNext(TableScanDescPtr scan) {
     for (int i = 0; i < scan->nkeys; ++i) {
       ScanKey* scanKey = scan->scanKey + i;
 
-      Slice column;
-      if (scanKey->attno == 0) {
-        if (scanKey->type != INT8OID) {
+      Tuple tuple((char*) value.data(), value.size());
+      tuple.SetRowID(rowID);
+
+      if (scanKey->attno == 0 && scanKey->type != INT8OID) {
           elog(ERROR, "invalid key type %d", scanKey->type);
-        }
-        column = key;
-      } else {
-        Tuple tuple((char*) value.data(), value.size());
-        TupleMeta entry;
-        tuple.Get(scanKey->attno - 1, entry);
-        if (entry.type != scanKey->type) {
-          elog(ERROR, "type not matched %d, %d", entry.type, scanKey->type);
-        }
-        column.assign(entry.data, entry.size);
       }
+
+      Slice column;
+      TupleMeta entry;
+      tuple.GetTupleMeta(scanKey->attno, entry);
+      if (entry.type != scanKey->type) {
+          elog(ERROR, "type not matched %d, %d", entry.type, scanKey->type);
+      }
+      column.assign(entry.data, entry.size);
 
       matched = ScanKey::CheckSatisfy(scanKey, column);
       if (!matched) {

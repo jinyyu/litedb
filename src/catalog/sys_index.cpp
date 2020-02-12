@@ -7,7 +7,6 @@ namespace db {
 TuplePtr SysIndex::ToTuple(const SysIndex& self) {
   std::vector<TupleMeta> entries;
 
-  entries.emplace_back(INT8OID, (char*) &self.indexrelid, sizeof(self.indexrelid));
   entries.emplace_back(INT8OID, (char*) &self.indrelid, sizeof(self.indrelid));
   entries.emplace_back(INT2OID, (char*) &self.indnatts, sizeof(self.indnatts));
   entries.emplace_back(INT2OID, (char*) &self.indnkeyatts, sizeof(self.indnkeyatts));
@@ -15,34 +14,33 @@ TuplePtr SysIndex::ToTuple(const SysIndex& self) {
   entries.emplace_back(BOOLOID, (char*) &self.indisprimary, sizeof(self.indisprimary));
   entries.emplace_back(INT2VECTOROID, (char*) &self.indkey, sizeof(self.indkey));
 
-  TuplePtr tuple = Tuple::Construct(entries);
-  tuple->SetRowID(self.indexrelid);
+  TuplePtr tuple = Tuple::Construct(self.indexrelid, entries);
   return tuple;
 }
 
 void SysIndex::FromTuple(const Tuple& tuple, SysIndex& self) {
   assert(tuple.columns() == Natts_sys_index);
 
-  assert(tuple.GetType(Anum_sys_index_indexrelid - 1) == INT8OID);
-  self.indexrelid = tuple.GetBasicType<i64>(Anum_sys_index_indexrelid - 1);
+  assert(tuple.GetType(Anum_sys_index_indexrelid) == INT8OID);
+  self.indexrelid = tuple.GetBasicType<i64>(Anum_sys_index_indexrelid);
 
-  assert(tuple.GetType(Anum_sys_index_indrelid - 1) == INT8OID);
-  self.indrelid = tuple.GetBasicType<i64>(Anum_sys_index_indrelid - 1);
+  assert(tuple.GetType(Anum_sys_index_indrelid) == INT8OID);
+  self.indrelid = tuple.GetBasicType<i64>(Anum_sys_index_indrelid);
 
-  assert(tuple.GetType(Anum_sys_index_indnatts - 1) == INT2OID);
-  self.indnatts = tuple.GetBasicType<i16>(Anum_sys_index_indnatts - 1);
+  assert(tuple.GetType(Anum_sys_index_indnatts) == INT2OID);
+  self.indnatts = tuple.GetBasicType<i16>(Anum_sys_index_indnatts);
 
-  assert(tuple.GetType(Anum_sys_index_indnkeyatts - 1) == INT2OID);
-  self.indnkeyatts = tuple.GetBasicType<i16>(Anum_sys_index_indnkeyatts - 1);
+  assert(tuple.GetType(Anum_sys_index_indnkeyatts) == INT2OID);
+  self.indnkeyatts = tuple.GetBasicType<i16>(Anum_sys_index_indnkeyatts);
 
-  assert(tuple.GetType(Anum_sys_index_indisunique - 1) == BOOLOID);
-  self.indisunique = tuple.GetBasicType<i8>(Anum_sys_index_indisunique - 1);
+  assert(tuple.GetType(Anum_sys_index_indisunique) == BOOLOID);
+  self.indisunique = tuple.GetBasicType<i8>(Anum_sys_index_indisunique);
 
-  assert(tuple.GetType(Anum_sys_index_indisprimary - 1) == BOOLOID);
-  self.indisprimary = tuple.GetBasicType<i8>(Anum_sys_index_indisprimary - 1);
+  assert(tuple.GetType(Anum_sys_index_indisprimary) == BOOLOID);
+  self.indisprimary = tuple.GetBasicType<i8>(Anum_sys_index_indisprimary);
 
   TupleMeta meta;
-  tuple.Get(Anum_sys_index_indkey - 1, meta);
+  tuple.GetTupleMeta(Anum_sys_index_indkey, meta);
   assert(meta.type = INT2VECTOROID);
   assert(meta.size = sizeof(Vector));
   memcpy(&self.indkey, meta.data, meta.size);

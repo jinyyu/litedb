@@ -92,8 +92,8 @@ int index_cmp(Entry* a, Entry* b) {
     Entry entry1;
     Entry entry2;
 
-    tuple1.Get(i, meta1);
-    tuple2.Get(i, meta2);
+    tuple1.GetTupleMeta(i, meta1);
+    tuple2.GetTupleMeta(i, meta2);
     assert(meta1.type == meta2.type);
 
     entry1.size = meta1.size;

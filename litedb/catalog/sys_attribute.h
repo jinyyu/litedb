@@ -6,10 +6,11 @@
 namespace db {
 
 struct SysAttribute {
-  i64 attrelid;                /*relation containing this attribute*/
-  i32 atttypid;                /*the id of the instance*/
-  NameData attname;            /*name of attribute*/
-  i16 attnum;                  /*attnum is the "attribute number" for the attribute*/
+  i64 attid;              /*the attribute id*/
+  i64 attrelid;           /*relation containing this attribute*/
+  i32 atttypid;           /*the id of the instance*/
+  NameData attname;       /*name of attribute*/
+  i16 attnum;             /*attnum is the "attribute number" for the attribute*/
 
   static TuplePtr ToTuple(const SysAttribute& self);
   static i64 CreateEntry(TransactionPtr txn,
@@ -22,12 +23,13 @@ struct SysAttribute {
 #define SysAttributeRelationName "sys_attribute"
 #define SysAttributeRelationId 1249
 
-#define Anum_sys_attribute_attrelid 1
-#define Anum_sys_attribute_atttypid 2
-#define Anum_sys_attribute_attname 3
-#define Anum_sys_attribute_attnum 4
+#define Anum_sys_attribute_attid      0
+#define Anum_sys_attribute_attrelid   1
+#define Anum_sys_attribute_atttypid   2
+#define Anum_sys_attribute_attname    3
+#define Anum_sys_attribute_attnum     4
 
-#define Natts_sys_attribute 4
+#define Natts_sys_attribute           5
 
 }
 
