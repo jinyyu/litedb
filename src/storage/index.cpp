@@ -24,18 +24,10 @@ void IndexAmInsert(RelationPtr index, TuplePtr tuple, IndexInfo* info) {
 
   for (int i = 0; i < info->ii_NumIndexKeyAttrs; ++i) {
     i16 column = info->ii_IndexAttrNumbers[i];
-    if (column == 0) {
-
-      columns[i].type = INT8OID;
-      columns[i].data = (char*) &rowID;
-      columns[i].size = sizeof(rowID);
-
-    } else {
-      tuple->Get(column - 1, columns[i]);
-    }
+    tuple->GetTupleMeta(column, columns[i]);
   }
 
-  TuplePtr indexTuple = Tuple::Construct(columns);
+  TuplePtr indexTuple = Tuple::Construct(rowID, columns);
   Slice tupleData;
   indexTuple->GetTupleData(tupleData);
   int flags = 0;
@@ -96,7 +88,7 @@ class IndexScanDesc {
     assert(indexTuple);
     for (int i = 0; i < commonKeys; ++i) {
       TupleMeta meta;
-      indexTuple->Get(i, meta);
+      indexTuple->GetTupleMeta(i + 1, meta); //index没有rowid
       assert(meta.type = keyData[i].type);
       Slice column(meta.data, meta.size);
       if (ScanKey::PerformCompare(keyData + i, column) != 0) {
@@ -165,7 +157,7 @@ IndexScanDescPtr IndexBeginScan(RelationPtr tableRel, RelationPtr index,
     commonIndex[i] = TupleMeta(key.type, key.argument.data(), key.argument.size());
   }
 
-  TuplePtr indexTuple = Tuple::Construct(commonIndex);
+  TuplePtr indexTuple = Tuple::Construct(0, commonIndex);
   Slice tupleData;
   Slice indexVal;
   indexTuple->GetTupleData(tupleData);
@@ -226,7 +218,7 @@ TuplePtr IndexGetNext(IndexScanDescPtr desc) {
 
         for (int i = desc->commonKeys; i < desc->numberOfKeys; ++i) {
           TupleMeta meta;
-          desc->indexTuple->Get(i, meta);
+          desc->indexTuple->GetTupleMeta(i, meta);
           Slice column(meta.data, meta.size);
 
           if (!ScanKey::PerformCompare(desc->keyData + i, column)) {

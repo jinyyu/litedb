@@ -26,30 +26,30 @@ TEST(tuple, construct) {
   std::string v6 = "i am v6";
   entries.emplace_back(TEXTOID, v6.c_str(), v6.size());
 
-  TuplePtr tuple = Tuple::Construct(entries);
-  ASSERT_EQ(v1, tuple->GetBasicType<u8>(0));
-  ASSERT_EQ(CHAROID, tuple->GetType(0));
+  TuplePtr tuple = Tuple::Construct(0, entries);
+  ASSERT_EQ(v1, tuple->GetBasicType<u8>(1));
+  ASSERT_EQ(CHAROID, tuple->GetType(1));
 
-  ASSERT_EQ(v2, tuple->GetBasicType<u16>(1));
-  ASSERT_EQ(INT2OID, tuple->GetType(1));
+  ASSERT_EQ(v2, tuple->GetBasicType<u16>(2));
+  ASSERT_EQ(INT2OID, tuple->GetType(2));
 
-  ASSERT_EQ(v3, tuple->GetBasicType<u32>(2));
-  ASSERT_EQ(INT4OID, tuple->GetType(2));
+  ASSERT_EQ(v3, tuple->GetBasicType<u32>(3));
+  ASSERT_EQ(INT4OID, tuple->GetType(3));
 
-  ASSERT_EQ(v4, tuple->GetBasicType<u64>(3));
-  ASSERT_EQ(INT8OID, tuple->GetType(3));
+  ASSERT_EQ(v4, tuple->GetBasicType<u64>(4));
+  ASSERT_EQ(INT8OID, tuple->GetType(4));
 
-  ASSERT_EQ(v5, tuple->GetSlice(4).to_string());
-  ASSERT_EQ(TEXTOID, tuple->GetType(4));
+  ASSERT_EQ(v5, tuple->GetSlice(5).to_string());
+  ASSERT_EQ(TEXTOID, tuple->GetType(5));
 
-  ASSERT_EQ(v6, tuple->GetSlice(5).to_string());
-  ASSERT_EQ(TEXTOID, tuple->GetType(4));
+  ASSERT_EQ(v6, tuple->GetSlice(6).to_string());
+  ASSERT_EQ(TEXTOID, tuple->GetType(6));
 
-  ASSERT_EQ(tuple->columns(), entries.size());
+  ASSERT_EQ(tuple->columns(), entries.size() + 1);
 
   entries.resize(1);
-  tuple = Tuple::Construct(entries);
-  ASSERT_EQ(tuple->columns(), entries.size());
+  tuple = Tuple::Construct(0, entries);
+  ASSERT_EQ(tuple->columns(), entries.size() + 1);
 }
 
 TEST(tuple, construct_null) {
@@ -64,23 +64,22 @@ TEST(tuple, construct_null) {
   entries.emplace_back(TEXTOID, v4.c_str(), v4.size());
   entries.emplace_back(TEXTOID, (char*) nullptr, 0);
 
-  TuplePtr tuple = Tuple::Construct(entries);
+  TuplePtr tuple = Tuple::Construct(0, entries);
 
-  ASSERT_EQ(v1, tuple->GetBasicType<u8>(0));
-
-  ASSERT_EQ(0, tuple->GetSlice(1).size());
-  ASSERT_EQ(nullptr, tuple->GetSlice(1).data());
+  ASSERT_EQ(v1, tuple->GetBasicType<u8>(1));
 
   ASSERT_EQ(0, tuple->GetSlice(2).size());
   ASSERT_EQ(nullptr, tuple->GetSlice(2).data());
 
-  ASSERT_EQ(v4, tuple->GetSlice(3).to_string());
+  ASSERT_EQ(0, tuple->GetSlice(3).size());
+  ASSERT_EQ(nullptr, tuple->GetSlice(3).data());
 
-  ASSERT_EQ(0, tuple->GetSlice(4).size());
-  ASSERT_EQ(nullptr, tuple->GetSlice(4).data());
+  ASSERT_EQ(v4, tuple->GetSlice(4).to_string());
 
-  ASSERT_ANY_THROW(tuple->GetSlice(5));
+  ASSERT_EQ(0, tuple->GetSlice(5).size());
+  ASSERT_EQ(nullptr, tuple->GetSlice(5).data());
 
+  ASSERT_ANY_THROW(tuple->GetSlice(6));
 }
 
 int main(int argc, char* argv[]) {

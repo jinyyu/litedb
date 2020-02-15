@@ -27,3 +27,6 @@ gtest_add_tests(TARGET test_vector)
 add_executable(test_index test_index.cpp)
 target_link_libraries(test_index ${test_LIBS})
 gtest_add_tests(TARGET test_index)
+
+add_executable(test_catalog test_catalog.cpp)
+target_link_libraries(test_catalog ${test_LIBS})

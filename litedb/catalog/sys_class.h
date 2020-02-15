@@ -8,16 +8,16 @@
 namespace db {
 
 struct SysClass {
-  i64 relid;
-  NameData relname;  /* class name */
-  bool relhasindex;           /* true if has (or has had) any indexes */
-  char relkind;               /* see RELKIND_xxx constants below */
-  i16 relnatts;               /* number of user attributes */
+  i64 relid;              /* the relation id*/
+  NameData relname;       /* class name */
+  bool relhasindex;       /* true if has (or has had) any indexes */
+  char relkind;           /* see RELKIND_xxx constants below */
+  i16 relnatts;           /* number of user attributes */
 
   static void FromTuple(const Tuple& tuple, SysClass& self);
   static TuplePtr ToTuple(const SysClass& self);
   static i64 CreateEntry(TransactionPtr txn,
-                         i64 id,
+                         i64 relid,
                          const char* relname,
                          bool relhasindex,
                          char relkind,
@@ -33,13 +33,19 @@ struct SysClass {
 #define SysClassRelationName "sys_class"
 #define SysClassRelationId 1259
 
-#define Anum_sys_class_id 1
-#define Anum_sys_class_relname 2
-#define Anum_sys_class_relhasindex 3
-#define Anum_sys_class_relkind 4
-#define Anum_sys_class_relnatts 5
+#define Anum_sys_class_relid        0
+#define Anum_sys_class_relname      1
+#define Anum_sys_class_relhasindex  2
+#define Anum_sys_class_relkind      3
+#define Anum_sys_class_relnatts     4
 
-#define Natts_sys_class 5
+#define Natts_sys_class             5
+
+// relid index
+#define sys_class_relid_index     2662
+
+// relname index
+#define sys_class_relname_index   2663
 
 }
 
