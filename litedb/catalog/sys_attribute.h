@@ -12,6 +12,7 @@ struct SysAttribute {
   NameData attname;       /*name of attribute*/
   i16 attnum;             /*attnum is the "attribute number" for the attribute*/
 
+  static void FromTuple(const Tuple& tuple, SysAttribute& self);
   static TuplePtr ToTuple(const SysAttribute& self);
   static i64 CreateEntry(TransactionPtr txn,
                           i64 attrelid,
@@ -30,6 +31,15 @@ struct SysAttribute {
 #define Anum_sys_attribute_attnum     4
 
 #define Natts_sys_attribute           5
+
+// attid index
+#define sys_attribute_attid_index 2657
+
+//  (attrelid, attname) index
+#define sys_attribute_attrelid_attname_index 2658
+
+// (attrelid, attnum) index
+#define sys_attribute_attrelid_attnum_index  2659
 
 }
 

@@ -333,7 +333,8 @@ SysScanDescPtr SysTableBeginScan(TransactionPtr txn,
   SysScanDescPtr scan(new SysScanDesc());
   scan->tableRel = tableRel;
 
-  if (nkeys == 1 && scanKey->attno == 0) {
+  if ((scanKey == nullptr || nkeys == 0)
+      || (nkeys == 1 && scanKey->attno == 0)) {
     scan->relScan = TableBeginScan(tableRel, scanKey, nkeys);
     return scan;
   }
@@ -352,18 +353,15 @@ SysScanDescPtr SysTableBeginScan(TransactionPtr txn,
       ScanKey* key = scanKey + i;
 
       size_t j = 0;
-      for (j = 0; j < indexTup.indkey.element_num; ++j) {
-        i16 attno = VectorGet<i16>(&indexTup.indkey, j);
+      for (j = 0; j < static_cast<size_t>(indexTup.indnatts); ++j) {
+        i16 attno = indexTup.indkey[j];
         if (key->attno == attno) {
-          if (key->type != indexTup.indkey.element_type) {
-            elog(ERROR, "type not matched");
-          }
           ScanKey::Init(&indexKeys[i], attno, key->strategy, key->type, key->argument);
           break;
         }
       }
 
-      if (j == indexTup.indkey.element_num) {
+      if (j == static_cast<size_t>(indexTup.indnatts)) {
         elog(ERROR, "column is not in index");
       }
     }

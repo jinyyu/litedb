@@ -9,12 +9,12 @@ TuplePtr SysIndex::ToTuple(const SysIndex& self) {
 
   entries.emplace_back(INT8OID, (char*) &self.indrelid, sizeof(self.indrelid));
   entries.emplace_back(INT2OID, (char*) &self.indnatts, sizeof(self.indnatts));
-  entries.emplace_back(INT2OID, (char*) &self.indnkeyatts, sizeof(self.indnkeyatts));
   entries.emplace_back(BOOLOID, (char*) &self.indisunique, sizeof(self.indisunique));
   entries.emplace_back(BOOLOID, (char*) &self.indisprimary, sizeof(self.indisprimary));
-  entries.emplace_back(INT2VECTOROID, (char*) &self.indkey, sizeof(self.indkey));
+  entries.emplace_back(INT2VECTOROID, (char*) self.indkey, sizeof(self.indkey));
 
   TuplePtr tuple = Tuple::Construct(self.indexrelid, entries);
+  tuple->SetRowID(self.indexrelid);
   return tuple;
 }
 
@@ -30,9 +30,6 @@ void SysIndex::FromTuple(const Tuple& tuple, SysIndex& self) {
   assert(tuple.GetType(Anum_sys_index_indnatts) == INT2OID);
   self.indnatts = tuple.GetBasicType<i16>(Anum_sys_index_indnatts);
 
-  assert(tuple.GetType(Anum_sys_index_indnkeyatts) == INT2OID);
-  self.indnkeyatts = tuple.GetBasicType<i16>(Anum_sys_index_indnkeyatts);
-
   assert(tuple.GetType(Anum_sys_index_indisunique) == BOOLOID);
   self.indisunique = tuple.GetBasicType<i8>(Anum_sys_index_indisunique);
 
@@ -42,7 +39,7 @@ void SysIndex::FromTuple(const Tuple& tuple, SysIndex& self) {
   TupleMeta meta;
   tuple.GetTupleMeta(Anum_sys_index_indkey, meta);
   assert(meta.type = INT2VECTOROID);
-  assert(meta.size = sizeof(Vector));
+  assert(meta.size = sizeof(self.indkey));
   memcpy(&self.indkey, meta.data, meta.size);
 }
 

@@ -7,6 +7,7 @@
 #include <litedb/catalog/sys_index.h>
 #include <litedb/storage/relation.h>
 #include <sys/stat.h>
+#include <litedb/command/indexcmd.h>
 
 namespace db {
 
@@ -16,6 +17,7 @@ namespace db {
 static void init_sys_class(TransactionPtr txn);
 static void init_sys_attribute(TransactionPtr txn);
 static void init_sys_index(TransactionPtr txn);
+static void build_sys_index(TransactionPtr txn);
 
 static void init_sys_class(TransactionPtr txn) {
   SysClass::CreateEntry(txn, SysClassRelationId, SysClassRelationName, true, RELKIND_RELATION, Natts_sys_class);
@@ -25,7 +27,6 @@ static void init_sys_class(TransactionPtr txn) {
   SysAttribute::CreateEntry(txn, SysClassRelationId, BOOLOID, "relhasindex", Anum_sys_class_relhasindex);
   SysAttribute::CreateEntry(txn, SysClassRelationId, CHAROID, "relkind", Anum_sys_class_relkind);
   SysAttribute::CreateEntry(txn, SysClassRelationId, INT2OID, "relnatts", Anum_sys_class_relnatts);
-
 }
 
 static void init_sys_attribute(TransactionPtr txn) {
@@ -49,10 +50,75 @@ void init_sys_index(TransactionPtr txn) {
   SysAttribute::CreateEntry(txn, SysIndexRelationId, INT8OID, "indexrelid", Anum_sys_index_indexrelid);
   SysAttribute::CreateEntry(txn, SysIndexRelationId, INT8OID, "indrelid", Anum_sys_index_indrelid);
   SysAttribute::CreateEntry(txn, SysIndexRelationId, INT2OID, "indnatts", Anum_sys_index_indnatts);
-  SysAttribute::CreateEntry(txn, SysIndexRelationId, INT2OID, "indnkeyatts", Anum_sys_index_indnkeyatts);
   SysAttribute::CreateEntry(txn, SysIndexRelationId, BOOLOID, "indisunique", Anum_sys_index_indisunique);
   SysAttribute::CreateEntry(txn, SysIndexRelationId, BOOLOID, "indisprimary", Anum_sys_index_indisprimary);
   SysAttribute::CreateEntry(txn, SysIndexRelationId, INT2VECTOROID, "indkey", Anum_sys_index_indkey);
+}
+
+void build_sys_index(TransactionPtr txn) {
+  IndexInfo info;
+
+  {
+    //sys_class index
+
+    memset(&info, 0, sizeof(info));
+    info.ii_NumIndexKeyAttrs = 1;
+    info.ii_Unique = true;
+    info.ii_IndexAttrNumbers[0] = Anum_sys_class_relid;
+    IndexRegister(SysClassRelationId, sys_class_relid_index, true, &info);
+
+    memset(&info, 0, sizeof(info));
+    info.ii_NumIndexKeyAttrs = 1;
+    info.ii_Unique = true;
+    info.ii_IndexAttrNumbers[0] = Anum_sys_class_relname;
+    IndexRegister(SysClassRelationId, sys_class_relname_index, false, &info);
+  }
+
+  {
+    //sys_attribute index
+
+    memset(&info, 0, sizeof(info));
+    info.ii_NumIndexKeyAttrs = 1;
+    info.ii_Unique = true;
+    info.ii_IndexAttrNumbers[0] = Anum_sys_attribute_attid;
+    IndexRegister(SysAttributeRelationId, sys_attribute_attid_index, true, &info);
+
+    memset(&info, 0, sizeof(info));
+    info.ii_NumIndexKeyAttrs = 2;
+    info.ii_Unique = true;
+    info.ii_IndexAttrNumbers[0] = Anum_sys_attribute_attrelid;
+    info.ii_IndexAttrNumbers[1] = Anum_sys_attribute_attname;
+    IndexRegister(SysAttributeRelationId, sys_attribute_attrelid_attname_index, false, &info);
+
+    memset(&info, 0, sizeof(info));
+    info.ii_NumIndexKeyAttrs = 2;
+    info.ii_Unique = true;
+    info.ii_IndexAttrNumbers[0] = Anum_sys_attribute_attrelid;
+    info.ii_IndexAttrNumbers[1] = Anum_sys_attribute_attnum;
+    IndexRegister(SysAttributeRelationId, sys_attribute_attrelid_attnum_index, false, &info);
+  }
+
+  {
+    //sys_index index
+    memset(&info, 0, sizeof(info));
+    info.ii_NumIndexKeyAttrs = 1;
+    info.ii_Unique = true;
+    info.ii_IndexAttrNumbers[0] = Anum_sys_index_indexrelid;
+    IndexRegister(SysIndexRelationId, sys_index_indexrelid_index, true, &info);
+
+    memset(&info, 0, sizeof(info));
+    info.ii_NumIndexKeyAttrs = 1;
+    info.ii_Unique = false;
+    info.ii_IndexAttrNumbers[0] = Anum_sys_index_indrelid;
+    IndexRegister(SysIndexRelationId, sys_index_indrelid_index, false, &info);
+  }
+
+  fprintf(stdout,"build indices .... ");
+  fflush(stdout);
+  BuildIndices(txn);
+  fprintf(stdout, "ok\n");
+
+  BuildIndices(txn);
 }
 
 void InitCatalog() {
@@ -72,6 +138,8 @@ void InitCatalog() {
   init_sys_class(txn);
   init_sys_attribute(txn);
   init_sys_index(txn);
+
+  build_sys_index(txn);
 
   txn->Commit();
 

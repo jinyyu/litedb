@@ -41,6 +41,12 @@ struct SysClass {
 
 #define Natts_sys_class             5
 
+// relid index
+#define sys_class_relid_index     2662
+
+// relname index
+#define sys_class_relname_index   2663
+
 }
 
 #endif //LITEDB_CATALOG_SYS_CLASS_H_
