@@ -4,7 +4,7 @@
 #include <litedb/parser/parser.h>
 #include <litedb/parser/analyze.h>
 #include <litedb/utils/portal.h>
-#include <litedb/parser/plannodes.h>
+#include <litedb/nodes/plannodes.h>
 #include <litedb//utils/env.h>
 #include <assert.h>
 

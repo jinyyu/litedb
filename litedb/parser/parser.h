@@ -2,7 +2,8 @@
 #define LITEDB_PARSER_H_
 #include <litedb/int.h>
 #include <litedb/utils/env.h>
-#include <litedb/parser/nodes.h>
+#include <litedb/nodes/value.h>
+#include <litedb/nodes/parsenodes.h>
 #include <litedb/utils/list.h>
 #include <vector>
 

@@ -1,7 +1,8 @@
 %{
 #include <assert.h>
 #include <litedb/parser/parser.h>
-#include <litedb/parser/nodes.h>
+#include <litedb/nodes/parsenodes.h>
+#include <litedb/nodes/value.h>
 #include "gram.hpp"
 
 #define YYERROR_VERBOSE
@@ -120,7 +121,7 @@ stmt:
         {
             $$ = NULL;
         }
-     ;
+    ;
 
 CreateTableStmt:
     CREATE OptTemp TABLE name '(' column_def_list ')'
@@ -296,23 +297,15 @@ type:
 value:
     ICONST
         {
-            Value* value = makeNode(Value);
-            value->isInt = true;
-            value->vInt = $1;
-            $$ = (Node*) value;
+            $$ = (Node*) makeInteger($1);
         }
     | SCONST
         {
-            Value* value = makeNode(Value);
-            value->isStr = true;
-            value->str = $1;
-            $$ = (Node*) value;
+            $$ = (Node*) makeString($1);
         }
     | NULL_P
         {
-            Value* value = makeNode(Value);
-            value->isNUll = true;
-            $$ = (Node*) value;
+             $$ = (Node*) makeNull();
         }
     ;
 
@@ -415,16 +408,12 @@ constraint:
 column_list:
     column_list ',' name
         {
-            Name* name = makeNode(Name);
-            name->name = $3;
-            $1->Append((Node*)name);
+            $1->Append((Node*) makeString($3));
             $$ = $1;
         }
     | name
         {
-            Name* name = makeNode(Name);
-            name->name = $1;
-            $$ = new List<Node>((Node*)name);
+            $$ = new List<Node>((Node*) makeString($1));
         }
     ;
 

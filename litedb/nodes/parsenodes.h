@@ -2,37 +2,9 @@
 #define LITEDB_PARSER_NODES_H_
 #include <litedb/utils/env.h>
 #include <litedb/utils/list.h>
+#include <litedb/nodes/nodes.h>
 
 namespace db {
-enum NodeTag {
-  T_Invalid = 0,
-  T_CreateTableStmt,
-  T_Typename,
-  T_ColumnDef,
-  T_ColumnConstraint,
-  T_Value,
-  T_TableConstraint,
-  T_Name,
-  T_Query,
-  T_PlannedStmt,
-};
-
-#define newNode(size, tag) \
-({    Node   *_result; \
-    _result = (Node *) SessionEnv->Malloc0(size); \
-    _result->type = (tag); \
-    _result; \
-})
-#define makeNode(_type_) ((_type_ *) newNode(sizeof(_type_),T_##_type_))
-
-struct Node {
-  NodeTag type;
-};
-
-struct Name {
-  NodeTag type;
-  char* name;
-};
 
 struct Typename {
   NodeTag type;
@@ -67,15 +39,7 @@ enum ConflictAlgorithm {
   CONFLICT_REPLACE,
 };
 
-struct Value {
-  NodeTag type;
-  bool isInt;
-  int vInt;
-  bool isStr;
-  char* str;
-  bool isNUll;
-};
-
+struct Value;
 struct ColumnConstraint {
   NodeTag type;
   ConstraintType constraint;
@@ -103,7 +67,20 @@ struct CreateTableStmt {
   List<Node>* table_constraints;
 };
 
-void NodeDisplay(Node* node);
+typedef enum CmdType {
+  CMD_UNKNOWN,
+  CMD_SELECT,      /* select stmt */
+  CMD_UPDATE,      /* update stmt */
+  CMD_INSERT,      /* insert stmt */
+  CMD_DELETE,      /* delete stmt */
+  CMD_CMD_UTILITY, /* cmds like create etc. */
+} CmdType;
+
+struct Query {
+  NodeTag type;
+  CmdType commandType;    /* select|insert|update|delete|etc */
+  Node* utilityStmt;       /* non-null if commandType == CMD_CMD_UTILITY */
+};
 
 };
 #endif //LITEDB_PARSER_NODES_H_

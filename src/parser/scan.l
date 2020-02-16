@@ -592,7 +592,7 @@ static char *litbufdup(yyscan_t yyscanner) {
     return str;
 }
 
-static int	process_integer_literal(const char *token, YYSTYPE *lval) {
+static int process_integer_literal(const char *token, YYSTYPE *lval) {
     long val;
     char *endptr;
 

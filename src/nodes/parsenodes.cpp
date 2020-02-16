@@ -1,10 +1,11 @@
-#include <litedb/parser/nodes.h>
+#include <litedb/nodes/parsenodes.h>
 #include <litedb/utils/elog.h>
 #include <assert.h>
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/prettywriter.h>
 #include <functional>
+#include <litedb/nodes/value.h>
 
 namespace db {
 
@@ -15,32 +16,63 @@ static rapidjson::Value notImpl(CreateTableStmt* node, rapidjson::Document& doc)
 static rapidjson::Value dumpCreateTableStmt(CreateTableStmt* node, rapidjson::Document& doc);
 static rapidjson::Value dumpTypename(Typename* node, rapidjson::Document& doc);
 static rapidjson::Value dumpColumnDef(ColumnDef* node, rapidjson::Document& doc);
-static rapidjson::Value dumpName(Name* node, rapidjson::Document& doc);
 static rapidjson::Value dumpValue(Value* node, rapidjson::Document& doc);
 static rapidjson::Value dumpColumnConstraint(ColumnConstraint* node, rapidjson::Document& doc);
 static rapidjson::Value dumpTableConstraint(TableConstraint* node, rapidjson::Document& doc);
 
 static const char* ConstraintTypeStr(ConstraintType type);
 static const char* ConflictAlgorithmStr(ConflictAlgorithm type);
+static NodeDumpFunc GetNodeDumpFunction(NodeTag tag, const char** tagName);
 
-struct NodeTypeNameDumpFunc {
-  NodeTag tag;
+static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName) {
+  NodeDumpFunc func;
   const char* name;
-  NodeDumpFunc nodeDumpFunc;
-};
-
-static NodeTypeNameDumpFunc nodeTypeNameDumpFunc[] = {
-    {T_Invalid, "Invalid", (NodeDumpFunc) notImpl},
-    {T_CreateTableStmt, "CreateTableStmt", (NodeDumpFunc) dumpCreateTableStmt},
-    {T_Typename, "Typename", (NodeDumpFunc) dumpTypename},
-    {T_ColumnDef, "ColumnDef", (NodeDumpFunc) dumpColumnDef},
-    {T_ColumnConstraint, "ColumnConstraint", (NodeDumpFunc) dumpColumnConstraint},
-    {T_Value, "Value", (NodeDumpFunc) dumpValue},
-    {T_TableConstraint, "TableConstraint", (NodeDumpFunc) dumpTableConstraint},
-    {T_Name, "Name", (NodeDumpFunc) dumpName},
-    {T_Query, "Query", (NodeDumpFunc) notImpl},
-    {T_PlannedStmt, "PlannedStmt", (NodeDumpFunc) notImpl},
-};
+  switch (type) {
+    case T_CreateTableStmt: {
+      func = (NodeDumpFunc) dumpCreateTableStmt;
+      name = "CreateTableStmt";
+      break;
+    }
+    case T_Typename: {
+      func = (NodeDumpFunc) dumpTypename;
+      name = "Typename";
+      break;
+    }
+    case T_ColumnDef: {
+      func = (NodeDumpFunc) dumpColumnDef;
+      name = "T_ColumnDef";
+      break;
+    }
+    case T_ColumnConstraint: {
+      func = (NodeDumpFunc) dumpColumnConstraint;
+      name = "T_ColumnConstraint";
+      break;
+    }
+    case T_Integer:
+    case T_String:
+    case T_Float:
+    case T_Null: {
+      func = (NodeDumpFunc) dumpValue;
+      name = "T_Value";
+      break;
+    }
+    case T_TableConstraint: {
+      func = (NodeDumpFunc) dumpTableConstraint;
+      name = "T_TableConstraint";
+      break;
+    }
+    default: {
+      elog(INFO, "not impl tag type %d", type);
+      func = (NodeDumpFunc) notImpl;
+      name = "Invalid";
+      break;
+    }
+  }
+  if (tagName) {
+    *tagName = name;
+  }
+  return func;
+}
 
 rapidjson::Value notImpl(CreateTableStmt* node, rapidjson::Document& doc) {
   rapidjson::Value value(rapidjson::kObjectType);
@@ -102,20 +134,29 @@ rapidjson::Value dumpColumnDef(ColumnDef* node, rapidjson::Document& doc) {
   return value;
 }
 
-rapidjson::Value dumpName(Name* node, rapidjson::Document& doc) {
-  rapidjson::Value value;
-  value.SetString(node->name, strlen(node->name), doc.GetAllocator());
-  return value;
-}
-
 rapidjson::Value dumpValue(Value* node, rapidjson::Document& doc) {
   rapidjson::Value value;
-  if (node->isInt) {
-    value.SetInt(node->vInt);
-  } else if (node->isNUll) {
-    value.SetString("NULL", strlen("NULL"));
-  } else if (node->isStr) {
-    value.SetString(node->str, strlen(node->str), doc.GetAllocator());
+  switch (node->type) {
+    case T_Integer: {
+      value.SetInt(intVal(node));
+      break;
+    }
+    case T_String: {
+      char* str = strVal(node);
+      value.SetString(str, strlen(str));
+      break;
+    }
+    case T_Float: {
+      value.SetFloat(floatVal(node));
+      break;
+    }
+    case T_Null: {
+      value.SetString("NULL");
+    }
+    default: {
+      elog(ERROR, "invalid value type %d", node->type);
+      break;
+    }
   }
   return value;
 }
@@ -204,7 +245,7 @@ const char* ConflictAlgorithmStr(ConflictAlgorithm type) {
 }
 
 rapidjson::Value dumpNode(Node* node, rapidjson::Document& doc) {
-  NodeDumpFunc nodeDumpFunc = nodeTypeNameDumpFunc[node->type].nodeDumpFunc;
+  NodeDumpFunc nodeDumpFunc = GetNodeDumpFunction(node->type, nullptr);
   return nodeDumpFunc(node, doc);
 }
 
@@ -222,12 +263,9 @@ void NodeDisplay(Node* node) {
 
   rapidjson::Document doc(rapidjson::kObjectType);
 
-  NodeTag tag = nodeTypeNameDumpFunc[node->type].tag;
-  const char* name = nodeTypeNameDumpFunc[node->type].name;
-  NodeDumpFunc nodeDumpFunc = nodeTypeNameDumpFunc[node->type].nodeDumpFunc;
+  const char* name;
+  NodeDumpFunc nodeDumpFunc = GetNodeDumpFunction(node->type, &name);
 
-  assert(tag == node->type);
-  assert(nodeDumpFunc);
   rapidjson::Value value = nodeDumpFunc(node, doc);
   doc.AddMember(rapidjson::Value(name, doc.GetAllocator()), value, doc.GetAllocator());
 
