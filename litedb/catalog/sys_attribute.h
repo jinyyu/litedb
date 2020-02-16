@@ -8,7 +8,7 @@ namespace db {
 struct SysAttribute {
   i64 attrelid;                /*relation containing this attribute*/
   i32 atttypid;                /*the id of the instance*/
-  NameData attname;            /*name of attribute*/
+  Name attname;            /*name of attribute*/
   i16 attnum;                  /*attnum is the "attribute number" for the attribute*/
 
   static TuplePtr ToTuple(const SysAttribute& self);

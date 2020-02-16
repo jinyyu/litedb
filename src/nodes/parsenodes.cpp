@@ -21,7 +21,6 @@ static rapidjson::Value dumpColumnConstraint(ColumnConstraint* node, rapidjson::
 static rapidjson::Value dumpTableConstraint(TableConstraint* node, rapidjson::Document& doc);
 
 static const char* ConstraintTypeStr(ConstraintType type);
-static const char* ConflictAlgorithmStr(ConflictAlgorithm type);
 static NodeDumpFunc GetNodeDumpFunction(NodeTag tag, const char** tagName);
 
 static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName) {
@@ -169,11 +168,6 @@ rapidjson::Value dumpColumnConstraint(ColumnConstraint* node, rapidjson::Documen
                     doc.GetAllocator());
   }
 
-  if (node->conflictAlgorithm != CONFLICT_DEFAULT) {
-    value.AddMember("conflictAlgorithm",
-                    rapidjson::Value(ConflictAlgorithmStr(node->conflictAlgorithm), doc.GetAllocator()),
-                    doc.GetAllocator());
-  }
   if (node->defaultValue) {
     value.AddMember("defaultValue", dumpNode((Node*) node->defaultValue, doc), doc.GetAllocator());
   }
@@ -189,11 +183,6 @@ rapidjson::Value dumpTableConstraint(TableConstraint* node, rapidjson::Document&
   }
   if (node->columnList) {
     value.AddMember("columnList", dumpArray(node->columnList, doc), doc.GetAllocator());
-  }
-  if (node->conflictAlgorithm != CONFLICT_DEFAULT) {
-    value.AddMember("conflictAlgorithm",
-                    rapidjson::Value(ConflictAlgorithmStr(node->conflictAlgorithm), doc.GetAllocator()),
-                    doc.GetAllocator());
   }
   return value;
 }
@@ -217,29 +206,6 @@ const char* ConstraintTypeStr(ConstraintType type) {
     }
     default: {
       elog(ERROR, "invalid constraint type %d", type);
-    }
-  }
-}
-
-const char* ConflictAlgorithmStr(ConflictAlgorithm type) {
-  switch (type) {
-    case CONFLICT_ROLLBACK: {
-      return "ROLLBACK";
-    }
-    case CONFLICT_ABORT: {
-      return "ABORT";
-    }
-    case CONFLICT_FAIL: {
-      return "FAIL";
-    }
-    case CONFLICT_IGNORE: {
-      return "IGNORE";
-    }
-    case CONFLICT_REPLACE: {
-      return "REPLACE";
-    }
-    default: {
-      elog(ERROR, "invalid conflict algorithm %d", type);
     }
   }
 }

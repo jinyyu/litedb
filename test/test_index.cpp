@@ -30,10 +30,10 @@ TEST(relation, index_scan) {
   index = Relation::OpenIndex(txn, 1227);
 
   ScanKey key;
-  NameData name;
-  NameDataSetStr(&name, SysClassRelationName);
+  Name name;
+  NameSetStr(&name, SysClassRelationName);
 
-  ScanKey::Init(&key, Anum_sys_class_relname, BTEqualStrategyNumber, NAMEOID, NameDataGetSlice(&name));
+  ScanKey::Init(&key, Anum_sys_class_relname, BTEqualStrategyNumber, NAMEOID, NameGetSlice(&name));
   IndexScanDescPtr desc = IndexBeginScan(rel, index, &key, 1);
   TuplePtr tuple;
   int matched = 0;

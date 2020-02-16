@@ -9,7 +9,7 @@ namespace db {
 
 struct SysClass {
   i64 relid;
-  NameData relname;  /* class name */
+  Name relname;  /* class name */
   bool relhasindex;           /* true if has (or has had) any indexes */
   char relkind;               /* see RELKIND_xxx constants below */
   i16 relnatts;               /* number of user attributes */

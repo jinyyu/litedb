@@ -25,7 +25,7 @@ i64 SysAttribute::CreateEntry(TransactionPtr txn,
 
   entry.attrelid = attrelid;
   entry.atttypid = atttypid;
-  NameDataSetStr(&entry.attname, attname);
+  NameSetStr(&entry.attname, attname);
   entry.attnum = attnum;
 
   TuplePtr tuple = SysAttribute::ToTuple(entry);

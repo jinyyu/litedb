@@ -30,20 +30,10 @@ enum ConstraintType {
   CONSTRAINT_DEFAULT,
 };
 
-enum ConflictAlgorithm {
-  CONFLICT_DEFAULT,
-  CONFLICT_ROLLBACK,
-  CONFLICT_ABORT,
-  CONFLICT_FAIL,
-  CONFLICT_IGNORE,
-  CONFLICT_REPLACE,
-};
-
 struct Value;
 struct ColumnConstraint {
   NodeTag type;
   ConstraintType constraint;
-  ConflictAlgorithm conflictAlgorithm;
   Value* defaultValue;
 };
 
@@ -55,7 +45,6 @@ struct TableConstraint {
   NodeTag type;
   ConstraintType constraint;
   List<Node>* columnList;
-  ConflictAlgorithm conflictAlgorithm;
   Expr* expr;
 };
 

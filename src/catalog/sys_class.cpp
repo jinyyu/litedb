@@ -14,7 +14,7 @@ void SysClass::FromTuple(const Tuple& tuple, SysClass& self) {
 
   assert(tuple.GetType(Anum_sys_class_relname - 1) == NAMEOID);
   Slice relname = tuple.GetSlice(Anum_sys_class_relname - 1);
-  NameDataSetStr(&self.relname, relname.data());
+  NameSetStr(&self.relname, relname.data());
 
   assert(tuple.GetType(Anum_sys_class_relhasindex - 1) == BOOLOID);
   self.relhasindex = tuple.GetBasicType<bool>(Anum_sys_class_relhasindex - 1);
@@ -70,7 +70,7 @@ i64 SysClass::CreateEntry(TransactionPtr txn,
     entry.relid = rel->TableNextID();
   }
 
-  NameDataSetStr(&entry.relname, relname);
+  NameSetStr(&entry.relname, relname);
   entry.relhasindex = relhasindex;
   entry.relkind = relkind;
   entry.relnatts = relnatts;

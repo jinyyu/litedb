@@ -40,7 +40,6 @@ using namespace db;
 %type <list> column_def_list column_constraint_list table_constraint column_list
 %type <node> stmt CreateTableStmt column_constraint type constraint column_def expr value
 %type <boolean> OptTemp
-%type <ival> conflict_clause
 
 // Define operator precedence early so that this is the first occurance
 // of the operator tokens in the grammer.  Keeping the operators together
@@ -207,24 +206,10 @@ column_constraint:
             n->constraint = CONSTRAINT_NOT_NULL,
             $$ = (Node*) n;
         }
-    | NOT NULL_P conflict_clause
-        {
-            ColumnConstraint* n = makeNode(ColumnConstraint);
-            n->constraint = CONSTRAINT_NOT_NULL,
-            n->conflictAlgorithm = (ConflictAlgorithm) $3;
-            $$ = (Node*) n;
-        }
     | PRIMARY KEY
         {
             ColumnConstraint* n = makeNode(ColumnConstraint);
             n->constraint = CONSTRAINT_PRIMARY_KEY,
-            $$ = (Node*) n;
-        }
-    | PRIMARY KEY conflict_clause
-        {
-            ColumnConstraint* n = makeNode(ColumnConstraint);
-            n->constraint = CONSTRAINT_PRIMARY_KEY,
-            n->conflictAlgorithm = (ConflictAlgorithm) $3;
             $$ = (Node*) n;
         }
     | UNIQUE
@@ -233,24 +218,10 @@ column_constraint:
             n->constraint = CONSTRAINT_UNIQUE,
             $$ = (Node*) n;
         }
-    | UNIQUE conflict_clause
-        {
-            ColumnConstraint* n = makeNode(ColumnConstraint);
-            n->constraint = CONSTRAINT_UNIQUE,
-            n->conflictAlgorithm = (ConflictAlgorithm) $2;
-            $$ = (Node*) n;
-        }
     | CHECK expr
         {
             ColumnConstraint* n = makeNode(ColumnConstraint);
             n->constraint = CONSTRAINT_CHECK,
-            $$ = (Node*) n;
-        }
-    | CHECK expr conflict_clause
-        {
-            ColumnConstraint* n = makeNode(ColumnConstraint);
-            n->constraint = CONSTRAINT_CHECK,
-            n->conflictAlgorithm = (ConflictAlgorithm) $3;
             $$ = (Node*) n;
         }
     | DEFAULT value
@@ -258,14 +229,6 @@ column_constraint:
             ColumnConstraint* n = makeNode(ColumnConstraint);
             n->constraint = CONSTRAINT_DEFAULT,
             n->defaultValue = (Value*) $2;
-            $$ = (Node*) n;
-        }
-    | DEFAULT value conflict_clause
-        {
-            ColumnConstraint* n = makeNode(ColumnConstraint);
-            n->constraint = CONSTRAINT_DEFAULT,
-            n->defaultValue = (Value*) $2;
-            n->conflictAlgorithm = (ConflictAlgorithm) $3;
             $$ = (Node*) n;
         }
     ;
@@ -323,29 +286,6 @@ name:
 typename:
     name    {  $$ = $1; }
 
-conflict_clause:
-    ON_P CONFLICT ROLLBACK
-        {
-            $$ = CONFLICT_ROLLBACK;
-        }
-    | ON_P CONFLICT ABORT_P
-        {
-            $$ = CONFLICT_ABORT;
-        }
-    | ON_P CONFLICT FAIL
-        {
-            $$ = CONFLICT_FAIL;
-        }
-    | ON_P CONFLICT IGNORE
-        {
-            $$ = CONFLICT_IGNORE;
-        }
-    | ON_P CONFLICT REPLACE
-        {
-            $$ = CONFLICT_REPLACE;
-        }
-    ;
-
 table_constraint:
     table_constraint ','  constraint
         {
@@ -365,14 +305,6 @@ constraint:
             n->columnList = $4;
             $$ = (Node*) n;
         }
-    | PRIMARY KEY '(' column_list ')' conflict_clause
-        {
-            TableConstraint* n = makeNode(TableConstraint);
-            n->constraint = CONSTRAINT_PRIMARY_KEY;
-            n->columnList = $4;
-            n->conflictAlgorithm = (ConflictAlgorithm) $6;
-            $$ = (Node*) n;
-        }
     | UNIQUE  '(' column_list ')'
         {
             TableConstraint* n = makeNode(TableConstraint);
@@ -380,27 +312,11 @@ constraint:
             n->columnList = $3;
             $$ = (Node*) n;
         }
-    | UNIQUE  '(' column_list ')' conflict_clause
-        {
-            TableConstraint* n = makeNode(TableConstraint);
-            n->constraint = CONSTRAINT_UNIQUE;
-            n->columnList = $3;
-            n->conflictAlgorithm = (ConflictAlgorithm) $5;
-            $$ = (Node*) n;
-        }
     | CHECK expr
         {
             TableConstraint* n = makeNode(TableConstraint);
             n->constraint = CONSTRAINT_CHECK;
             n->expr = (Expr*) $2;
-            $$ = (Node*) n;
-        }
-    | CHECK expr conflict_clause
-        {
-            TableConstraint* n = makeNode(TableConstraint);
-            n->constraint = CONSTRAINT_CHECK;
-            n->expr = (Expr*) $2;
-            n->conflictAlgorithm = (ConflictAlgorithm) $3;
             $$ = (Node*) n;
         }
     ;

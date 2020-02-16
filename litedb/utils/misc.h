@@ -5,8 +5,8 @@
 
 namespace db {
 
-void NameDataSetStr(NameData* name, const char* data);
-Slice NameDataGetSlice(NameData* name);
+void NameSetStr(Name* name, const char* data);
+Slice NameGetSlice(Name* name);
 
 }
 
