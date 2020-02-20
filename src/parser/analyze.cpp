@@ -9,7 +9,7 @@ ParseState* ParseState::Create() {
 }
 
 Query* ParseAnalyze(Node* parseTree, const char* queryString) {
-  NodeDisplay(parseTree);
+  DisplayParseNode(parseTree);
   Query* result;
   ParseState* pstate = ParseState::Create();
 

@@ -56,6 +56,26 @@ struct CreateTableStmt {
   List<Node>* table_constraints;
 };
 
+struct SelectStmt {
+  NodeTag type;
+  bool distinct;
+  List<Node>* targetList;   /* the target list (of ResTarget) */
+  List<Node>* fromClause;   /* the FROM clause */
+  Node* whereClause;        /* WHERE qualification */
+};
+
+struct ResTarget {
+  NodeTag type;
+  char* name;            /* column name or NULL */
+  Node* val;            /* the value expression to compute or assign */
+};
+
+struct RangeVar {
+  NodeTag type;
+  char* relname;
+  char* alias;
+};
+
 typedef enum CmdType {
   CMD_UNKNOWN,
   CMD_SELECT,      /* select stmt */
@@ -70,6 +90,8 @@ struct Query {
   CmdType commandType;    /* select|insert|update|delete|etc */
   Node* utilityStmt;       /* non-null if commandType == CMD_CMD_UTILITY */
 };
+
+void DisplayParseNode(Node* node);
 
 };
 #endif //LITEDB_PARSER_NODES_H_

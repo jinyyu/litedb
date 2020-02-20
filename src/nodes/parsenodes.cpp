@@ -19,6 +19,9 @@ static rapidjson::Value dumpColumnDef(ColumnDef* node, rapidjson::Document& doc)
 static rapidjson::Value dumpValue(Value* node, rapidjson::Document& doc);
 static rapidjson::Value dumpColumnConstraint(ColumnConstraint* node, rapidjson::Document& doc);
 static rapidjson::Value dumpTableConstraint(TableConstraint* node, rapidjson::Document& doc);
+static rapidjson::Value dumpSelectStmt(SelectStmt* node, rapidjson::Document& doc);
+static rapidjson::Value dumpResTarget(ResTarget* node, rapidjson::Document& doc);
+static rapidjson::Value dumpRangeVar(RangeVar* node, rapidjson::Document& doc);
 
 static const char* ConstraintTypeStr(ConstraintType type);
 static NodeDumpFunc GetNodeDumpFunction(NodeTag tag, const char** tagName);
@@ -52,12 +55,27 @@ static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName) {
     case T_Float:
     case T_Null: {
       func = (NodeDumpFunc) dumpValue;
-      name = "T_Value";
+      name = "Value";
       break;
     }
     case T_TableConstraint: {
       func = (NodeDumpFunc) dumpTableConstraint;
-      name = "T_TableConstraint";
+      name = "TableConstraint";
+      break;
+    }
+    case T_SelectStmt: {
+      func = (NodeDumpFunc) dumpSelectStmt;
+      name = "SelectStmt";
+      break;
+    }
+    case T_ResTarget: {
+      func = (NodeDumpFunc) dumpResTarget;
+      name = "ResTarget";
+      break;
+    }
+    case T_RangeVar: {
+      func = (NodeDumpFunc) dumpRangeVar;
+      name = "RangeVar";
       break;
     }
     default: {
@@ -210,6 +228,57 @@ const char* ConstraintTypeStr(ConstraintType type) {
   }
 }
 
+rapidjson::Value dumpSelectStmt(SelectStmt* stmt, rapidjson::Document& doc) {
+  rapidjson::Value value(rapidjson::kObjectType);
+
+  value.AddMember("distinct", stmt->distinct, doc.GetAllocator());
+
+  if (stmt->targetList) {
+    value.AddMember("targetList", dumpArray(stmt->targetList, doc), doc.GetAllocator());
+  }
+
+  if (stmt->fromClause) {
+    value.AddMember("fromClause", dumpArray(stmt->fromClause, doc), doc.GetAllocator());
+  }
+
+  if (stmt->whereClause) {
+    value.AddMember("whereClause", dumpNode(stmt->whereClause, doc), doc.GetAllocator());
+  }
+  return value;
+}
+
+rapidjson::Value dumpResTarget(ResTarget* node, rapidjson::Document& doc) {
+  rapidjson::Value value(rapidjson::kObjectType);
+  if (node->name) {
+    value.AddMember("name",
+                    rapidjson::Value(node->name, doc.GetAllocator()),
+                    doc.GetAllocator());
+  }
+
+  if (node->val) {
+    value.AddMember("val",
+        dumpNode(node->val, doc),
+        doc.GetAllocator());
+  }
+  return value;
+}
+
+rapidjson::Value dumpRangeVar(RangeVar* node, rapidjson::Document& doc) {
+  rapidjson::Value value(rapidjson::kObjectType);
+  if (node->relname) {
+    value.AddMember("relname",
+                    rapidjson::Value(node->relname, doc.GetAllocator()),
+                    doc.GetAllocator());
+  }
+
+  if (node->alias) {
+    value.AddMember("alias",
+                    rapidjson::Value(node->alias, doc.GetAllocator()),
+                    doc.GetAllocator());
+  }
+  return value;
+}
+
 rapidjson::Value dumpNode(Node* node, rapidjson::Document& doc) {
   NodeDumpFunc nodeDumpFunc = GetNodeDumpFunction(node->type, nullptr);
   return nodeDumpFunc(node, doc);
@@ -224,7 +293,7 @@ rapidjson::Value dumpArray(List<Node>* nodeList, rapidjson::Document& doc) {
   return array;
 }
 
-void NodeDisplay(Node* node) {
+void DisplayParseNode(Node* node) {
   assert(node);
 
   rapidjson::Document doc(rapidjson::kObjectType);

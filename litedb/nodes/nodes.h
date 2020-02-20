@@ -21,6 +21,9 @@ enum NodeTag {
   T_ColumnDef,
   T_ColumnConstraint,
   T_TableConstraint,
+  T_SelectStmt,
+  T_ResTarget,
+  T_RangeVar,
   T_Query,
   T_PlannedStmt,
 };
@@ -36,8 +39,6 @@ enum NodeTag {
 struct Node {
   NodeTag type;
 };
-
-void NodeDisplay(Node* node);
 
 
 }

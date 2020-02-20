@@ -26,6 +26,8 @@ using namespace db;
     const char*          keyword;
     db::Node*            node;
     db::List<db::Node>*  list;
+    db::ResTarget*       target;
+    db::RangeVar*        range;
 }
 
 %token IDENT_P
@@ -35,11 +37,15 @@ using namespace db;
 %token EQUALS_GREATER LESS_EQUALS GREATER_EQUALS NOT_EQUALS
 
 %type <keyword> unreserved_keyword
-%type <str> name typename
-%type <list> stmtblock stmtmulti
-%type <list> column_def_list column_constraint_list table_constraint column_list
-%type <node> stmt CreateTableStmt column_constraint type constraint column_def expr value
-%type <boolean> OptTemp
+%type <str>     name typename opt_alias_clause
+%type <list>    stmtblock stmtmulti
+%type <list>    column_def_list column_constraint_list table_constraint column_list
+                target_list from_clause from_list
+%type <node>    stmt CreateTableStmt column_constraint type constraint column_def expr value
+%type <boolean> OptTemp distinct_clause
+%type <node>    SelectStmt where_clause
+%type <target>  target_el
+%type <range>	table_ref
 
 // Define operator precedence early so that this is the first occurance
 // of the operator tokens in the grammer.  Keeping the operators together
@@ -58,19 +64,21 @@ using namespace db;
 %right  UMINUS UPLUS BITNOT
 
 %token <keyword>
-        ABORT_P ASC AUTOINCREMENT
+        ABORT_P ALL AS ASC AUTOINCREMENT
         CHECK CONFLICT CONSTRAINT CREATE
-        DEFAULT DESC
+        DEFAULT DISTINCT DESC
         EXISTS
-        FAIL
+        FROM
         IGNORE IF_P
         NOT NULL_P
         KEY
         ON_P
         PRIMARY
         REPLACE ROLLBACK
+        SELECT
         TABLE TEMP TEMPORARY
         UNIQUE
+        WHERE
 
 /* Grammar follows */
 %%
@@ -80,9 +88,9 @@ using namespace db;
  */
 stmtblock:
     stmtmulti
-    {
-        parser->nodes = $1;
-    }
+        {
+            parser->nodes = $1;
+        }
     ;
 
 stmtmulti:
@@ -112,14 +120,9 @@ stmtmulti:
 	;
 
 stmt:
-    CreateTableStmt
-        {
-            $$ = $1;
-        }
-    | /*empty*/
-        {
-            $$ = NULL;
-        }
+    CreateTableStmt         { $$ = $1; }
+    | SelectStmt            { $$ = $1; }
+    | /*empty*/             { $$ = NULL; }
     ;
 
 CreateTableStmt:
@@ -258,29 +261,14 @@ type:
     ;
 
 value:
-    ICONST
-        {
-            $$ = (Node*) makeInteger($1);
-        }
-    | SCONST
-        {
-            $$ = (Node*) makeString($1);
-        }
-    | NULL_P
-        {
-             $$ = (Node*) makeNull();
-        }
+    ICONST      { $$ = (Node*) makeInteger($1); }
+    | SCONST    { $$ = (Node*) makeString($1); }
+    | NULL_P    { $$ = (Node*) makeNull(); }
     ;
 
 name:
-    IDENT
-        {
-            $$ = (char*) $1;
-        }
-    | unreserved_keyword
-        {
-            $$ = (char*) $1;
-        }
+    IDENT                   { $$ = (char*) $1; }
+    | unreserved_keyword    {   $$ = (char*) $1; }
     ;
 
 typename:
@@ -334,13 +322,91 @@ column_list:
     ;
 
 expr:
-    name { /*todo*/}
+    name
+        {
+            $$ = (Node*) makeString($1);
+        }
+    ;
+
+SelectStmt:
+    SELECT distinct_clause target_list from_clause
+    where_clause
+        {
+            SelectStmt* stmt = (SelectStmt*) makeNode(SelectStmt);
+            stmt->distinct = $2;
+            stmt->targetList = $3;
+            stmt->fromClause = $4;
+            stmt->whereClause = $5;
+            $$ = (Node*) stmt;
+        }
+    ;
+
+distinct_clause:
+    DISTINCT    { $$ = true; }
+    | ALL       { $$ = false;  }
+    | /*empty*/ { $$ = false; }
+    ;
+
+target_list:
+    target_el
+        {
+            $$ = new List<Node>((Node*)$1);
+        }
+    | target_list ',' target_el
+        {
+            $1->Append((Node*) $3);
+            $$ = $1;
+        }
+    ;
+
+target_el:
+    expr AS name
+        {
+			$$ = (ResTarget*) makeNode(ResTarget);
+			$$->name = $3;
+			$$->val = (Node *) makeString($3);
+        }
+    ;
+
+from_clause:
+    FROM from_list  { $$ = $2; }
+    | /*empty*/     { $$ = NULL; }
+    ;
+
+from_list:
+    table_ref
+        {
+            $$ = new List<Node>((Node*)$1);
+        }
+    | from_list ',' table_ref
+        {
+            $1->Append((Node*) $3);
+            $$ = $1;
+        }
+
+table_ref:
+    name opt_alias_clause
+        {
+            $$ = makeNode(RangeVar);
+            $$->relname = $1;
+            $$->alias = $2;
+        }
+    ;
+
+opt_alias_clause:
+    name        { $$ = $1; }
+    | /*empty*/ { $$ = NULL; }
+    ;
+
+where_clause:
+    WHERE expr	    { $$ = $2; }
+    | /*EMPTY*/		{ $$ = NULL; }
+    ;
 
 unreserved_keyword:
     ABORT_P
     | CONFLICT
     | EXISTS
-    | FAIL
     | IF_P
     | IGNORE
     | KEY

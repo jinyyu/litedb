@@ -8,16 +8,19 @@ namespace db {
 
 static ScanKeyword ScanKeywords[] = {
     {"abort", ABORT_P, UNRESERVED_KEYWORD},
-    {"autoincrement", AUTOINCREMENT, RESERVED_KEYWORD},
+    {"all", ALL, RESERVED_KEYWORD},
+    {"as", AS, RESERVED_KEYWORD},
     {"asc", ASC, RESERVED_KEYWORD},
+    {"autoincrement", AUTOINCREMENT, RESERVED_KEYWORD},
     {"check", CHECK, RESERVED_KEYWORD},
     {"conflict", CONFLICT, UNRESERVED_KEYWORD},
     {"constraint", CONSTRAINT, RESERVED_KEYWORD},
+    {"create", CREATE, RESERVED_KEYWORD},
     {"default", DEFAULT, RESERVED_KEYWORD},
     {"desc", DESC, RESERVED_KEYWORD},
-    {"create", CREATE, RESERVED_KEYWORD},
+    {"distinct", DISTINCT , RESERVED_KEYWORD},
     {"exists", EXISTS, UNRESERVED_KEYWORD},
-    {"fail", FAIL, UNRESERVED_KEYWORD},
+    {"from", FROM, RESERVED_KEYWORD},
     {"if", IF_P, UNRESERVED_KEYWORD},
     {"ignore", IGNORE, UNRESERVED_KEYWORD},
     {"not", NOT, RESERVED_KEYWORD},
@@ -27,11 +30,12 @@ static ScanKeyword ScanKeywords[] = {
     {"primary", PRIMARY, RESERVED_KEYWORD},
     {"replace", REPLACE, UNRESERVED_KEYWORD},
     {"rollback", ROLLBACK, UNRESERVED_KEYWORD},
+    {"select", SELECT, RESERVED_KEYWORD},
     {"table", TABLE, RESERVED_KEYWORD},
     {"temp", TEMP, UNRESERVED_KEYWORD},
     {"temporary", TEMPORARY, UNRESERVED_KEYWORD},
     {"unique", UNIQUE, RESERVED_KEYWORD},
-
+    {"where", WHERE, RESERVED_KEYWORD},
 };
 static const int NumScanKeywords = sizeof(ScanKeywords) / sizeof(ScanKeyword);
 
