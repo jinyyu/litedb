@@ -12,7 +12,7 @@ Query* ParseAnalyze(Node* parseTree, const char* queryString) {
 
   query = TransformStmt(pstate, parseTree);
 
-  delete(pstate);
+  SessionEnv->Drop(pstate);
   return query;
 }
 

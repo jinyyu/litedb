@@ -2,12 +2,11 @@
 #include <assert.h>
 #include <stdexcept>
 #include <litedb/utils/exception.h>
+#include <litedb/catalog/sys_type.h>
 
 namespace db {
 
-#define MAX_COLUMNS (128)
-
-TuplePtr Tuple::Construct(const std::vector<TupleMeta>& entries) {
+TuplePtr Tuple::Construct(i64 rowID, const std::vector<TupleMeta>& entries) {
   if (entries.empty()) {
     THROW_EXCEPTION("invalid entries");
   }
@@ -33,21 +32,31 @@ TuplePtr Tuple::Construct(const std::vector<TupleMeta>& entries) {
   }
 
   TuplePtr tuple(new Tuple((char*) header, totalLen));
+  tuple->rowID_ = rowID;
   tuple->copied_ = true;
   return tuple;
 }
 
 u32 Tuple::columns() const {
   TupleHeaderData* header = (TupleHeaderData*) tuple_;
-  size_t n = (header->headerSize - sizeof(TupleHeaderData)) / sizeof(TypeMeta);
-  assert(n > 0);
+  size_t n = 1 + (header->headerSize - sizeof(TupleHeaderData)) / sizeof(TypeMeta);
+  assert(n > 1);
   return n;
 }
 
-void Tuple::Get(int index, TupleMeta& entry) const {
+void Tuple::GetTupleMeta(int attno, TupleMeta& entry) const {
+  if (attno == 0) {
+    entry.data = (const char*) &rowID_;
+    entry.size = sizeof(rowID_);
+    entry.type = INT8OID;
+    return;
+  }
+
+  int index = attno - 1;
+
   TupleHeaderData* header = (TupleHeaderData*) tuple_;
 
-  if (header->headerSize < sizeof(TupleHeaderData) + (index + 1) * sizeof(TypeMeta)) {
+  if (header->headerSize < sizeof(TupleHeaderData) + (attno) * sizeof(TypeMeta)) {
     THROW_EXCEPTION("index out of range");
   }
 

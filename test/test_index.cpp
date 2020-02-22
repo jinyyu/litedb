@@ -39,12 +39,33 @@ TEST(relation, index_scan) {
   int matched = 0;
   while ((tuple = IndexGetNext(desc)) != nullptr) {
     TupleMeta meta;
-    tuple->Get(Anum_sys_class_relname - 1, meta);
+    tuple->GetTupleMeta(Anum_sys_class_relname, meta);
     fprintf(stderr, "type = %d, size = %d, str = %s\n", meta.type, meta.size, meta.data);
     ++matched;
   }
   IndexEndScan(desc);
-  ASSERT_EQ(matched , 1);
+  ASSERT_EQ(matched, 1);
+}
+
+TEST(relation, sys_scan) {
+  TransactionPtr txn = CatalogDB->Begin();
+  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+
+  ScanKey key;
+  i64 id = SysClassRelationId;
+  ScanKey::Init(&key, Anum_sys_class_relid, BTEqualStrategyNumber, INT8OID, Slice((char*) &id, sizeof(id)));
+
+  SysScanDescPtr desc = SysTableBeginScan(txn, rel, 0, &key, 1);
+  TuplePtr tuple;
+  int matched = 0;
+  while ((tuple = SysTableGetNext(desc)) != nullptr) {
+    TupleMeta meta;
+    tuple->GetTupleMeta(Anum_sys_class_relname, meta);
+    fprintf(stderr, "type = %d, size = %d, str = %s\n", meta.type, meta.size, meta.data);
+    ++matched;
+  }
+  SysTableEndScan(desc);
+  ASSERT_EQ(matched, 1);
 }
 
 int main(int argc, char* argv[]) {

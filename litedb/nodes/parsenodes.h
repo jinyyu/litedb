@@ -133,6 +133,7 @@ struct ParseState : public Object {
 
   const char* sourceText;           /* source text, or NULL if not available */
   std::list<RangeTblEntry*> rtable; /* range table so far */
+  std::list<RangeTblRef*> joinlist; /* join items so far */
 };
 
 void DisplayParseNode(Node* node);

@@ -24,19 +24,19 @@ bool ScanKey::CheckSatisfy(ScanKey* self, const Slice& column) {
   int ret = ScanKey::PerformCompare(self, column);
   switch (self->strategy) {
     case BTLessStrategyNumber: {
-      return ret < 0;
+      return ret > 0;
     }
     case BTLessEqualStrategyNumber: {
-      return ret <= 0;
+      return ret >= 0;
     }
     case BTEqualStrategyNumber: {
       return ret == 0;
     }
     case BTGreaterEqualStrategyNumber: {
-      return ret >= 0;
+      return ret <= 0;
     }
     case BTGreaterStrategyNumber: {
-      return ret > 0;
+      return ret < 0;
     }
     default: {
       elog(ERROR, "invalid strategy %d", self->strategy);

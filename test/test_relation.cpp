@@ -15,8 +15,8 @@ TEST(relation, table_scan) {
   ScanKey key;
   u64 id = SysClassRelationId;
   ScanKey::Init(&key,
-      Anum_sys_class_id, BTEqualStrategyNumber,
-      INT8OID, Slice((char*) &id, sizeof(id)));
+                Anum_sys_class_relid, BTEqualStrategyNumber,
+                INT8OID, Slice((char*) &id, sizeof(id)));
 
   int matched = 0;
   TableScanDescPtr scan = TableBeginScan(rel, &key, 1);
