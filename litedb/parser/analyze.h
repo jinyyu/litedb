@@ -4,18 +4,15 @@
 
 namespace db {
 
-struct ParseState {
-  const char* sourceText;      /* source text, or NULL if not available */
-
-  static ParseState* Create();
-};
-
 /*
  * parse_analyze
  *		Analyze a raw parse tree and transform it to Query form.
  */
 Query* ParseAnalyze(Node* parseTree, const char* queryString);
 
+Query* TransformStmt(ParseState* pstate, Node* parseTree);
+Query* TransformCreateTableStmt(ParseState* pstate, CreateTableStmt* stmt);
+Query* TransformSelectStmt(ParseState *pstate, SelectStmt *stmt);
 }
 
 #endif //LITEDB_PARSER_ANALYZE_H_

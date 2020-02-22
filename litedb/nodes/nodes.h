@@ -24,7 +24,11 @@ enum NodeTag {
   T_SelectStmt,
   T_ResTarget,
   T_RangeVar,
+  T_A_Star,
+
   T_Query,
+  T_RangeTblEntry,
+  T_RangeTblRef,
   T_PlannedStmt,
 };
 

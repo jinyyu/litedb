@@ -1,14 +1,14 @@
 #ifndef LITEDB_CATALOG_CATALOG_H_
 #define LITEDB_CATALOG_CATALOG_H_
 #include <litedb/storage/database.h>
+#include <litedb/storage/tuple.h>
 
 namespace db {
 
 extern Database* CatalogDB;
-extern Database* PublicDB;
+extern thread_local TransactionPtr CurrentTransaction;
 
 #define CATALOG_DATABASE "catalog"
-#define PUBLIC_DATABASE "public"
 
 #define NAMEDATALEN 64
 

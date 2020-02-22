@@ -27,6 +27,7 @@ set(node_src
 set(parser_src
         parser/analyze.cpp
         parser/keywords.cpp
+        parser/parse_clause.cpp
         parser/parser.cpp
         )
 

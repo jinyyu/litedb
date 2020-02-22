@@ -24,6 +24,7 @@ struct SysClass {
                          i16 relnatts);
 
   static bool GetCatalog(TransactionPtr txn, i64 relid, SysClass* self);
+  static TuplePtr GetSysClass(TransactionPtr txn, const char* relname);
 
 };
 

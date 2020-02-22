@@ -6,6 +6,7 @@
 #include <litedb/utils/portal.h>
 #include <litedb/nodes/plannodes.h>
 #include <litedb//utils/env.h>
+#include <litedb/catalog/catalog.h>
 #include <assert.h>
 
 namespace db {
@@ -73,6 +74,11 @@ void Session::Loop() {
 
   while (!forceClose) {
     try {
+      if (CurrentTransaction) {
+        CurrentTransaction->Abort();
+        CurrentTransaction = nullptr;
+      }
+
       SessionEnv = std::make_shared<Environment>();
 
       ReadyForQuery();
@@ -133,6 +139,11 @@ void Session::Loop() {
       if (e.level > ERROR) {
         forceClose = true;
         break;
+      }
+
+      if (CurrentTransaction) {
+        CurrentTransaction->Abort();
+        CurrentTransaction = nullptr;
       }
     }
   }
@@ -276,15 +287,23 @@ void Session::ExecSimpleQuery(char* queryString, size_t queryLen) {
   List<Node>* parseTrees = Parser::Parse(queryString, queryLen);
 
   if (parseTrees) {
+
+    CurrentTransaction = CatalogDB->Begin();
+
     for (Node* parseTree : parseTrees->list) {
-      List<Node>* querytree = AnalyzeAndRewrite(parseTree, queryString);
-      List<Node>* planTree = PlanQueries(querytree);
+      List<Node>* queryTree = AnalyzeAndRewrite(parseTree, queryString);
+      List<Node>* planTree = PlanQueries(queryTree);
 
       Portal portal(this, planTree);
       portal.Start();
       portal.Run();
 
       SendCommand('C', "ok", strlen("ok") + 1);
+    }
+
+    if (CurrentTransaction) {
+      CurrentTransaction->Commit();
+      CurrentTransaction = nullptr;
     }
   }
 }

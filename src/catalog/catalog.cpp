@@ -3,7 +3,7 @@
 namespace db {
 
 Database* CatalogDB = nullptr;
-extern Database* PublicDB = nullptr;
+thread_local TransactionPtr CurrentTransaction = nullptr;
 
 }
 

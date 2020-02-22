@@ -176,7 +176,7 @@ column_def:
             ColumnDef* n = makeNode(ColumnDef);
             n->columnName = $1;
             n->typeName = (Typename*) $2;
-            n->columnConstraints = $3;
+            n->constraints = $3;
             $$ = (Node*) n;
         }
     | name type CONSTRAINT name column_constraint_list
@@ -185,7 +185,7 @@ column_def:
             n->columnName = $1;
             n->typeName = (Typename*) $2;
             n->constraintName = $4;
-            n->columnConstraints = $5;
+            n->constraints = $5;
             $$ = (Node*) n;
         }
     ;
@@ -364,7 +364,25 @@ target_el:
         {
 			$$ = (ResTarget*) makeNode(ResTarget);
 			$$->name = $3;
-			$$->val = (Node *) makeString($3);
+			$$->val = (Node *) $1;
+        }
+    | expr IDENT
+        {
+  			$$ = (ResTarget*) makeNode(ResTarget);
+  			$$->name = $2;
+  			$$->val = (Node *) $1;
+        }
+    | expr
+        {
+     		$$ = (ResTarget*) makeNode(ResTarget);
+     		$$->name = NULL;
+     		$$->val = (Node *) $1;
+        }
+    | '*'
+        {
+     		$$ = (ResTarget*) makeNode(ResTarget);
+     		$$->name = NULL;
+     		$$->val = (Node *) makeNode(A_Star);
         }
     ;
 

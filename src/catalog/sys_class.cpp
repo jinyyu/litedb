@@ -39,6 +39,15 @@ bool SysClass::GetCatalog(TransactionPtr txn, i64 relid, SysClass* self) {
   return true;
 }
 
+TuplePtr SysClass::GetSysClass(TransactionPtr txn, const char* relname) {
+  TuplePtr ret;
+  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+
+  SysTableBeginScan(txn,  rel, )
+
+  return ret;
+}
+
 TuplePtr SysClass::ToTuple(const SysClass& self) {
   std::vector<TupleMeta> entries;
 

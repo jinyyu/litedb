@@ -12,19 +12,19 @@ namespace db {
 typedef rapidjson::Value (* NodeDumpFunc)(Node* node, rapidjson::Document& doc);
 static rapidjson::Value dumpNode(Node* node, rapidjson::Document& doc);
 static rapidjson::Value dumpArray(List<Node>* nodeList, rapidjson::Document& doc);
-static rapidjson::Value notImpl(CreateTableStmt* node, rapidjson::Document& doc);
 static rapidjson::Value dumpCreateTableStmt(CreateTableStmt* node, rapidjson::Document& doc);
 static rapidjson::Value dumpTypename(Typename* node, rapidjson::Document& doc);
 static rapidjson::Value dumpColumnDef(ColumnDef* node, rapidjson::Document& doc);
 static rapidjson::Value dumpValue(Value* node, rapidjson::Document& doc);
 static rapidjson::Value dumpColumnConstraint(ColumnConstraint* node, rapidjson::Document& doc);
 static rapidjson::Value dumpTableConstraint(TableConstraint* node, rapidjson::Document& doc);
-static rapidjson::Value dumpSelectStmt(SelectStmt* node, rapidjson::Document& doc);
+static rapidjson::Value dumpSelectStmt(SelectStmt* stmt, rapidjson::Document& doc);
 static rapidjson::Value dumpResTarget(ResTarget* node, rapidjson::Document& doc);
 static rapidjson::Value dumpRangeVar(RangeVar* node, rapidjson::Document& doc);
+static rapidjson::Value dumpA_Star(RangeVar* node, rapidjson::Document& doc);
 
 static const char* ConstraintTypeStr(ConstraintType type);
-static NodeDumpFunc GetNodeDumpFunction(NodeTag tag, const char** tagName);
+static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName);
 
 static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName) {
   NodeDumpFunc func;
@@ -78,10 +78,13 @@ static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName) {
       name = "RangeVar";
       break;
     }
+    case T_A_Star:func = (NodeDumpFunc) dumpA_Star;
+      name = "A_Star";
+      break;
     default: {
       elog(INFO, "not impl tag type %d", type);
-      func = (NodeDumpFunc) notImpl;
       name = "Invalid";
+      func = nullptr;
       break;
     }
   }
@@ -89,14 +92,6 @@ static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName) {
     *tagName = name;
   }
   return func;
-}
-
-rapidjson::Value notImpl(CreateTableStmt* node, rapidjson::Document& doc) {
-  rapidjson::Value value(rapidjson::kObjectType);
-  const char* msg = "no implement";
-  int len = strlen(msg);
-  value.SetString(msg, len);
-  return value;
 }
 
 rapidjson::Value dumpCreateTableStmt(CreateTableStmt* node, rapidjson::Document& doc) {
@@ -145,8 +140,8 @@ rapidjson::Value dumpColumnDef(ColumnDef* node, rapidjson::Document& doc) {
   if (node->constraintName) {
     value.AddMember("constraintName", dumpNode((Node*) node->constraintName, doc), doc.GetAllocator());
   }
-  if (node->columnConstraints) {
-    value.AddMember("columnConstraints", dumpArray(node->columnConstraints, doc), doc.GetAllocator());
+  if (node->constraints) {
+    value.AddMember("constraints", dumpArray(node->constraints, doc), doc.GetAllocator());
   }
   return value;
 }
@@ -257,8 +252,8 @@ rapidjson::Value dumpResTarget(ResTarget* node, rapidjson::Document& doc) {
 
   if (node->val) {
     value.AddMember("val",
-        dumpNode(node->val, doc),
-        doc.GetAllocator());
+                    dumpNode(node->val, doc),
+                    doc.GetAllocator());
   }
   return value;
 }
@@ -276,6 +271,12 @@ rapidjson::Value dumpRangeVar(RangeVar* node, rapidjson::Document& doc) {
                     rapidjson::Value(node->alias, doc.GetAllocator()),
                     doc.GetAllocator());
   }
+  return value;
+}
+
+rapidjson::Value dumpA_Star(RangeVar* node, rapidjson::Document& doc) {
+  rapidjson::Value value;
+  value.SetString("*");
   return value;
 }
 
