@@ -113,23 +113,16 @@ rapidjson::Value dumpCreateTableStmt(CreateTableStmt* node, rapidjson::Document&
 }
 
 rapidjson::Value dumpTypename(Typename* node, rapidjson::Document& doc) {
-  std::string buff;
-  buff.append(node->name);
-  if (node->leftPrecision) {
-    char tmp[16];
-    snprintf(tmp, sizeof(tmp), "(%d", node->leftPrecision);
-    buff.append(tmp);
+  char buffer[128];
+  size_t n;
+  if (node->typeMod > 0) {
+    n = snprintf(buffer, sizeof(buffer), "%s(%d)", node->name, node->typeMod);
+  } else {
+    n = snprintf(buffer, sizeof(buffer), "%s", node->name);
   }
-  if (node->rightPrecision) {
-    char tmp[16];
-    snprintf(tmp, sizeof(tmp), ",%d", node->rightPrecision);
-    buff.append(tmp);
-  }
-  if (node->leftPrecision || node->rightPrecision) {
-    buff.push_back(')');
-  }
+
   rapidjson::Value value;
-  value.SetString(buff.c_str(), buff.size(), doc.GetAllocator());
+  value.SetString(buffer, n, doc.GetAllocator());
   return value;
 }
 
@@ -311,6 +304,15 @@ void DisplayParseNode(Node* node) {
   doc.Accept(writer);
   const char* out = buffer.GetString();
   fprintf(stdout, "%s\n", out);
+}
+
+A_Expr* makeA_Expr(A_Expr_Kind kind, const char* name, Node* lexpr, Node* rexpr) {
+  A_Expr* a = makeNode(A_Expr);
+  a->kind = kind;
+  a->name = (char*) name;
+  a->lexpr = lexpr;
+  a->rexpr = rexpr;
+  return a;
 }
 
 }

@@ -6,6 +6,17 @@
 #include "gram.hpp"
 
 #define YYERROR_VERBOSE
+
+
+
+namespace db {
+
+static Node* makeIntConst(int i);
+static Node* makeStringConst(char* str);
+static Node* makeFloatConst(char* str);
+
+}
+
 using namespace db;
 
 %}
@@ -28,6 +39,7 @@ using namespace db;
     db::List<db::Node>*  list;
     db::ResTarget*       target;
     db::RangeVar*        range;
+    db::Typename*        typnam;
 }
 
 %token IDENT_P
@@ -37,82 +49,68 @@ using namespace db;
 %token EQUALS_GREATER LESS_EQUALS GREATER_EQUALS NOT_EQUALS
 
 %type <keyword> unreserved_keyword
-%type <str>     name typename opt_alias_clause
+%type <str>     name opt_alias_clause
 %type <list>    stmtblock stmtmulti
 %type <list>    column_def_list column_constraint_list table_constraint column_list
                 target_list from_clause from_list
-%type <node>    stmt CreateTableStmt column_constraint type constraint column_def expr value
+%type <ival>    opt_type_modifiers
+%type <typnam>  Typename
+%type <node>    stmt CreateTableStmt column_constraint constraint column_def
+%type <node>    a_expr b_expr c_expr AexprConst columnref
 %type <boolean> OptTemp distinct_clause
 %type <node>    SelectStmt where_clause
 %type <target>  target_el
 %type <range>	table_ref
 
 %token <keyword>
-        ABORT_P ALL AS ASC AUTOINCREMENT
+        ABORT_P ALL AND AS ASC AUTOINCREMENT
+
+        BETWEEN
+
         CHECK CONFLICT CONSTRAINT CREATE
+
         DEFAULT DISTINCT DESC
+
         EXISTS
-        FROM
-        IGNORE IF_P
+
+        FALSE_P FROM
+
+        IGNORE IF_P INT_P INTEGER
+
         NOT NULL_P
+
         KEY
-        ON_P
+
+        ON_P OR
+
         PRIMARY
+
         REPLACE ROLLBACK
+
         SELECT
-        TABLE TEMP TEMPORARY
+
+        TABLE TEMP TEMPORARY TEXT TRUE_P
+
         UNIQUE
+
+        VARCHAR
+
         WHERE
 
 
 /* Precedence: lowest to highest */
-%nonassoc	SET
-%left		UNION EXCEPT
-%left		INTERSECT
+%left		UNION
 %left		OR
 %left		AND
 %right		NOT
 %nonassoc	IS ISNULL NOTNULL	/* IS sets precedence for IS NULL, etc */
 %nonassoc	'<' '>' '=' LESS_EQUALS GREATER_EQUALS NOT_EQUALS
-%nonassoc	BETWEEN IN_P LIKE ILIKE SIMILAR NOT_LA
-%nonassoc	ESCAPE			/* ESCAPE must be just above LIKE/ILIKE/SIMILAR */
-%left		POSTFIXOP		/* dummy for postfix Op rules */
-/*
- * To support target_el without AS, we must give IDENT an explicit priority
- * between POSTFIXOP and Op.  We can safely assign the same priority to
- * various unreserved keywords as needed to resolve ambiguities (this can't
- * have any bad effects since obviously the keywords will still behave the
- * same as if they weren't keywords).  We need to do this:
- * for PARTITION, RANGE, ROWS, GROUPS to support opt_existing_window_name;
- * for RANGE, ROWS, GROUPS so that they can follow a_expr without creating
- * postfix-operator problems;
- * for GENERATED so that it can follow b_expr;
- * and for NULL so that it can follow b_expr in ColQualList without creating
- * postfix-operator problems.
- *
- * To support CUBE and ROLLUP in GROUP BY without reserving them, we give them
- * an explicit priority lower than '(', so that a rule with CUBE '(' will shift
- * rather than reducing a conflicting rule that takes CUBE as a function name.
- * Using the same precedence as IDENT seems right for the reasons given above.
- *
- * The frame_bound productions UNBOUNDED PRECEDING and UNBOUNDED FOLLOWING
- * are even messier: since UNBOUNDED is an unreserved keyword (per spec!),
- * there is no principled way to distinguish these from the productions
- * a_expr PRECEDING/FOLLOWING.  We hack this up by giving UNBOUNDED slightly
- * lower precedence than PRECEDING and FOLLOWING.  At present this doesn't
- * appear to cause UNBOUNDED to be treated differently from other unreserved
- * keywords anywhere else in the grammar, but it's definitely risky.  We can
- * blame any funny behavior of UNBOUNDED on the SQL standard, though.
- */
-%nonassoc	UNBOUNDED		/* ideally should have same precedence as IDENT */
-%nonassoc	IDENT GENERATED NULL_P PARTITION RANGE ROWS GROUPS PRECEDING FOLLOWING CUBE ROLLUP
-%left		Op OPERATOR		/* multi-character ops and user-defined operators */
+%nonassoc	BETWEEN IN_P NOT_LA
+%nonassoc	IDENT NULL_P
 %left		'+' '-'
 %left		'*' '/' '%'
 %left		'^'
 /* Unary Operators */
-%left		AT				/* sets precedence for AT TIME ZONE */
-%left		COLLATE
 %right		UMINUS
 %left		'[' ']'
 %left		'(' ')'
@@ -212,26 +210,26 @@ column_def_list:
     ;
 
 column_def:
-    name type
+    name Typename
         {
             ColumnDef* n = makeNode(ColumnDef);
             n->columnName = $1;
-            n->typeName = (Typename*) $2;
+            n->typeName = $2;
             $$ = (Node*) n;
         }
-    | name type column_constraint_list
+    | name Typename column_constraint_list
         {
             ColumnDef* n = makeNode(ColumnDef);
             n->columnName = $1;
-            n->typeName = (Typename*) $2;
+            n->typeName = $2;
             n->constraints = $3;
             $$ = (Node*) n;
         }
-    | name type CONSTRAINT name column_constraint_list
+    | name Typename CONSTRAINT name column_constraint_list
         {
             ColumnDef* n = makeNode(ColumnDef);
             n->columnName = $1;
-            n->typeName = (Typename*) $2;
+            n->typeName = $2;
             n->constraintName = $4;
             n->constraints = $5;
             $$ = (Node*) n;
@@ -269,58 +267,25 @@ column_constraint:
             n->constraint = CONSTRAINT_UNIQUE,
             $$ = (Node*) n;
         }
-    | CHECK expr
+    | CHECK a_expr
         {
             ColumnConstraint* n = makeNode(ColumnConstraint);
             n->constraint = CONSTRAINT_CHECK,
             $$ = (Node*) n;
         }
-    | DEFAULT value
+    | DEFAULT b_expr
         {
             ColumnConstraint* n = makeNode(ColumnConstraint);
             n->constraint = CONSTRAINT_DEFAULT,
-            n->defaultValue = (Value*) $2;
+            n->defaultValue = (A_Expr*)$2;
             $$ = (Node*) n;
         }
-    ;
-
-type:
-    typename
-        {
-            Typename* n = makeNode(Typename);
-            n->name = $1;
-            $$ = (Node*) n;
-        }
-    | typename '(' ICONST ')'
-        {
-            Typename* n = makeNode(Typename);
-            n->name = $1;
-            n->leftPrecision = $3;
-            $$ = (Node*) n;
-        }
-    | typename '(' ICONST ',' ICONST ')'
-        {
-            Typename* n = makeNode(Typename);
-            n->name = $1;
-            n->leftPrecision = $3;
-            n->rightPrecision = $5;
-            $$ = (Node*) n;
-        }
-    ;
-
-value:
-    ICONST      { $$ = (Node*) makeInteger($1); }
-    | SCONST    { $$ = (Node*) makeString($1); }
-    | NULL_P    { $$ = (Node*) makeNull(); }
     ;
 
 name:
     IDENT                   { $$ = (char*) $1; }
     | unreserved_keyword    {   $$ = (char*) $1; }
     ;
-
-typename:
-    name    {  $$ = $1; }
 
 table_constraint:
     table_constraint ','  constraint
@@ -348,11 +313,11 @@ constraint:
             n->columnList = $3;
             $$ = (Node*) n;
         }
-    | CHECK expr
+    | CHECK a_expr
         {
             TableConstraint* n = makeNode(TableConstraint);
             n->constraint = CONSTRAINT_CHECK;
-            n->expr = (Expr*) $2;
+            n->expr = (A_Expr*) $2;
             $$ = (Node*) n;
         }
     ;
@@ -369,11 +334,214 @@ column_list:
         }
     ;
 
-expr:
+Typename:
+    INT_P
+        {
+            $$ = makeNode(Typename);
+            $$->name = (char*) "int4";
+        }
+    | INTEGER
+        {
+            $$ = makeNode(Typename);
+            $$->name = (char*) "int4";
+        }
+    | TEXT
+        {
+             $$ = makeNode(Typename);
+             $$->name = (char*) "text";
+        }
+    | VARCHAR opt_type_modifiers
+        {
+            $$ = makeNode(Typename);
+            $$->name = (char*) "varchar";
+            $$->typeMod = $2;
+        }
+    ;
+
+opt_type_modifiers:
+    '(' ICONST ')'      { $$ = $2; }
+    | /*empty*/         { $$ = 0;  }
+
+a_expr:
+    c_expr      { $$ = $1; }
+    | '+' a_expr %prec UMINUS
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "+" , NULL, $2);
+        }
+    | '-' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "-" , NULL, $2);
+        }
+    | a_expr '+' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "+" , $1, $3);
+        }
+    | a_expr '-' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "-" , $1, $3);
+        }
+    | a_expr '*' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "*" , $1, $3);
+        }
+    | a_expr '/' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "/" , $1, $3);
+        }
+    | a_expr '<' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "<" , $1, $3);
+        }
+    | a_expr '>' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, ">" , $1, $3);
+        }
+    | a_expr '=' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "=" , $1, $3);
+        }
+    | a_expr LESS_EQUALS a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "<=" , $1, $3);
+        }
+    | a_expr GREATER_EQUALS a_expr
+        {
+             $$ = (Node*) makeA_Expr(AEXPR_OP, ">=" , $1, $3);
+        }
+    | a_expr NOT_EQUALS a_expr
+        {
+             $$ = (Node*) makeA_Expr(AEXPR_OP, "<>" , $1, $3);
+        }
+    | a_expr AND a_expr
+        {
+            $$ = NULL;
+        }
+    | a_expr OR a_expr
+        {
+            $$ = NULL;
+        }
+    | NOT a_expr
+        {
+            $$ = NULL;
+        }
+    | NOT_LA a_expr	%prec NOT
+        {
+            $$ = NULL;
+        }
+    | a_expr IS NULL_P	%prec IS
+        {
+            $$ = NULL;
+        }
+    | a_expr ISNULL
+        {
+            $$ = NULL;
+        }
+    | a_expr IS NOT NULL_P	%prec IS
+        {
+            $$ = NULL;
+        }
+    | a_expr NOTNULL
+        {
+            $$ = NULL;
+        }
+    | a_expr IS TRUE_P %prec IS
+        {
+            $$ = NULL;
+        }
+    | a_expr IS NOT TRUE_P %prec IS
+        {
+            $$ = NULL;
+        }
+    | a_expr IS FALSE_P	%prec IS
+        {
+            $$ = NULL;
+        }
+    | a_expr IS NOT FALSE_P	%prec IS
+        {
+            $$ = NULL;
+        }
+    | a_expr BETWEEN b_expr AND a_expr %prec BETWEEN
+        {
+            $$ = NULL;
+        }
+    | a_expr NOT_LA BETWEEN b_expr AND a_expr %prec NOT_LA
+        {
+            $$ = NULL;
+        }
+    ;
+
+b_expr:
+    c_expr      { $$ = $1; }
+    | '+' b_expr %prec UMINUS
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "+" , NULL, $2);
+        }
+    | '-' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "-" , NULL, $2);
+        }
+    | b_expr '+' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "+" , $1, $3);
+        }
+    | b_expr '-' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "-" , $1, $3);
+        }
+    | b_expr '*' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "*" , $1, $3);
+        }
+    | b_expr '/' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "/" , $1, $3);
+        }
+    | b_expr '<' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "<" , $1, $3);
+        }
+    | b_expr '>' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, ">" , $1, $3);
+        }
+    | b_expr '=' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "=" , $1, $3);
+        }
+    | b_expr LESS_EQUALS b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "<=" , $1, $3);
+        }
+    | b_expr GREATER_EQUALS b_expr
+        {
+             $$ = (Node*) makeA_Expr(AEXPR_OP, ">=" , $1, $3);
+        }
+    | b_expr NOT_EQUALS b_expr
+        {
+             $$ = (Node*) makeA_Expr(AEXPR_OP, "<>" , $1, $3);
+        }
+    ;
+
+c_expr:
+    AexprConst          { $$ = $1; }
+    | columnref         { $$ = $1; }
+    | '(' a_expr ')'    { $$ = $2; }
+    ;
+
+columnref:
     name
         {
-            $$ = (Node*) makeString($1);
+            ColumnRef* ref = makeNode(ColumnRef);
+            ref->fields = new List<Node>();
+            ref->fields->Append((Node*) makeString($1));
+            $$ = (Node*) ref;
         }
+    ;
+
+AexprConst:
+    ICONST      { $$ = makeIntConst($1); }
+    | SCONST    { $$ = makeStringConst($1); }
+    | FCONST    { $$ = makeFloatConst($1); }
     ;
 
 SelectStmt:
@@ -408,19 +576,19 @@ target_list:
     ;
 
 target_el:
-    expr AS name
+    a_expr AS name
         {
 			$$ = (ResTarget*) makeNode(ResTarget);
 			$$->name = $3;
 			$$->val = (Node *) $1;
         }
-    | expr IDENT
+    | a_expr IDENT
         {
   			$$ = (ResTarget*) makeNode(ResTarget);
   			$$->name = $2;
   			$$->val = (Node *) $1;
         }
-    | expr
+    | a_expr
         {
      		$$ = (ResTarget*) makeNode(ResTarget);
      		$$->name = NULL;
@@ -465,9 +633,10 @@ opt_alias_clause:
     ;
 
 where_clause:
-    WHERE expr	    { $$ = $2; }
+    WHERE a_expr	    { $$ = $2; }
     | /*EMPTY*/		{ $$ = NULL; }
     ;
+
 
 unreserved_keyword:
     ABORT_P
@@ -482,7 +651,25 @@ unreserved_keyword:
     | TEMPORARY
     ;
 %%
+namespace db
+{
 
-void help() {
+Node* makeIntConst(int i) {
+  A_Const* n = makeNode(A_Const);
+  n->val = makeInteger(i);
+  return (Node*) n;
+}
+
+Node* makeStringConst(char* str) {
+  A_Const* n = makeNode(A_Const);
+  n->val = makeString(str);
+  return (Node*) n;
+}
+
+Node* makeFloatConst(char* str) {
+  A_Const* n = makeNode(A_Const);
+  n->val = makeFloat(str);
+  return (Node*) n;
+}
 
 }

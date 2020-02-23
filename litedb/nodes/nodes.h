@@ -16,6 +16,10 @@ enum NodeTag {
   T_String,
   T_Null,
 
+  T_A_Expr,
+  T_A_Const,
+  T_ColumnRef,
+
   T_CreateTableStmt,
   T_Typename,
   T_ColumnDef,

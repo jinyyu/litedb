@@ -11,8 +11,7 @@ namespace db {
 struct Typename {
   NodeTag type;
   char* name;
-  int leftPrecision;
-  int rightPrecision;
+  i32 typeMod;
 };
 
 struct ColumnDef {
@@ -32,22 +31,51 @@ enum ConstraintType {
   CONSTRAINT_DEFAULT,
 };
 
-struct Value;
+struct A_Expr;
 struct ColumnConstraint {
   NodeTag type;
   ConstraintType constraint;
-  Value* defaultValue;
+  A_Expr* defaultValue;
 };
 
-struct Expr {
+enum A_Expr_Kind {
+  AEXPR_OP,             /* normal operator */
+  AEXPR_OP_ANY,         /* scalar op ANY (array) */
+  AEXPR_OP_ALL,         /* scalar op ALL (array) */
+  AEXPR_DISTINCT,       /* IS DISTINCT FROM - name must be "=" */
+  AEXPR_NOT_DISTINCT,   /* IS NOT DISTINCT FROM - name must be "=" */
+  AEXPR_NULLIF,         /* NULLIF - name must be "=" */
+  AEXPR_IN,             /* [NOT] IN - name must be "=" or "<>" */
+  AEXPR_BETWEEN,        /* name must be "BETWEEN" */
+  AEXPR_NOT_BETWEEN,    /* name must be "NOT BETWEEN" */
+};
+
+struct A_Expr {
   NodeTag type;
+  A_Expr_Kind kind;     /* see above */
+  char* name;           /* possibly-qualified name of operator */
+  Node* lexpr;          /* left argument, or NULL if none */
+  Node* rexpr;          /* right argument, or NULL if none */
+};
+
+A_Expr* makeA_Expr(A_Expr_Kind kind, const char* name, Node* lexpr, Node* rexpr);
+
+struct Value;
+struct A_Const {
+  NodeTag type;
+  Value* val;
+};
+
+struct ColumnRef {
+  NodeTag type;
+  List<Node>* fields;    /* field names (Value strings) or A_Star */
 };
 
 struct TableConstraint {
   NodeTag type;
   ConstraintType constraint;
   List<Node>* columnList;
-  Expr* expr;
+  A_Expr* expr;
 };
 
 struct CreateTableStmt {

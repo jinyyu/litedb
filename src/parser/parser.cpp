@@ -73,9 +73,6 @@ int parser_lex(PARSER_STYPE* yylval, PARSER_LTYPE* yylloc, Parser* parser) {
       {
         case BETWEEN:
         case IN_P:
-        case LIKE:
-        case ILIKE:
-        case SIMILAR:
           cur_token = NOT_LA;
           break;
       }
