@@ -633,6 +633,9 @@ void ScannerInit(Scanner* scanner, char* query, size_t queryLen) {
     scanner->scanBuf[queryLen] = scanner->scanBuf[queryLen + 1] = YY_END_OF_BUFFER_CHAR;
     scanner->flex = flex;
     scanner->scanBufLen = queryLen + 2;
+    scanner->have_lookahead = false;
+    scanner->lookahead_token = 0;
+
     scanner__scan_buffer(scanner->scanBuf, queryLen + 2, flex);
 }
 

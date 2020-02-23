@@ -18,6 +18,9 @@ struct Scanner {
   void* flex;
   int xcdepth;           //depth of nesting in slash-star comments
 
+  bool have_lookahead; /* is lookahead info valid? */
+  int lookahead_token;    /* one-token lookahead */
+
   std::vector<char> literalBuf;   //literalbuf is used to accumulate literal
   // values when multiple rules are needed to parse a single literal
 };

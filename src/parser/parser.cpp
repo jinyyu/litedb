@@ -34,9 +34,56 @@ List<Node>* Parser::Parse(char* query, size_t queryLen) {
 }
 
 int parser_lex(PARSER_STYPE* yylval, PARSER_LTYPE* yylloc, Parser* parser) {
-  int token = scanner_lex(yylval, yylloc, parser->scanner.flex);
-  return token;
+  int cur_token;
+  int next_token;
+  Scanner& scanner = parser->scanner;
 
+  /* Get next token --- we might already have it */
+  if (scanner.have_lookahead) {
+    cur_token = scanner.lookahead_token;
+    scanner.have_lookahead = false;
+  } else {
+    cur_token = scanner_lex(yylval, yylloc, parser->scanner.flex);
+  }
+
+  /*
+   * If this token isn't one that requires lookahead, just return it.  If it
+   * does, determine the token length.  (We could get that via strlen(), but
+   * since we have such a small set of possibilities, hardwiring seems
+   * feasible and more efficient.)
+   */
+  switch (cur_token) {
+    case NOT: {
+      break;
+    }
+    default: {
+      return cur_token;
+    }
+  }
+
+  next_token = scanner_lex(yylval, yylloc, parser->scanner.flex);
+  scanner.lookahead_token = next_token;
+  scanner.have_lookahead = true;
+
+  switch (cur_token)
+  {
+    case NOT:
+      /* Replace NOT by NOT_LA if it's followed by BETWEEN, IN, etc */
+      switch (next_token)
+      {
+        case BETWEEN:
+        case IN_P:
+        case LIKE:
+        case ILIKE:
+        case SIMILAR:
+          cur_token = NOT_LA;
+          break;
+      }
+      break;
+      break;
+  }
+
+  return cur_token;
 }
 
 void parser_error(PARSER_LTYPE*, Parser* parser, const char* msg) {
