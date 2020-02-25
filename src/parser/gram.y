@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <litedb/parser/parser.h>
 #include <litedb/nodes/parsenodes.h>
+#include <litedb/nodes/execnodes.h>
 #include <litedb/nodes/value.h>
 #include "gram.hpp"
 
@@ -75,7 +76,7 @@ using namespace db;
 
         FALSE_P FROM
 
-        IGNORE IF_P INT_P INTEGER
+        IGNORE IF_P INT_P INTEGER IS ISNULL
 
         NOT NULL_P
 
@@ -430,35 +431,59 @@ a_expr:
         }
     | a_expr IS NULL_P	%prec IS
         {
-            $$ = NULL;
+			NullTest *n = makeNode(NullTest);
+			n->arg = (Expr *) $1;
+			n->nulltesttype = IS_NULL;
+			$$ = (Node *)n;
         }
     | a_expr ISNULL
         {
-            $$ = NULL;
+			NullTest *n = makeNode(NullTest);
+			n->arg = (Expr *) $1;
+			n->nulltesttype = IS_NULL;
+			$$ = (Node *)n;
         }
     | a_expr IS NOT NULL_P	%prec IS
         {
-            $$ = NULL;
+			NullTest *n = makeNode(NullTest);
+			n->arg = (Expr *) $1;
+			n->nulltesttype = IS_NOT_NULL;
+			$$ = (Node *)n;
         }
     | a_expr NOTNULL
         {
-            $$ = NULL;
+			NullTest *n = makeNode(NullTest);
+			n->arg = (Expr *) $1;
+			n->nulltesttype = IS_NOT_NULL;
+			$$ = (Node *)n;
         }
     | a_expr IS TRUE_P %prec IS
         {
-            $$ = NULL;
+			BooleanTest *b = makeNode(BooleanTest);
+			b->arg = (Expr *) $1;
+			b->booltesttype = IS_TRUE;
+			$$ = (Node *)b;
         }
     | a_expr IS NOT TRUE_P %prec IS
         {
-            $$ = NULL;
+			BooleanTest *b = makeNode(BooleanTest);
+			b->arg = (Expr *) $1;
+			b->booltesttype = IS_NOT_TRUE;
+			$$ = (Node *)b;
         }
     | a_expr IS FALSE_P	%prec IS
         {
-            $$ = NULL;
+			BooleanTest *b = makeNode(BooleanTest);
+			b->arg = (Expr *) $1;
+			b->booltesttype = IS_FALSE;
+			$$ = (Node *)b;
         }
     | a_expr IS NOT FALSE_P	%prec IS
         {
-            $$ = NULL;
+			BooleanTest *b = makeNode(BooleanTest);
+			b->arg = (Expr *) $1;
+			b->booltesttype = IS_NOT_FALSE;
+			$$ = (Node *)b;
         }
     | a_expr BETWEEN b_expr AND a_expr %prec BETWEEN
         {
@@ -649,6 +674,8 @@ unreserved_keyword:
     | ROLLBACK
     | TEMP
     | TEMPORARY
+    | ISNULL
+    | TEXT
     ;
 %%
 namespace db

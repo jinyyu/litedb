@@ -33,6 +33,10 @@ enum NodeTag {
   T_Query,
   T_RangeTblEntry,
   T_RangeTblRef,
+
+  T_NullTest,
+  T_BooleanTest,
+
   T_PlannedStmt,
 };
 
