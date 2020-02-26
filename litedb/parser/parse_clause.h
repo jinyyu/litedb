@@ -4,7 +4,7 @@
 
 namespace db {
 
-void TransformFromClause(ParseState* pstate, List<Node>* fromClause);
+void TransformFromClause(ParseState* pstate, List* fromClause);
 
 }
 

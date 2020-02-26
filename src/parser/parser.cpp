@@ -22,7 +22,7 @@ Parser::~Parser() {
   ScannerFinish(&scanner);
 }
 
-List<Node>* Parser::Parse(char* query, size_t queryLen) {
+List* Parser::Parse(char* query, size_t queryLen) {
   Parser* parser = new Parser(query, queryLen);
   int result = parser_parse(parser);
   ScannerFinish(&parser->scanner);

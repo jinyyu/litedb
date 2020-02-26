@@ -27,10 +27,10 @@ struct Scanner {
 
 struct Parser : Object {
   ~Parser() final;
-  static List<Node>* Parse(char* query, size_t queryLen);
+  static List* Parse(char* query, size_t queryLen);
 
   Scanner scanner;
-  List<Node>* nodes;
+  List* nodes;
  private:
   explicit Parser(char* query, size_t queryLen);
 };

@@ -13,22 +13,23 @@ namespace db {
 
 thread_local Session* CurSession = nullptr;
 
-static List<Node>* AnalyzeAndRewrite(Node* parseTrees, const char* src);
-static List<Node>* PlanQueries(List<Node>* queryTrees);
+static List* AnalyzeAndRewrite(Node* parseTrees, const char* src);
+static List* PlanQueries(List* queryTrees);
 
-List<Node>* AnalyzeAndRewrite(Node* parseTrees, const char* src) {
+List* AnalyzeAndRewrite(Node* parseTrees, const char* src) {
   Query* query = ParseAnalyze(parseTrees, src);
 
-  List<Node>* ret = new List<Node>();
-  ret->Append((Node*) query);
+  List* ret = NULL;
+  ret = lappend(ret, (Node*) query);
   return ret;
 }
 
-List<Node>* PlanQueries(List<Node>* queryTrees) {
-  List<Node>* ret = new List<Node>();
+List* PlanQueries(List* queryTrees) {
+  List* ret = NULL;
+  ListCell* cell;
 
-  for (Node* node: queryTrees->list) {
-    Query* query = (Query*) node;
+  foreach(cell, queryTrees) {
+    Query* query = (Query*) lfirst(cell);
     assert(query->type == T_Query);
 
     PlannedStmt* stmt;
@@ -37,7 +38,7 @@ List<Node>* PlanQueries(List<Node>* queryTrees) {
       stmt = makeNode(PlannedStmt);
       stmt->commandType = CMD_CMD_UTILITY;
       stmt->utilityStmt = query->utilityStmt;
-      ret->Append((Node*) stmt);
+      ret = lappend(ret, (Node*) stmt);
     }
   }
   return ret;
@@ -284,15 +285,17 @@ void Session::SendCommand(char c, const char* command, int len) {
 }
 
 void Session::ExecSimpleQuery(char* queryString, size_t queryLen) {
-  List<Node>* parseTrees = Parser::Parse(queryString, queryLen);
+  List* parseTrees = Parser::Parse(queryString, queryLen);
 
   if (parseTrees) {
 
     CurrentTransaction = CatalogDB->Begin();
+    ListCell* cell;
 
-    for (Node* parseTree : parseTrees->list) {
-      List<Node>* queryTree = AnalyzeAndRewrite(parseTree, queryString);
-      List<Node>* planTree = PlanQueries(queryTree);
+    foreach(cell, parseTrees) {
+      Node* parseTree = (Node*) lfirst(cell);
+      List* queryTree = AnalyzeAndRewrite(parseTree, queryString);
+      List* planTree = PlanQueries(queryTree);
 
       Portal portal(this, planTree);
       portal.Start();

@@ -42,6 +42,7 @@ set(utils_src
         utils/compare.cpp
         utils/env.cpp
         utils/elog.cpp
+        utils/list.cpp
         utils/misc.cpp
         utils/portal.cpp
         utils/pq.cpp

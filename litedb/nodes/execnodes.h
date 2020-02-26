@@ -2,6 +2,7 @@
 #define LITEDB_NODES_EXECNODES_H_
 #include <litedb/int.h>
 #include <litedb/nodes/nodes.h>
+#include <litedb/utils/list.h>
 
 namespace db {
 
@@ -33,6 +34,20 @@ struct BooleanTest {
   Expr* arg;                    /* input expression */
   BoolTestType booltesttype;    /* test type */
 };
+
+enum BoolExprType {
+  AND_EXPR,
+  OR_EXPR,
+  NOT_EXPR
+};
+
+struct BoolExpr {
+  Expr xpr;
+  BoolExprType boolop;
+  List* args;            /* arguments to this expression */
+};
+
+
 
 struct IndexInfo {
   int ii_NumIndexKeyAttrs;    /* number of key columns in index */

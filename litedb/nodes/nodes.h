@@ -16,6 +16,9 @@ enum NodeTag {
   T_String,
   T_Null,
 
+  T_List,
+  T_IntList,
+
   T_A_Expr,
   T_A_Const,
   T_ColumnRef,
@@ -36,6 +39,7 @@ enum NodeTag {
 
   T_NullTest,
   T_BooleanTest,
+  T_BoolExpr,
 
   T_PlannedStmt,
 };

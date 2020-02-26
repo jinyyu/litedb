@@ -11,7 +11,7 @@ namespace db {
 
 typedef rapidjson::Value (* NodeDumpFunc)(Node* node, rapidjson::Document& doc);
 static rapidjson::Value dumpNode(Node* node, rapidjson::Document& doc);
-static rapidjson::Value dumpArray(List<Node>* nodeList, rapidjson::Document& doc);
+static rapidjson::Value dumpArray(List* nodeList, rapidjson::Document& doc);
 static rapidjson::Value dumpCreateTableStmt(CreateTableStmt* node, rapidjson::Document& doc);
 static rapidjson::Value dumpTypename(Typename* node, rapidjson::Document& doc);
 static rapidjson::Value dumpColumnDef(ColumnDef* node, rapidjson::Document& doc);
@@ -22,6 +22,8 @@ static rapidjson::Value dumpSelectStmt(SelectStmt* stmt, rapidjson::Document& do
 static rapidjson::Value dumpResTarget(ResTarget* node, rapidjson::Document& doc);
 static rapidjson::Value dumpRangeVar(RangeVar* node, rapidjson::Document& doc);
 static rapidjson::Value dumpA_Star(RangeVar* node, rapidjson::Document& doc);
+static rapidjson::Value dumpColumnRef(ColumnRef* node, rapidjson::Document& doc);
+static rapidjson::Value dumpA_Expr(A_Expr* node, rapidjson::Document& doc);
 
 static const char* ConstraintTypeStr(ConstraintType type);
 static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName);
@@ -58,6 +60,12 @@ static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName) {
       name = "Value";
       break;
     }
+    case T_List:
+    case T_IntList: {
+      func = (NodeDumpFunc) dumpArray;
+      name = "list";
+      break;
+    }
     case T_TableConstraint: {
       func = (NodeDumpFunc) dumpTableConstraint;
       name = "TableConstraint";
@@ -78,9 +86,22 @@ static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName) {
       name = "RangeVar";
       break;
     }
-    case T_A_Star:func = (NodeDumpFunc) dumpA_Star;
+    case T_A_Star: {
+      func = (NodeDumpFunc) dumpA_Star;
       name = "A_Star";
       break;
+    }
+
+    case T_ColumnRef: {
+      func = (NodeDumpFunc) dumpColumnRef;
+      name = "ColumnRef";
+      break;
+    }
+    case T_A_Expr: {
+      func = (NodeDumpFunc) dumpA_Expr;
+      name = "A_Expr";
+      break;
+    }
     default: {
       elog(INFO, "not impl tag type %d", type);
       name = "Invalid";
@@ -273,16 +294,50 @@ rapidjson::Value dumpA_Star(RangeVar* node, rapidjson::Document& doc) {
   return value;
 }
 
+rapidjson::Value dumpColumnRef(ColumnRef* node, rapidjson::Document& doc) {
+  rapidjson::Value array = dumpArray(node->fields, doc);
+  rapidjson::Value value(rapidjson::kObjectType);
+  value.AddMember("fields", array, doc.GetAllocator());
+  return value;
+}
+
+rapidjson::Value dumpA_Expr(A_Expr* node, rapidjson::Document& doc) {
+  rapidjson::Value value(rapidjson::kObjectType);
+  value.AddMember("kind", rapidjson::Value(node->kind), doc.GetAllocator());
+  value.AddMember("name", rapidjson::Value(node->name, doc.GetAllocator()), doc.GetAllocator());
+  if (node->lexpr) {
+    value.AddMember("lexpr", dumpNode(node->lexpr, doc), doc.GetAllocator());
+  }
+  if (node->rexpr) {
+    value.AddMember("rexpr", dumpNode(node->rexpr, doc), doc.GetAllocator());
+  }
+  return value;
+}
+
 rapidjson::Value dumpNode(Node* node, rapidjson::Document& doc) {
   NodeDumpFunc nodeDumpFunc = GetNodeDumpFunction(node->type, nullptr);
   return nodeDumpFunc(node, doc);
 }
 
-rapidjson::Value dumpArray(List<Node>* nodeList, rapidjson::Document& doc) {
+rapidjson::Value dumpArray(List* nodeList, rapidjson::Document& doc) {
   rapidjson::Value array(rapidjson::kArrayType);
-  for (Node* node: nodeList->list) {
-    auto value = dumpNode(node, doc);
-    array.PushBack(value, doc.GetAllocator());
+  if (nodeList->type == T_List) {
+    ListCell* cell;
+    foreach (cell, nodeList) {
+      Node* node = (Node*) lfirst(cell);
+      auto value = dumpNode(node, doc);
+      array.PushBack(value, doc.GetAllocator());
+    }
+
+  } else if (nodeList->type == T_IntList) {
+    ListCell* cell;
+    foreach (cell, nodeList) {
+      int v = lfirst_int(cell);
+      rapidjson::Value value(v);
+      array.PushBack(value, doc.GetAllocator());
+    }
+  } else {
+    elog(ERROR, "invalid type %d", nodeList->type);
   }
   return array;
 }

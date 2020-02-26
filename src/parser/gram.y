@@ -8,13 +8,14 @@
 
 #define YYERROR_VERBOSE
 
-
-
 namespace db {
 
 static Node* makeIntConst(int i);
 static Node* makeStringConst(char* str);
 static Node* makeFloatConst(char* str);
+static Node* makeAndExpr(Node *lexpr, Node *rexpr);
+static Node* makeOrExpr(Node *lexpr, Node *rexpr);
+static Node *makeNotExpr(Node *expr);
 
 }
 
@@ -37,7 +38,7 @@ using namespace db;
     char*                str;
     const char*          keyword;
     db::Node*            node;
-    db::List<db::Node>*  list;
+    db::List*            list;
     db::ResTarget*       target;
     db::RangeVar*        range;
     db::Typename*        typnam;
@@ -143,25 +144,18 @@ stmtblock:
 stmtmulti:
     stmtmulti ';' stmt
         {
-            if (!$1 && !$3) {
-                $$ = nullptr;
-            } else if ($1 && $3) {
-                $1->Append($3);
-                $$ = $1;
-            } else if ($1) {
-                assert(!$3);
-                $$ = $1;
+            if ($3 != NULL) {
+                $$ = lappend($1, $3);
             } else {
-                assert(!$1);
-                $$ = new List<Node>($3);
+                 $$ = $1;
             }
 		}
 	| stmt
 		{
 		    if ($1) {
-		        $$ = new List<Node>($1);
+		        $$ = list_make1($1);
 		    } else {
-		        $$ = nullptr;
+		        $$ = NULL;
 		    }
 	    }
 	;
@@ -201,12 +195,11 @@ OptTemp:
 column_def_list:
     column_def_list ',' column_def
         {
-            $1->Append($3);
-            $$ = $1;
+            $$ = lappend($1, $3);
         }
     | column_def
         {
-            $$ = new List<Node>($1);
+            $$ = list_make1($1);
         }
     ;
 
@@ -240,12 +233,11 @@ column_def:
 column_constraint_list:
     column_constraint_list column_constraint
         {
-            $1->Append($2);
-            $$ = $1;
+            $$ = lappend($1, $2);
         }
     | column_constraint
         {
-            $$ = new List<Node>($1);
+            $$ = list_make1($1);
         }
     ;
 
@@ -291,11 +283,11 @@ name:
 table_constraint:
     table_constraint ','  constraint
         {
-            $1->Append($3);
+            $$ = lappend($1, $3);
         }
     | constraint
         {
-            $$ = new List<Node>($1);
+            $$ = list_make1($1);
         }
     ;
 
@@ -326,12 +318,11 @@ constraint:
 column_list:
     column_list ',' name
         {
-            $1->Append((Node*) makeString($3));
-            $$ = $1;
+            $$ = lappend($1, (Node*) makeString($3));
         }
     | name
         {
-            $$ = new List<Node>((Node*) makeString($1));
+            $$ = list_make1((Node*) makeString($1));
         }
     ;
 
@@ -415,19 +406,19 @@ a_expr:
         }
     | a_expr AND a_expr
         {
-            $$ = NULL;
+            $$ = makeAndExpr($1, $3);
         }
     | a_expr OR a_expr
         {
-            $$ = NULL;
+            $$ = makeOrExpr($1, $3);
         }
     | NOT a_expr
         {
-            $$ = NULL;
+            $$ = makeNotExpr($2);
         }
     | NOT_LA a_expr	%prec NOT
         {
-            $$ = NULL;
+            $$ = makeNotExpr($2);
         }
     | a_expr IS NULL_P	%prec IS
         {
@@ -487,11 +478,11 @@ a_expr:
         }
     | a_expr BETWEEN b_expr AND a_expr %prec BETWEEN
         {
-            $$ = NULL;
+            $$ = (Node*) makeA_Expr(AEXPR_BETWEEN, "BETWEEN" , $1, (Node *) list_make2($3, $5));
         }
     | a_expr NOT_LA BETWEEN b_expr AND a_expr %prec NOT_LA
         {
-            $$ = NULL;
+            $$ = (Node*) makeA_Expr(AEXPR_NOT_BETWEEN, "NOT BETWEEN" , $1, (Node *) list_make2($4, $6));
         }
     ;
 
@@ -557,8 +548,7 @@ columnref:
     name
         {
             ColumnRef* ref = makeNode(ColumnRef);
-            ref->fields = new List<Node>();
-            ref->fields->Append((Node*) makeString($1));
+            ref->fields= list_make1((Node*) makeString($1));
             $$ = (Node*) ref;
         }
     ;
@@ -591,12 +581,11 @@ distinct_clause:
 target_list:
     target_el
         {
-            $$ = new List<Node>((Node*)$1);
+            $$ = list_make1((Node*)$1);
         }
     | target_list ',' target_el
         {
-            $1->Append((Node*) $3);
-            $$ = $1;
+            $$ = lappend($1, (Node*) $3);
         }
     ;
 
@@ -635,12 +624,11 @@ from_clause:
 from_list:
     table_ref
         {
-            $$ = new List<Node>((Node*)$1);
+            $$ = list_make1((Node*)$1);
         }
     | from_list ',' table_ref
         {
-            $1->Append((Node*) $3);
-            $$ = $1;
+            $$ = lappend($1, (Node*) $3);
         }
 
 table_ref:
@@ -698,5 +686,50 @@ Node* makeFloatConst(char* str) {
   n->val = makeFloat(str);
   return (Node*) n;
 }
+
+Node* makeAndExpr(Node *lexpr, Node *rexpr)
+{
+	Node* lexp = lexpr;
+	/* Flatten "a AND b AND c ..." to a single BoolExpr on sight */
+	if (lexp->type ==  T_BoolExpr) {
+		BoolExpr *blexpr = (BoolExpr *) lexp;
+
+		if (blexpr->boolop == AND_EXPR)
+		{
+			blexpr->args = lappend(blexpr->args, rexpr);
+			return (Node *) blexpr;
+		}
+	}
+	BoolExpr* expr = makeNode(BoolExpr);
+	expr->boolop = AND_EXPR;
+	expr->args = list_make2(lexpr, rexpr);
+	return (Node*) expr;
+}
+
+Node* makeOrExpr(Node* lexpr, Node* rexpr) {
+	Node* lexp = lexpr;
+	/* Flatten "a OR b OR c ..." to a single BoolExpr on sight */
+	if (lexp->type ==  T_BoolExpr) {
+		BoolExpr *blexpr = (BoolExpr *) lexp;
+
+		if (blexpr->boolop == OR_EXPR)
+		{
+			blexpr->args = lappend(blexpr->args, rexpr);
+			return (Node *) blexpr;
+		}
+	}
+	BoolExpr* expr = makeNode(BoolExpr);
+	expr->boolop = OR_EXPR;
+	expr->args = list_make2(lexpr, rexpr);
+	return (Node*) expr;
+}
+
+Node* makeNotExpr(Node* expr) {
+    BoolExpr* bexpr = (BoolExpr*) makeNode(BoolExpr);
+    bexpr->boolop = NOT_EXPR;
+    bexpr->args = list_make1(expr);
+    return (Node*) bexpr;
+}
+
 
 }

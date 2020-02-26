@@ -19,7 +19,7 @@ struct ColumnDef {
   char* columnName;
   Typename* typeName;
   char* constraintName;
-  List<Node>* constraints;
+  List* constraints;
 };
 
 enum ConstraintType {
@@ -68,13 +68,13 @@ struct A_Const {
 
 struct ColumnRef {
   NodeTag type;
-  List<Node>* fields;    /* field names (Value strings) or A_Star */
+  List* fields;    /* field names (Value strings) or A_Star */
 };
 
 struct TableConstraint {
   NodeTag type;
   ConstraintType constraint;
-  List<Node>* columnList;
+  List* columnList;
   A_Expr* expr;
 };
 
@@ -82,16 +82,16 @@ struct CreateTableStmt {
   NodeTag type;
   bool temp;
   char* name;
-  List<Node>* columns;
-  List<Node>* table_constraints;
+  List* columns;
+  List* table_constraints;
 };
 
 struct SelectStmt {
   NodeTag type;
   bool distinct;
-  List<Node>* targetList;   /* the target list (of ResTarget) */
-  List<Node>* fromClause;   /* the FROM clause */
-  Node* whereClause;        /* WHERE qualification */
+  List* targetList;     /* the target list (of ResTarget) */
+  List* fromClause;     /* the FROM clause */
+  Node* whereClause;    /* WHERE qualification */
 };
 
 struct ResTarget {

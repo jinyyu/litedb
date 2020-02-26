@@ -65,12 +65,13 @@ RangeTblRef* TransformFromClauseItem(ParseState* pstate, Node* node, RangeTblEnt
 
 }
 
-void TransformFromClause(ParseState* pstate, List<Node>* fromClause) {
+void TransformFromClause(ParseState* pstate, List* fromClause) {
   if (!fromClause) {
     return;
   }
-
-  for (Node* node : fromClause->list) {
+  ListCell* cell;
+  foreach (cell, fromClause) {
+    Node* node = (Node*) lfirst(cell);
     RangeTblEntry* rte;
     int rtindex;
     RangeTblRef* rtr = TransformFromClauseItem(pstate, node, &rte, &rtindex);
