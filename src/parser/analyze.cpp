@@ -1,5 +1,6 @@
 #include <litedb/parser/analyze.h>
 #include <litedb/parser/parse_clause.h>
+#include <litedb/parser/parse_target.h>
 #include <litedb/utils/elog.h>
 #include <litedb/utils/env.h>
 namespace db {
@@ -47,7 +48,9 @@ Query* TransformSelectStmt(ParseState* pstate, SelectStmt* stmt) {
   query->commandType = CMD_SELECT;
 
   /* process the FROM clause */
-  db::TransformFromClause(pstate, stmt->fromClause);
+  TransformFromClause(pstate, stmt->fromClause);
+
+  query->targetList = TransformTargetList(pstate, stmt->targetList);
 
   return query;
 }

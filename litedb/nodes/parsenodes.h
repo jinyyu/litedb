@@ -123,6 +123,8 @@ struct Query {
   NodeTag type;
   CmdType commandType;    /* select|insert|update|delete|etc */
   Node* utilityStmt;      /* non-null if commandType == CMD_CMD_UTILITY */
+
+  List* targetList;        /* target list (of TargetEntry) */
 };
 
 typedef enum RTEKind {

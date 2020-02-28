@@ -66,9 +66,6 @@ RangeTblRef* TransformFromClauseItem(ParseState* pstate, Node* node, RangeTblEnt
 }
 
 void TransformFromClause(ParseState* pstate, List* fromClause) {
-  if (!fromClause) {
-    return;
-  }
   ListCell* cell;
   foreach (cell, fromClause) {
     Node* node = (Node*) lfirst(cell);
@@ -77,7 +74,7 @@ void TransformFromClause(ParseState* pstate, List* fromClause) {
     RangeTblRef* rtr = TransformFromClauseItem(pstate, node, &rte, &rtindex);
 
     CheckNameSpaceConflicts(pstate);
-    //pstate->joinlist.push_back(rtr);
+    pstate->joinlist.push_back(rtr);
   }
 }
 
