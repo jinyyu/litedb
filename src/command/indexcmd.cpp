@@ -34,7 +34,7 @@ void BuildIndices(TransactionPtr txn) {
 
   for (IndexRegisterInfo* info: IndexRegisterInfoList) {
     RelationPtr table = Relation::Create(txn, info->table);
-    RelationPtr index = Relation::OpenIndex(txn, info->index);
+    Relation* index = Relation::OpenIndex(txn, info->index);
 
     SysIndex sys_index;
     memset(&sys_index, 0, sizeof(sys_index));
@@ -48,7 +48,7 @@ void BuildIndices(TransactionPtr txn) {
 
     if (sys_index.indexrelid )
     SysIndex::CreateEntry(txn, sys_index);
-    IndexAmBuild(table, index, &info->info);
+    IndexAmBuild(table.get(), index, &info->info);
 
     SessionEnv->Free(info);
   }

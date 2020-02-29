@@ -46,7 +46,7 @@ TuplePtr SysClass::GetSysClass(TransactionPtr txn, const char* relname) {
   TuplePtr tuple;
   Name name;
 
-  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+  Relation* rel = Relation::OpenTable(txn, SysClassRelationId);
   ScanKey key;
   NameSetStr(&name, relname);
 
@@ -81,7 +81,7 @@ i64 SysClass::CreateEntry(TransactionPtr txn,
   SysClass entry;
   memset(&entry, 0, sizeof(entry));
 
-  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+  Relation* rel = Relation::OpenTable(txn, SysClassRelationId);
 
   if (relid > 0) {
     entry.relid = relid;

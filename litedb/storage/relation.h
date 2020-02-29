@@ -16,9 +16,9 @@ class Relation {
  public:
   static RelationPtr Create(TransactionPtr txn, i64 id);
 
-  static RelationPtr OpenTable(TransactionPtr txn, i64 id);
+  static Relation* OpenTable(TransactionPtr txn, i64 id);
 
-  static RelationPtr OpenIndex(TransactionPtr txn, i64 id);
+  static Relation* OpenIndex(TransactionPtr txn, i64 id);
 
   ~Relation() = default;
 
@@ -44,14 +44,14 @@ class Relation {
 
 class TableScanDesc;
 typedef std::shared_ptr<TableScanDesc> TableScanDescPtr;
-TableScanDescPtr TableBeginScan(RelationPtr rel, ScanKey* scanKey, int nkeys);
+TableScanDescPtr TableBeginScan(Relation* rel, ScanKey* scanKey, int nkeys);
 TuplePtr TableGetNext(TableScanDescPtr scan);
 void TableEndScan(TableScanDescPtr& scan);
 
 class SysScanDesc;
 typedef std::shared_ptr<SysScanDesc> SysScanDescPtr;
 SysScanDescPtr SysTableBeginScan(TransactionPtr txn,
-                                 RelationPtr tableRel,
+                                 Relation* tableRel,
                                  i64 indexId,
                                  ScanKey* scanKey, int nkeys);
 TuplePtr SysTableGetNext(SysScanDescPtr scan);

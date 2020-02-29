@@ -30,7 +30,7 @@ class TableScanDesc {
     }
   }
 
-  RelationPtr rel;    /* the relation of table */
+  Relation* rel;    /* the relation of table */
   Cursor* cursor;     /* the scan cursor */
   ScanKey* scanKey;   /* scan key */
   int nkeys;          /* number of scan key */
@@ -53,8 +53,8 @@ RelationPtr Relation::Create(TransactionPtr txn, i64 id) {
   return rel;
 }
 
-RelationPtr Relation::OpenTable(TransactionPtr txn, i64 id) {
-  RelationPtr rel;
+Relation* Relation::OpenTable(TransactionPtr txn, i64 id) {
+  Relation* rel;
   rel = txn->GetOpenRelation(id);
   if (rel) {
     return rel;
@@ -66,7 +66,7 @@ RelationPtr Relation::OpenTable(TransactionPtr txn, i64 id) {
   if (!mdb->SetCompare()) {
     mdb->SetCompare(u64_cmp);
   }
-  rel = std::make_shared<Relation>(table);
+  rel = new Relation(table);
   rel->rd_rel.relid = id;
   rel->rd_rel.relkind = RELKIND_RELATION;
 
@@ -82,8 +82,8 @@ RelationPtr Relation::OpenTable(TransactionPtr txn, i64 id) {
   return rel;
 }
 
-RelationPtr Relation::OpenIndex(TransactionPtr txn, i64 id) {
-  RelationPtr rel;
+Relation* Relation::OpenIndex(TransactionPtr txn, i64 id) {
+  Relation* rel;
   rel = txn->GetOpenRelation(id);
   if (rel) {
     return rel;
@@ -95,7 +95,7 @@ RelationPtr Relation::OpenIndex(TransactionPtr txn, i64 id) {
   if (!mdb->SetCompare()) {
     mdb->SetCompare(index_cmp);
   }
-  rel = std::make_shared<Relation>(table);
+  rel = new Relation(table);
   rel->rd_rel.relid = id;
   rel->rd_rel.relkind = RELKIND_INDEX;
 
@@ -189,7 +189,7 @@ void RowidScanTableBeginScan(TableScanDescPtr desc) {
   }
 }
 
-TableScanDescPtr TableBeginScan(RelationPtr rel, ScanKey* scanKey, int nkeys) {
+TableScanDescPtr TableBeginScan(Relation* rel, ScanKey* scanKey, int nkeys) {
   assert(rel->rd_rel.relkind == RELKIND_RELATION);
   TableScanDescPtr desc(new TableScanDesc());
   desc->rel = rel;
@@ -337,14 +337,14 @@ void TableEndScan(TableScanDescPtr& scan) {
 
 class SysScanDesc {
  public:
-  RelationPtr tableRel;          /* catalog being scanned */
-  RelationPtr indexRel;          /* NULL if doing table scan */
+  Relation* tableRel;          /* catalog being scanned */
+  Relation* indexRel;          /* NULL if doing table scan */
   TableScanDescPtr relScan;       /* only valid in storage-scan case */
   IndexScanDescPtr indexScan;     /* only valid in index-scan case */
 };
 
 SysScanDescPtr SysTableBeginScan(TransactionPtr txn,
-                                 RelationPtr tableRel,
+                                 Relation* tableRel,
                                  i64 indexId,
                                  ScanKey* scanKey, int nkeys) {
   SysScanDescPtr scan(new SysScanDesc());

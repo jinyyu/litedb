@@ -53,7 +53,7 @@ i64 SysAttribute::CreateEntry(TransactionPtr txn,
   entry.attnum = attnum;
 
   TuplePtr tuple = SysAttribute::ToTuple(entry);
-  RelationPtr rel = Relation::OpenTable(txn, SysAttributeRelationId);
+  Relation* rel = Relation::OpenTable(txn, SysAttributeRelationId);
   return rel->TableAppend(*tuple);
 }
 

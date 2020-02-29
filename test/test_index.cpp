@@ -12,9 +12,9 @@ static std::string test_db_dir = "test_index_dir";
 
 TEST(relation, index_scan) {
   TransactionPtr txn = CatalogDB->Begin();
-  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+  Relation* rel = Relation::OpenTable(txn, SysClassRelationId);
 
-  RelationPtr index = Relation::OpenIndex(txn, 1227);
+  Relation* index = Relation::OpenIndex(txn, 1227);
 
   IndexInfo info;
   memset(&info, 0, sizeof(info));
@@ -49,7 +49,7 @@ TEST(relation, index_scan) {
 
 TEST(relation, sys_scan) {
   TransactionPtr txn = CatalogDB->Begin();
-  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+  Relation* rel = Relation::OpenTable(txn, SysClassRelationId);
 
   ScanKey key;
   i64 id = SysClassRelationId;

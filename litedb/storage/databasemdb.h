@@ -54,7 +54,7 @@ class TransactionMdb : public Transaction {
 
   void Abort() final;
 
-  RelationPtr GetOpenRelation(i64 relid) final {
+  Relation* GetOpenRelation(i64 relid) final {
     auto it = openRel_.find(relid);
     if (it == openRel_.end()) {
       return nullptr;
@@ -63,14 +63,12 @@ class TransactionMdb : public Transaction {
     }
   }
 
-  void InsertOpenRelation(i64 relid, RelationPtr rel) final {
-    openRel_[relid] = rel;
-  }
+  void InsertOpenRelation(i64 relid, Relation* rel) final;
 
   DatabaseMdb* mdb_;
   MDB_txn* txn_;
   std::unordered_map<std::string, KVStore*> tables_;
-  std::unordered_map<i64, RelationPtr> openRel_;
+  std::unordered_map<i64, Relation*> openRel_;
 };
 
 class KVStoreMdb : public KVStore {
