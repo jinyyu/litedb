@@ -2,6 +2,8 @@
 #include <litedb/catalog/sys_class.h>
 #include <litedb/catalog/sys_attribute.h>
 #include <litedb/storage/relation.h>
+#include <litedb/storage/index.h>
+
 namespace db {
 
 TuplePtr SysIndex::ToTuple(const SysIndex& self) {
@@ -79,7 +81,7 @@ bool SysIndex::GetIndexTuple(TransactionPtr txn, i64 indexrelid, SysIndex& index
 }
 
 void SysIndex::CreateEntry(TransactionPtr txn, const SysIndex& self) {
-  Relation* rel = Relation::OpenTable(txn, SysIndexRelationId);
+  RelationPtr rel = Relation::Create(txn, SysIndexRelationId);
   TuplePtr tuple = SysIndex::ToTuple(self);
   rel->TableInsert(self.indexrelid, *tuple);
 }

@@ -31,7 +31,6 @@ void IndexRegister(i64 table, i64 index, bool primaryKey, IndexInfo* indexInfo) 
 }
 
 void BuildIndices(TransactionPtr txn) {
-
   for (IndexRegisterInfo* info: IndexRegisterInfoList) {
     RelationPtr table = Relation::Create(txn, info->table);
     Relation* index = Relation::OpenIndex(txn, info->index);

@@ -81,7 +81,7 @@ i64 SysClass::CreateEntry(TransactionPtr txn,
   SysClass entry;
   memset(&entry, 0, sizeof(entry));
 
-  Relation* rel = Relation::OpenTable(txn, SysClassRelationId);
+  RelationPtr rel = Relation::Create(txn, SysClassRelationId);
 
   if (relid > 0) {
     entry.relid = relid;

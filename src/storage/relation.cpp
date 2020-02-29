@@ -67,6 +67,7 @@ Relation* Relation::OpenTable(TransactionPtr txn, i64 id) {
     mdb->SetCompare(u64_cmp);
   }
   rel = new Relation(table);
+  rel->relid = id;
   rel->rd_rel.relid = id;
   rel->rd_rel.relkind = RELKIND_RELATION;
 
@@ -82,7 +83,9 @@ Relation* Relation::OpenTable(TransactionPtr txn, i64 id) {
     SysIndex::GetIndexList(txn, id, rel->rd_index); //获取Index列表
   }
 
-  //SysAttribute::GetAttributeList(txn, id, rel->rd_rel.relnatts, rel->rd_attr); //sys_attribute加载该表信息
+  if (rel->rd_rel.relhasindex && rel->rd_index.empty()) {
+    SysAttribute::GetAttributeList(txn, id, rel->rd_rel.relnatts, rel->rd_attr); //sys_attribute加载该表信息
+  }
   return rel;
 }
 
@@ -361,12 +364,30 @@ SysScanDescPtr SysTableBeginScan(TransactionPtr txn,
   }
 
   if (indexId) {
-    scan->indexRel = Relation::OpenIndex(txn, indexId);
-    SysIndex indexTup;
-    if (!SysIndex::GetIndexTuple(txn, indexId, indexTup)) {
-      elog(ERROR, "no such index %lu", indexId);
+    if (!tableRel->rd_rel.relhasindex) {
+      elog(ERROR, "relation has not index %d", tableRel->relid);
     }
 
+    SysIndex indexTup;
+
+    if (tableRel->rd_index.empty()) {
+      if (!SysIndex::GetIndexTuple(txn, indexId, indexTup)) {
+        elog(ERROR, "no such index %lu", indexId);
+      }
+    } else {
+      for (size_t i = 0; i < tableRel->rd_index.size(); ++i) {
+        SysIndex& sys_index = tableRel->rd_index[i];
+        if (sys_index.indexrelid == indexId) {
+          memcpy(&indexTup, &sys_index, sizeof(SysIndex));
+          break;
+        }
+
+      }
+    }
+
+    assert(indexTup.indrelid == tableRel->relid);
+
+    scan->indexRel = Relation::OpenIndex(txn, indexId);
     std::vector<ScanKey> indexKeys(nkeys);
 
     /* Change attribute numbers to be index column numbers. */

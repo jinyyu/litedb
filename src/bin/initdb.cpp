@@ -117,8 +117,6 @@ void build_sys_index(TransactionPtr txn) {
   fflush(stdout);
   BuildIndices(txn);
   fprintf(stdout, "ok\n");
-
-  BuildIndices(txn);
 }
 
 void InitCatalog() {
