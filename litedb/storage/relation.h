@@ -14,18 +14,18 @@ typedef std::shared_ptr<Relation> RelationPtr;
 
 class Relation {
  public:
-  static RelationPtr Create(TransactionPtr tran, u64 id);
+  static RelationPtr Create(TransactionPtr txn, i64 id);
 
-  static RelationPtr OpenTable(TransactionPtr tran, u64 id);
+  static RelationPtr OpenTable(TransactionPtr txn, i64 id);
 
-  static RelationPtr OpenIndex(TransactionPtr tran, u64 id);
+  static RelationPtr OpenIndex(TransactionPtr txn, i64 id);
 
   ~Relation() = default;
 
   /*
    * insert a tuple
    */
-  void TableInsert(u64 id, const Tuple& tuple);
+  void TableInsert(i64 id, const Tuple& tuple);
 
   /*
    * append a tuple

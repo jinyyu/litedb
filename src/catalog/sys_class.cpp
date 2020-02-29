@@ -29,7 +29,7 @@ void SysClass::FromTuple(const Tuple& tuple, SysClass& self) {
 
 bool SysClass::GetCatalog(TransactionPtr txn, i64 relid, SysClass* self) {
   RelationPtr sys_class = Relation::Create(txn, SysClassRelationId);
-  Slice key((const char*) &relid, sizeof(relid));
+  Slice key(&relid);
   Slice data;
   if (!sys_class->kvstore->Get(key, data)) {
     return false;

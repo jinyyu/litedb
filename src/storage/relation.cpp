@@ -40,9 +40,9 @@ class TableScanDesc {
   TuplePtr lastTuple;
 };
 
-RelationPtr Relation::Create(TransactionPtr tran, u64 id) {
+RelationPtr Relation::Create(TransactionPtr txn, i64 id) {
   std::string name = std::to_string(id);
-  KVStore* table = tran->Open(name, MDB_CREATE);
+  KVStore* table = txn->Open(name, MDB_CREATE);
   KVStoreMdb* mdb = static_cast<KVStoreMdb*>(table);
   if (!mdb->SetCompare()) {
     mdb->SetCompare(u64_cmp);
@@ -53,37 +53,54 @@ RelationPtr Relation::Create(TransactionPtr tran, u64 id) {
   return rel;
 }
 
-RelationPtr Relation::OpenTable(TransactionPtr tran, u64 id) {
+RelationPtr Relation::OpenTable(TransactionPtr txn, i64 id) {
+  RelationPtr rel;
+  rel = txn->GetOpenRelation(id);
+  if (rel) {
+    return rel;
+  }
+
   std::string name = std::to_string(id);
-  KVStore* table = tran->Open(name, 0);
+  KVStore* table = txn->Open(name, 0);
   KVStoreMdb* mdb = static_cast<KVStoreMdb*>(table);
   if (!mdb->SetCompare()) {
     mdb->SetCompare(u64_cmp);
   }
-  RelationPtr rel(new Relation(table));
+  rel = std::make_shared<Relation>(table);
   rel->rd_rel.relid = id;
   rel->rd_rel.relkind = RELKIND_RELATION;
 
-  if (!SysClass::GetCatalog(tran, id, &rel->rd_rel)) {
+  txn->InsertOpenRelation(id, rel);
+
+  if (!SysClass::GetCatalog(txn, id, &rel->rd_rel)) {
     return rel;
   }
 
   if (rel->rd_rel.relhasindex) {
-    SysIndex::GetIndexList(tran, id, rel->rd_index);
+    SysIndex::GetIndexList(txn, id, rel->rd_index);
   }
   return rel;
 }
 
-RelationPtr Relation::OpenIndex(TransactionPtr tran, u64 id) {
+RelationPtr Relation::OpenIndex(TransactionPtr txn, i64 id) {
+  RelationPtr rel;
+  rel = txn->GetOpenRelation(id);
+  if (rel) {
+    return rel;
+  }
+
   std::string name = std::to_string(id);
-  KVStore* table = tran->Open(name, MDB_CREATE | MDB_DUPSORT);
+  KVStore* table = txn->Open(name, MDB_CREATE | MDB_DUPSORT);
   KVStoreMdb* mdb = static_cast<KVStoreMdb*>(table);
   if (!mdb->SetCompare()) {
     mdb->SetCompare(index_cmp);
   }
-  RelationPtr rel(new Relation(table));
+  rel = std::make_shared<Relation>(table);
   rel->rd_rel.relid = id;
   rel->rd_rel.relkind = RELKIND_INDEX;
+
+  txn->InsertOpenRelation(id, rel);
+
   return rel;
 }
 
@@ -92,9 +109,9 @@ Relation::Relation(KVStore* table) :
   memset(&rd_rel, 0, sizeof(rd_rel));
 }
 
-void Relation::TableInsert(u64 id, const Tuple& tuple) {
+void Relation::TableInsert(i64 id, const Tuple& tuple) {
   assert(rd_rel.relkind == RELKIND_RELATION);
-  Slice key((char*) &id, sizeof(u64));
+  Slice key(&id);
   Slice value;
   tuple.GetTupleData(value);
   kvstore->Put(key, value, 0);

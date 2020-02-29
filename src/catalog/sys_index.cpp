@@ -50,7 +50,7 @@ void SysIndex::GetIndexList(TransactionPtr txn, i64 indrelid, std::vector<SysInd
                 Anum_sys_index_indrelid,
                 BTEqualStrategyNumber,
                 INT8OID,
-                Slice((char*) &indrelid, sizeof(indrelid)));
+                &indrelid);
   TableScanDescPtr scan = TableBeginScan(tbl, &key, 1);
   TuplePtr tuple;
   while ((tuple = TableGetNext(scan)) != nullptr) {
@@ -67,7 +67,7 @@ void SysIndex::GetIndexList(TransactionPtr txn, i64 indrelid, std::vector<SysInd
 
 bool SysIndex::GetIndexTuple(TransactionPtr txn, i64 indexrelid, SysIndex& index) {
   RelationPtr tbl = Relation::Create(txn, SysIndexRelationId);
-  Slice key((char*) &indexrelid, sizeof(indexrelid));
+  Slice key(&indexrelid);
   Slice value;
   if (!tbl->kvstore->Get(key, value)) {
     return false;

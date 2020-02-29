@@ -142,7 +142,6 @@ void InitCatalog() {
   build_sys_index(txn);
 
   txn->Commit();
-
   Database::Close(CatalogDB);
 }
 

@@ -100,7 +100,7 @@ class IndexScanDesc {
 
   void GetTableTuple() {
     assert(rowID);
-    Slice key((char*) &rowID, sizeof(rowID));
+    Slice key( &rowID);
     Slice value;
     bool ok = tableRel->kvstore->Get(key, value);
     if (!ok) {

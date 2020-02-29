@@ -53,7 +53,7 @@ TEST(relation, sys_scan) {
 
   ScanKey key;
   i64 id = SysClassRelationId;
-  ScanKey::Init(&key, Anum_sys_class_relid, BTEqualStrategyNumber, INT8OID, Slice((char*) &id, sizeof(id)));
+  ScanKey::Init(&key, Anum_sys_class_relid, BTEqualStrategyNumber, INT8OID, &id);
 
   SysScanDescPtr desc = SysTableBeginScan(txn, rel, 0, &key, 1);
   TuplePtr tuple;

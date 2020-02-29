@@ -32,6 +32,9 @@ class Database {
 
 };
 
+class Relation;
+typedef std::shared_ptr<Relation> RelationPtr;
+
 class Transaction {
  public:
 
@@ -45,6 +48,9 @@ class Transaction {
 
   //Abandon all the operations of the transaction instead of saving them
   virtual void Abort() = 0;
+
+  virtual RelationPtr GetOpenRelation(i64 relid) = 0;
+  virtual void InsertOpenRelation(i64 relid, RelationPtr rel) = 0;
 
 };
 
