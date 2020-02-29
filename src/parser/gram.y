@@ -551,6 +551,18 @@ columnref:
             ref->fields= list_make1((Node*) makeString($1));
             $$ = (Node*) ref;
         }
+    | name '.' name
+        {
+            ColumnRef* ref = makeNode(ColumnRef);
+            ref->fields= list_make2((Node*) makeString($1), (Node*) makeString($3));
+            $$ = (Node*) ref;
+        }
+    | name '.' '*'
+        {
+            ColumnRef* ref = makeNode(ColumnRef);
+            ref->fields= list_make2((Node*) makeString($1), (Node *) makeNode(A_Star));
+            $$ = (Node*) ref;
+        }
     ;
 
 AexprConst:

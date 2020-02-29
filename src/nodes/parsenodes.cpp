@@ -346,6 +346,7 @@ rapidjson::Value dumpQuery(Query* node, rapidjson::Document& doc) {
 
 rapidjson::Value dumpVar(Var* node, rapidjson::Document& doc) {
   rapidjson::Value value(rapidjson::kObjectType);
+  value.AddMember("varno", rapidjson::Value(node->varno), doc.GetAllocator());
   value.AddMember("varattno", rapidjson::Value(node->varattno), doc.GetAllocator());
   value.AddMember("vartype", rapidjson::Value(node->vartype), doc.GetAllocator());
   return value;
@@ -396,7 +397,7 @@ rapidjson::Value dumpArray(List* nodeList, rapidjson::Document& doc) {
   return array;
 }
 
-void DisplayParseNode(Node* node, const char* name) {
+void DisplayParseNode(Node* node) {
   assert(node);
 
   rapidjson::Document doc(rapidjson::kObjectType);
@@ -412,7 +413,7 @@ void DisplayParseNode(Node* node, const char* name) {
   writer.SetIndent(' ', 2);
   doc.Accept(writer);
   const char* out = buffer.GetString();
-  fprintf(stdout, "%s : %s\n", name, out);
+  fprintf(stdout, "%s\n", out);
 }
 
 A_Expr* makeA_Expr(A_Expr_Kind kind, const char* name, Node* lexpr, Node* rexpr) {

@@ -5,7 +5,12 @@
 
 namespace db {
 
-int RTERangeTablePosn(ParseState *pstate, RangeTblEntry *rte, int *sublevels_up);
+int RTERangeTablePosn(ParseState* pstate, RangeTblEntry* rte, int* sublevels_up);
+RangeTblEntry* refnameRangeTblEntry(ParseState* pstate,
+                                    const char* refname,
+                                    int* sublevels_up);
+
+Var* colNameToVar(ParseState* pstate, const char* colname);
 
 }
 

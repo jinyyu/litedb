@@ -49,11 +49,12 @@ struct BoolExpr {
 
 struct Var {
   Expr xpr;
+  int varno;          /* index of this var's relation in the range table */
   i16 varattno;       /* attribute number of this var, or zero for all attrs ("whole-row Var") */
   i32 vartype;        /* sys_type id for the type of this var */
 };
 
-Var* makeVar(i16 varattno, i32 vartype);
+Var* makeVar(int varno, i16 varattno, i32 vartype);
 
 struct TargetEntry {
   Expr xpr;

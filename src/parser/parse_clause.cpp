@@ -9,8 +9,10 @@ static void CheckNameSpaceConflicts(ParseState* pstate);
 
 void CheckNameSpaceConflicts(ParseState* pstate) {
   std::unordered_set<std::string> names;
+  ListCell* cell;
+  foreach(cell, pstate->rtable) {
+    RangeTblEntry* rte = (RangeTblEntry*) lfirst(cell);
 
-  for (RangeTblEntry* rte : pstate->rtable) {
     if (!rte->alias) {
       continue;
     }
@@ -37,7 +39,7 @@ RangeTblRef* TransformFromClauseItem(ParseState* pstate, Node* node, RangeTblEnt
       RangeTblRef* rtr = makeNode(RangeTblRef);
 
       /* assume new rte is at end */
-      int rtindex = static_cast<int>(pstate->rtable.size());
+      int rtindex = list_length(pstate->rtable);
 
       rte->relkind = sys_class.relkind;
       rte->rteKind = RTE_RELATION;
@@ -48,7 +50,7 @@ RangeTblRef* TransformFromClauseItem(ParseState* pstate, Node* node, RangeTblEnt
       } else {
         rte->alias = rv->relname;
       }
-      pstate->rtable.push_back(rte);
+      pstate->rtable = lappend(pstate->rtable, rte);
 
       rtr->rtindex = rtindex;
 
@@ -74,7 +76,7 @@ void TransformFromClause(ParseState* pstate, List* fromClause) {
     RangeTblRef* rtr = TransformFromClauseItem(pstate, node, &rte, &rtindex);
 
     CheckNameSpaceConflicts(pstate);
-    pstate->joinlist.push_back(rtr);
+    pstate->joinlist = lappend(pstate->joinlist, rtr);
   }
 }
 

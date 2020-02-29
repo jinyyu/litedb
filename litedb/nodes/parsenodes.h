@@ -158,6 +158,8 @@ struct ParseState : public Object {
       : Object(),
         parentParseState(nullptr),
         sourceText(nullptr),
+        rtable(nullptr),
+        joinlist(nullptr),
         p_next_resno(1) {
 
   }
@@ -165,13 +167,13 @@ struct ParseState : public Object {
 
   struct ParseState* parentParseState;    /* stack link */
   const char* sourceText;           /* source text, or NULL if not available */
-  std::list<RangeTblEntry*> rtable; /* range table so far */
-  std::list<RangeTblRef*> joinlist; /* join items so far */
+  List* rtable; /* range table so far */
+  List* joinlist; /* join items so far */
 
   i16 p_next_resno;
 };
 
-void DisplayParseNode(Node* node, const char* name);
+void DisplayParseNode(Node* node);
 
 };
 #endif //LITEDB_PARSER_NODES_H_

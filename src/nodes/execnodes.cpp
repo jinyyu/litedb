@@ -2,8 +2,9 @@
 
 namespace db {
 
-Var* makeVar(i16 varattno, i32 vartype) {
+Var* makeVar(int varno, i16 varattno, i32 vartype) {
   Var* var = makeNode(Var);
+  var->varno = varno;
   var->varattno = varattno;
   var->vartype = vartype;
   return var;
