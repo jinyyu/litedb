@@ -19,6 +19,8 @@ static List* PlanQueries(List* queryTrees);
 List* AnalyzeAndRewrite(Node* parseTrees, const char* src) {
   Query* query = ParseAnalyze(parseTrees, src);
 
+  DisplayParseNode((Node*) query, "Query tree");
+
   List* ret = NULL;
   ret = lappend(ret, (Node*) query);
   return ret;

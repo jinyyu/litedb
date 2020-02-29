@@ -6,7 +6,7 @@
 namespace db {
 
 Query* ParseAnalyze(Node* parseTree, const char* queryString) {
-  DisplayParseNode(parseTree);
+  DisplayParseNode(parseTree, "Parse Tree");
   Query* query;
   ParseState* pstate = new ParseState();
   pstate->sourceText = queryString;

@@ -171,7 +171,7 @@ struct ParseState : public Object {
   i16 p_next_resno;
 };
 
-void DisplayParseNode(Node* node);
+void DisplayParseNode(Node* node, const char* name);
 
 };
 #endif //LITEDB_PARSER_NODES_H_

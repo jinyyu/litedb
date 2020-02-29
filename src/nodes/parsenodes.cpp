@@ -6,6 +6,7 @@
 #include <rapidjson/prettywriter.h>
 #include <functional>
 #include <litedb/nodes/value.h>
+#include <litedb/nodes/execnodes.h>
 
 namespace db {
 
@@ -24,6 +25,9 @@ static rapidjson::Value dumpRangeVar(RangeVar* node, rapidjson::Document& doc);
 static rapidjson::Value dumpA_Star(RangeVar* node, rapidjson::Document& doc);
 static rapidjson::Value dumpColumnRef(ColumnRef* node, rapidjson::Document& doc);
 static rapidjson::Value dumpA_Expr(A_Expr* node, rapidjson::Document& doc);
+static rapidjson::Value dumpQuery(Query* node, rapidjson::Document& doc);
+static rapidjson::Value dumpVar(Var* node, rapidjson::Document& doc);
+static rapidjson::Value dumpTargetEntry(TargetEntry* node, rapidjson::Document& doc);
 
 static const char* ConstraintTypeStr(ConstraintType type);
 static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName);
@@ -100,6 +104,21 @@ static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName) {
     case T_A_Expr: {
       func = (NodeDumpFunc) dumpA_Expr;
       name = "A_Expr";
+      break;
+    }
+    case T_Query: {
+      func = (NodeDumpFunc) dumpQuery;
+      name = "Query";
+      break;
+    }
+    case T_Var: {
+      func = (NodeDumpFunc) dumpVar;
+      name = "Var";
+      break;
+    }
+    case T_TargetEntry: {
+      func = (NodeDumpFunc) dumpTargetEntry;
+      name = "TargetEntry";
       break;
     }
     default: {
@@ -314,9 +333,44 @@ rapidjson::Value dumpA_Expr(A_Expr* node, rapidjson::Document& doc) {
   return value;
 }
 
+rapidjson::Value dumpQuery(Query* node, rapidjson::Document& doc) {
+  rapidjson::Value value(rapidjson::kObjectType);
+  if (node->utilityStmt) {
+    value.AddMember("utilityStmt", dumpNode(node->utilityStmt, doc), doc.GetAllocator());
+  }
+  if (node->targetList) {
+    value.AddMember("targetList", dumpArray(node->targetList, doc), doc.GetAllocator());
+  }
+  return value;
+}
+
+rapidjson::Value dumpVar(Var* node, rapidjson::Document& doc) {
+  rapidjson::Value value(rapidjson::kObjectType);
+  value.AddMember("varattno", rapidjson::Value(node->varattno), doc.GetAllocator());
+  value.AddMember("vartype", rapidjson::Value(node->vartype), doc.GetAllocator());
+  return value;
+}
+
+rapidjson::Value dumpTargetEntry(TargetEntry* node, rapidjson::Document& doc) {
+  rapidjson::Value value(rapidjson::kObjectType);
+  if (node->expr) {
+    value.AddMember("expr", dumpNode((Node*) node->expr, doc), doc.GetAllocator());
+  }
+  value.AddMember("resno", rapidjson::Value(node->resno), doc.GetAllocator());
+
+  if (node->resname) {
+    value.AddMember("resname", rapidjson::Value(node->resname, doc.GetAllocator()), doc.GetAllocator());
+  }
+  return value;
+}
+
 rapidjson::Value dumpNode(Node* node, rapidjson::Document& doc) {
-  NodeDumpFunc nodeDumpFunc = GetNodeDumpFunction(node->type, nullptr);
-  return nodeDumpFunc(node, doc);
+  const char* name;
+  rapidjson::Value value(rapidjson::kObjectType);
+
+  NodeDumpFunc nodeDumpFunc = GetNodeDumpFunction(node->type, &name);
+  value.AddMember(rapidjson::Value(name, strlen(name)), nodeDumpFunc(node, doc), doc.GetAllocator());
+  return value;
 }
 
 rapidjson::Value dumpArray(List* nodeList, rapidjson::Document& doc) {
@@ -342,23 +396,23 @@ rapidjson::Value dumpArray(List* nodeList, rapidjson::Document& doc) {
   return array;
 }
 
-void DisplayParseNode(Node* node) {
+void DisplayParseNode(Node* node, const char* name) {
   assert(node);
 
   rapidjson::Document doc(rapidjson::kObjectType);
 
-  const char* name;
-  NodeDumpFunc nodeDumpFunc = GetNodeDumpFunction(node->type, &name);
+  const char* nodeName;
+  NodeDumpFunc nodeDumpFunc = GetNodeDumpFunction(node->type, &nodeName);
 
   rapidjson::Value value = nodeDumpFunc(node, doc);
-  doc.AddMember(rapidjson::Value(name, doc.GetAllocator()), value, doc.GetAllocator());
+  doc.AddMember(rapidjson::Value(nodeName, doc.GetAllocator()), value, doc.GetAllocator());
 
   rapidjson::StringBuffer buffer;
   rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
   writer.SetIndent(' ', 2);
   doc.Accept(writer);
   const char* out = buffer.GetString();
-  fprintf(stdout, "%s\n", out);
+  fprintf(stdout, "%s : %s\n", name, out);
 }
 
 A_Expr* makeA_Expr(A_Expr_Kind kind, const char* name, Node* lexpr, Node* rexpr) {
