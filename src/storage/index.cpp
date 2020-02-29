@@ -107,6 +107,7 @@ class IndexScanDesc {
       elog(ERROR, "no such tuple error %lu", rowID);
     }
     tuple = std::make_shared<Tuple>((char*) value.data(), value.size());
+    tuple->SetRowID(rowID);
   }
 
   Relation* tableRel;

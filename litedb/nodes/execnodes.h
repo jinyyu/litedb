@@ -47,7 +47,22 @@ struct BoolExpr {
   List* args;            /* arguments to this expression */
 };
 
+struct Var {
+  Expr xpr;
+  i16 varattno;       /* attribute number of this var, or zero for all attrs ("whole-row Var") */
+  i32 vartype;        /* sys_type id for the type of this var */
+};
 
+Var* makeVar(i16 varattno, i32 vartype);
+
+struct TargetEntry {
+  Expr xpr;
+  Expr* expr;          /* expression to evaluate */
+  i16 resno;           /* attribute number */
+  char* resname;       /* name of the column (could be NULL) */
+};
+
+TargetEntry* makeTargetEntry(Expr* expr, i16 resno, char* resname);
 
 struct IndexInfo {
   int ii_NumIndexKeyAttrs;    /* number of key columns in index */

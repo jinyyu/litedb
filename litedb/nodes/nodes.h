@@ -40,6 +40,8 @@ enum NodeTag {
   T_NullTest,
   T_BooleanTest,
   T_BoolExpr,
+  T_Var,
+  T_TargetEntry,
 
   T_PlannedStmt,
 };

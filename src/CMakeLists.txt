@@ -28,6 +28,7 @@ set(parser_src
         parser/analyze.cpp
         parser/keywords.cpp
         parser/parse_clause.cpp
+        parser/parse_relation.cpp
         parser/parse_target.cpp
         parser/parser.cpp
         )

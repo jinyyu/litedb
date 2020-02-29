@@ -25,6 +25,8 @@ void SysClass::FromTuple(const Tuple& tuple, SysClass& self) {
 
   assert(tuple.GetType(Anum_sys_class_relnatts) == INT2OID);
   self.relnatts = tuple.GetBasicType<i16>(Anum_sys_class_relnatts);
+
+  self.relid = tuple.GetRowID();
 }
 
 bool SysClass::GetCatalog(TransactionPtr txn, i64 relid, SysClass* self) {

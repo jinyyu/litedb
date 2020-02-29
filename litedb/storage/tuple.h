@@ -102,7 +102,7 @@ class Tuple {
 
   bool ContainsRowID() const { return rowID_ > 0; }
   void SetRowID(u64 id) { rowID_ = id; }
-  u64 GetRowID() const { return rowID_; }
+  i64 GetRowID() const { return rowID_; }
 
  private:
   i64 rowID_;

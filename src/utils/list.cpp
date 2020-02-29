@@ -1,5 +1,6 @@
 #include <litedb/utils/list.h>
 #include <assert.h>
+#include <litedb/utils/elog.h>
 
 namespace db {
 
@@ -138,6 +139,23 @@ List* lcons_int(int datum, List* list) {
 
   lfirst_int(list->head) = datum;
   return list;
+}
+
+List* list_concat(List* list1, List* list2) {
+  if (list1 == NULL)
+    return list2;
+  if (list2 == NULL)
+    return list1;
+  if (list1 == list2)
+    elog(ERROR, "cannot list_concat() a list to itself");
+
+  assert(list1->type == list2->type);
+
+  list1->length += list2->length;
+  list1->tail->next = list2->head;
+  list1->tail = list2->tail;
+
+  return list1;
 }
 
 }

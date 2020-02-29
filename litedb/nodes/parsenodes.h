@@ -142,7 +142,7 @@ struct RangeTblEntry {
   RTEKind rteKind;
 
   i64 relid;      /* id of the relation */
-  char relkind;   /*sys_class.relkind*/
+  char relkind;   /* sys_class.relkind */
 
   char* alias;    /* user-written alias clause, if any */
 
@@ -156,14 +156,19 @@ struct RangeTblRef {
 struct ParseState : public Object {
   explicit ParseState()
       : Object(),
-        sourceText(nullptr) {
+        parentParseState(nullptr),
+        sourceText(nullptr),
+        p_next_resno(1) {
 
   }
   virtual ~ParseState() = default;
 
+  struct ParseState* parentParseState;    /* stack link */
   const char* sourceText;           /* source text, or NULL if not available */
   std::list<RangeTblEntry*> rtable; /* range table so far */
   std::list<RangeTblRef*> joinlist; /* join items so far */
+
+  i16 p_next_resno;
 };
 
 void DisplayParseNode(Node* node);
