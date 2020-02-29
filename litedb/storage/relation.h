@@ -7,6 +7,7 @@
 #include <litedb/storage/scan_key.h>
 #include <litedb/catalog/sys_index.h>
 #include <litedb/catalog/sys_class.h>
+#include <litedb/catalog/sys_attribute.h>
 
 namespace db {
 class Relation;
@@ -40,6 +41,7 @@ class Relation {
   KVStore* kvstore;
   SysClass rd_rel;                  /* RELATION tuple */
   std::vector<SysIndex> rd_index;   /* list of indexes on relation */
+  std::vector<SysAttribute> rd_attr; /* list of attribute on relation */
 };
 
 class TableScanDesc;

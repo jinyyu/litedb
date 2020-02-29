@@ -76,9 +76,13 @@ Relation* Relation::OpenTable(TransactionPtr txn, i64 id) {
     return rel;
   }
 
+  assert(id == rel->rd_rel.relid);
+
   if (rel->rd_rel.relhasindex) {
-    SysIndex::GetIndexList(txn, id, rel->rd_index);
+    SysIndex::GetIndexList(txn, id, rel->rd_index); //获取Index列表
   }
+
+  //SysAttribute::GetAttributeList(txn, id, rel->rd_rel.relnatts, rel->rd_attr); //sys_attribute加载该表信息
   return rel;
 }
 

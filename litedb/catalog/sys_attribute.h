@@ -19,6 +19,8 @@ struct SysAttribute {
                           i32 atttypid,
                           const char* attname,
                           i16 attnum);
+
+  static void GetAttributeList(TransactionPtr txn, i64 attrelid, i16 relnatts, std::vector<SysAttribute>& atrrs);
 };
 
 #define SysAttributeRelationName "sys_attribute"

@@ -218,7 +218,7 @@ TuplePtr IndexGetNext(IndexScanDescPtr desc) {
 
         for (int i = desc->commonKeys; i < desc->numberOfKeys; ++i) {
           TupleMeta meta;
-          desc->indexTuple->GetTupleMeta(i, meta);
+          desc->indexTuple->GetTupleMeta(i+1, meta); //index没有rowid
           Slice column(meta.data, meta.size);
 
           if (!ScanKey::PerformCompare(desc->keyData + i, column)) {

@@ -25,7 +25,6 @@ struct SysClass {
 
   static bool GetCatalog(TransactionPtr txn, i64 relid, SysClass* self);
   static TuplePtr GetSysClass(TransactionPtr txn, const char* relname);
-
 };
 
 #define  RELKIND_RELATION     'r'    /* ordinary table */

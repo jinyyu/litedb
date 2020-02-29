@@ -57,4 +57,22 @@ i64 SysAttribute::CreateEntry(TransactionPtr txn,
   return rel->TableAppend(*tuple);
 }
 
+void SysAttribute::GetAttributeList(TransactionPtr txn, i64 attrelid, i16 relnatts, std::vector<SysAttribute>& atrrs) {
+  RelationPtr attrRel = Relation::Create(txn, SysAttributeRelationId);
+  ScanKey keys[2];
+  ScanKey::Init(&keys[0], Anum_sys_attribute_attrelid, BTEqualStrategyNumber, INT8OID, &attrelid);
+  ScanKey::Init(&keys[1], Anum_sys_attribute_attnum,
+                BTLessStrategyNumber, INT2OID,
+                Slice((char*) &relnatts, sizeof(relnatts)));
+
+  TuplePtr tuple;
+  SysScanDescPtr scan = SysTableBeginScan(txn, attrRel.get(), sys_attribute_attrelid_attnum_index, keys, 2);
+  while ((tuple = SysTableGetNext(scan)) != nullptr) {
+    SysAttribute self;
+    SysAttribute::FromTuple(*tuple, self);
+    atrrs.push_back(self);
+  }
+  SysTableEndScan(scan);
+}
+
 }
