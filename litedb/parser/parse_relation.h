@@ -10,7 +10,9 @@ RangeTblEntry* refnameRangeTblEntry(ParseState* pstate,
                                     const char* refname,
                                     int* sublevels_up);
 
-Var* colNameToVar(ParseState* pstate, const char* colname);
+Node* colNameToVar(ParseState* pstate, const char* colname);
+
+Node* scanRTEForColumn(ParseState* pstate, RangeTblEntry* rte, const char* colname);
 
 }
 

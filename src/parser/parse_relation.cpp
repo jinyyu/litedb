@@ -49,17 +49,17 @@ RangeTblEntry* refnameRangeTblEntry(ParseState* pstate,
     RangeTblEntry* result = NULL;
     ListCell* cell;
     foreach(cell, pstate->rtable) {
-      RangeTblEntry* entry = (RangeTblEntry*) lfirst(cell);
+      RangeTblEntry* rte = (RangeTblEntry*) lfirst(cell);
 
-      if (entry->alias && strcmp(refname, entry->alias) == 0) {
-        result = entry;
+      if (rte->alias && strcmp(refname, rte->alias) == 0) {
+        result = rte;
         break;
       }
 
-      if (entry->relid) {
-        Relation* rel = Relation::OpenTable(CurrentTransaction, entry->relid);
+      if (rte->rteKind == RTE_RELATION && rte->relid) {
+        Relation* rel = Relation::OpenTable(CurrentTransaction, rte->relid);
         if (strcmp(refname, NameStr(&rel->rd_rel.relname)) == 0) {
-          result = entry;
+          result = rte;
           break;
         }
       }
@@ -82,28 +82,49 @@ RangeTblEntry* refnameRangeTblEntry(ParseState* pstate,
  *	  Search for an unqualified column name.
  *	  If found, return the appropriate Var node (or expression).
  */
-Var* colNameToVar(ParseState* pstate, const char* colname) {
+Node* colNameToVar(ParseState* pstate, const char* colname) {
+  Node* result = NULL;
   while (pstate) {
-
     ListCell* cell;
     foreach(cell, pstate->rtable) {
       RangeTblEntry* rte = (RangeTblEntry*) lfirst(cell);
+      Node* netResult = scanRTEForColumn(pstate, rte, colname);
 
-      if (rte->relid) {
-        Relation* rel = Relation::OpenTable(CurrentTransaction, rte->relid);
-        for(SysAttribute& attr : rel->rd_attr) {
-          if (strcmp(colname, attr.attname.data) == 0) {
-
-            int rtindex = RTERangeTablePosn(pstate, rte, nullptr);
-            return makeVar(rtindex, attr.attnum, attr.atttypid);
-          }
+      if (netResult) {
+        if (result) {
+          elog(ERROR, "column reference \"%s\" is ambiguous", colname);
         }
+        result = netResult;
       }
     }
-
     pstate = pstate->parentParseState;
   }
-  return NULL;
+  return result;
+}
+
+/*
+ * scanRTEForColumn
+ *	  Search the column names of a single RTE for the given name.
+ *	  If found, return an appropriate Var node, else return NULL.
+ */
+Node* scanRTEForColumn(ParseState* pstate, RangeTblEntry* rte, const char* colname) {
+  Node* result = NULL;
+  if (rte->rteKind == RTE_RELATION && rte->relid) {
+    Relation* rel = Relation::OpenTable(CurrentTransaction, rte->relid);
+    for (SysAttribute& attr : rel->rd_attr) {
+
+      if (strcmp(colname, attr.attname.data) == 0) {
+
+        if (result) {
+          elog(ERROR, "column reference \"%s\" is ambiguous", colname);
+        }
+        int rtindex = RTERangeTablePosn(pstate, rte, nullptr);
+        result = (Node*) makeVar(rtindex, attr.attnum, attr.atttypid);
+      }
+    }
+  }
+
+  return result;
 }
 
 }

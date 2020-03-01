@@ -51,33 +51,18 @@ List* ExpandAllTables(ParseState* pstate) {
   return targetList;
 }
 
-TargetEntry* TransformTargetEntry(ParseState* pstate, RangeTblEntry* rte, Node* node, char* colname) {
-  char* column = strVal((Value*) node);;
-  int rtindex = RTERangeTablePosn(pstate, rte, nullptr);
-
-  switch (rte->rteKind) {
-    case RTE_RELATION: {
-      Relation* rel = Relation::OpenTable(CurrentTransaction, rte->relid);
-
-      for (SysAttribute& attr : rel->rd_attr) {
-        if (strcmp(column, attr.attname.data) == 0) {
-          Var* var = makeVar(rtindex, attr.attnum, attr.atttypid);
-          TargetEntry* te = makeTargetEntry((Expr*) var, pstate->p_next_resno++, colname);
-          if (!te->resname) {
-            te->resname = column;
-          }
-          return te;
-        }
-      }
-      elog(ERROR, "column %s does not exist", column);
-      break;
-    }
-    default: {
-      elog(ERROR, "invalid rtekind %d", rte->rteKind);
-      break;
-    }
+TargetEntry* TransformTargetEntry(ParseState* pstate, RangeTblEntry* rte, Node* node, char* resname) {
+  char* columnName = strVal((Value*) node);;
+  Node* var = scanRTEForColumn(pstate, rte, columnName);
+  if (!var) {
+    elog(ERROR, "column %s does not exist", columnName);
   }
 
+  TargetEntry* te = makeTargetEntry((Expr*) var, pstate->p_next_resno++, resname);
+  if (!te->resname) {
+    te->resname = columnName;
+  }
+  return te;
 }
 
 List* TransformColumnRef(ParseState* pstate, ColumnRef* cref, char* columnName) {
@@ -89,7 +74,7 @@ List* TransformColumnRef(ParseState* pstate, ColumnRef* cref, char* columnName) 
       node1 = (Node*) linitial(cref->fields);
       assert(node1->type == T_String);
       char* column = strVal((Value*) node1);
-      Var* var = colNameToVar(pstate, column);
+      Node* var = colNameToVar(pstate, column);
       if (!var) {
         elog(ERROR, "column %s does not exist", column);
       }
