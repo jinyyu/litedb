@@ -80,4 +80,13 @@ void TransformFromClause(ParseState* pstate, List* fromClause) {
   }
 }
 
+/*
+ * transformWhereClause -
+ *	  Transform the qualification and make sure it is of type boolean.
+ *	  Used for WHERE and allied clauses.
+ */
+Node* TransformWhereClause(ParseState* pstate, Node* clause) {
+  return NULL;
+}
+
 }

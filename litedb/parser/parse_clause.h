@@ -5,6 +5,7 @@
 namespace db {
 
 void TransformFromClause(ParseState* pstate, List* fromClause);
+Node* TransformWhereClause(ParseState* pstate, Node* clause);
 
 }
 

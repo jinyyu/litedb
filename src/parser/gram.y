@@ -654,6 +654,7 @@ table_ref:
 
 opt_alias_clause:
     name        { $$ = $1; }
+    | AS name   { $$ = $2; }
     | /*empty*/ { $$ = NULL; }
     ;
 

@@ -42,6 +42,7 @@ enum NodeTag {
   T_BoolExpr,
   T_Var,
   T_TargetEntry,
+  T_FromExpr,
 
   T_PlannedStmt,
 };

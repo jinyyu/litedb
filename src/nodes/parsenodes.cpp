@@ -28,6 +28,9 @@ static rapidjson::Value dumpA_Expr(A_Expr* node, rapidjson::Document& doc);
 static rapidjson::Value dumpQuery(Query* node, rapidjson::Document& doc);
 static rapidjson::Value dumpVar(Var* node, rapidjson::Document& doc);
 static rapidjson::Value dumpTargetEntry(TargetEntry* node, rapidjson::Document& doc);
+static rapidjson::Value dumpFromExpr(FromExpr* node, rapidjson::Document& doc);
+static rapidjson::Value dumpRangeTblEntry(RangeTblEntry* node, rapidjson::Document& doc);
+static rapidjson::Value dumpRangeTblRef(RangeTblRef* node, rapidjson::Document& doc);
 
 static const char* ConstraintTypeStr(ConstraintType type);
 static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName);
@@ -121,8 +124,23 @@ static NodeDumpFunc GetNodeDumpFunction(NodeTag type, const char** tagName) {
       name = "TargetEntry";
       break;
     }
+    case T_FromExpr: {
+      func = (NodeDumpFunc) dumpFromExpr;
+      name = "FromExpr";
+      break;
+    }
+    case T_RangeTblEntry: {
+      func = (NodeDumpFunc) dumpRangeTblEntry;
+      name = "RangeTblEntry";
+      break;
+    }
+    case T_RangeTblRef: {
+      func = (NodeDumpFunc) dumpRangeTblRef;
+      name = "RangeTblRef";
+      break;
+    }
     default: {
-      elog(INFO, "not impl tag type %d", type);
+      elog(ERROR, "not impl tag type %d", type);
       name = "Invalid";
       func = nullptr;
       break;
@@ -338,6 +356,14 @@ rapidjson::Value dumpQuery(Query* node, rapidjson::Document& doc) {
   if (node->utilityStmt) {
     value.AddMember("utilityStmt", dumpNode(node->utilityStmt, doc), doc.GetAllocator());
   }
+  if (node->rtable) {
+    value.AddMember("rtable", dumpArray(node->rtable, doc), doc.GetAllocator());
+  }
+
+  if (node->jointree) {
+    value.AddMember("jointree", dumpNode((Node*) node->jointree, doc), doc.GetAllocator());
+  }
+
   if (node->targetList) {
     value.AddMember("targetList", dumpArray(node->targetList, doc), doc.GetAllocator());
   }
@@ -362,6 +388,40 @@ rapidjson::Value dumpTargetEntry(TargetEntry* node, rapidjson::Document& doc) {
   if (node->resname) {
     value.AddMember("resname", rapidjson::Value(node->resname, doc.GetAllocator()), doc.GetAllocator());
   }
+  return value;
+}
+
+rapidjson::Value dumpFromExpr(FromExpr* node, rapidjson::Document& doc) {
+  rapidjson::Value value(rapidjson::kObjectType);
+  if (node->quals) {
+    value.AddMember("quals", dumpNode(node->quals, doc), doc.GetAllocator());
+  }
+
+  if (node->fromlist) {
+    value.AddMember("fromlist", dumpArray(node->fromlist, doc), doc.GetAllocator());
+  }
+  return value;
+}
+
+rapidjson::Value dumpRangeTblEntry(RangeTblEntry* node, rapidjson::Document& doc) {
+  rapidjson::Value value(rapidjson::kObjectType);
+  value.AddMember("rteKind", rapidjson::Value(node->rteKind), doc.GetAllocator());
+
+  value.AddMember("relid", rapidjson::Value(node->relid), doc.GetAllocator());
+
+  char relkind[2];
+  snprintf(relkind, sizeof(relkind), "%c", node->relkind);
+  value.AddMember("relkind", rapidjson::Value(relkind, 1, doc.GetAllocator()), doc.GetAllocator());
+
+  if (node->alias) {
+    value.AddMember("alias", rapidjson::Value(node->alias, doc.GetAllocator()), doc.GetAllocator());
+  }
+  return value;
+}
+
+rapidjson::Value dumpRangeTblRef(RangeTblRef* node, rapidjson::Document& doc) {
+  rapidjson::Value value(rapidjson::kObjectType);
+  value.AddMember("rtindex", rapidjson::Value(node->rtindex), doc.GetAllocator());
   return value;
 }
 

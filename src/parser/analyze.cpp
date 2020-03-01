@@ -3,6 +3,8 @@
 #include <litedb/parser/parse_target.h>
 #include <litedb/utils/elog.h>
 #include <litedb/utils/env.h>
+#include <litedb/nodes/execnodes.h>
+
 namespace db {
 
 Query* ParseAnalyze(Node* parseTree, const char* queryString) {
@@ -51,6 +53,11 @@ Query* TransformSelectStmt(ParseState* pstate, SelectStmt* stmt) {
   TransformFromClause(pstate, stmt->fromClause);
 
   query->targetList = TransformTargetList(pstate, stmt->targetList);
+
+  Node* qual = TransformWhereClause(pstate, stmt->whereClause);
+
+  query->rtable = pstate->rtable;
+  query->jointree = makeFromExpr(pstate->joinlist, qual);
 
   return query;
 }

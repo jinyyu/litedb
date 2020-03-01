@@ -65,6 +65,18 @@ struct TargetEntry {
 
 TargetEntry* makeTargetEntry(Expr* expr, i16 resno, char* resname);
 
+/*----------
+ * FromExpr - represents a FROM ... WHERE ... construct
+ *----------
+ */
+struct FromExpr {
+  NodeTag type;
+  List* fromlist;        /* List of join subtrees */
+  Node* quals;           /* qualifiers on join, if any */
+};
+
+FromExpr* makeFromExpr(List* fromlist, Node* quals);
+
 struct IndexInfo {
   int ii_NumIndexKeyAttrs;    /* number of key columns in index */
   i16 ii_IndexAttrNumbers[INDEX_MAX_KEYS];

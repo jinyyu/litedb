@@ -119,11 +119,14 @@ typedef enum CmdType {
   CMD_CMD_UTILITY, /* cmds like create etc. */
 } CmdType;
 
+struct FromExpr;
 struct Query {
   NodeTag type;
   CmdType commandType;    /* select|insert|update|delete|etc */
   Node* utilityStmt;      /* non-null if commandType == CMD_CMD_UTILITY */
 
+  List* rtable;            /* list of range table entries */
+  FromExpr* jointree;        /* table join tree (FROM and WHERE clauses) */
   List* targetList;        /* target list (of TargetEntry) */
 };
 
