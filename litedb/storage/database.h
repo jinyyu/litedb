@@ -32,6 +32,7 @@ class Database {
 
 };
 
+class Relation;
 class Transaction {
  public:
 
@@ -46,6 +47,8 @@ class Transaction {
   //Abandon all the operations of the transaction instead of saving them
   virtual void Abort() = 0;
 
+  virtual Relation* GetOpenRelation(i64 relid) = 0;
+  virtual void InsertOpenRelation(i64 relid, Relation* rel) = 0;
 };
 
 class KVStore {

@@ -54,6 +54,7 @@ class Session {
   std::string database;
   std::string user;
   std::string client_encoding;
+
 };
 
 extern thread_local Session* CurSession;

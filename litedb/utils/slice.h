@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <string>
+#include <litedb/int.h>
 
 namespace db {
 
@@ -21,6 +22,9 @@ class Slice {
   // Create a slice that refers to the contents of "s"
   Slice(const std::string& s)
       : data_(s.data()), size_(s.size()) {}
+
+  Slice(i64* v)
+      : data_((char*) v), size_(sizeof(i64)) {}
 
   // Create a slice that refers to s[0,strlen(s)-1]
   Slice(const char* s)

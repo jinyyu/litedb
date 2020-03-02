@@ -61,6 +61,15 @@ class Tuple {
     }
   }
 
+  TuplePtr Copy() const {
+    char* data = (char*) malloc(len_);
+    memcpy(data, tuple_, len_);
+    TuplePtr tuple(new Tuple(data, len_));
+    tuple->copied_ = true;
+    tuple->rowID_ = rowID_;
+    return tuple;
+  }
+
   u32 columns() const;
 
   u32 GetType(int index) const {
@@ -93,7 +102,7 @@ class Tuple {
 
   bool ContainsRowID() const { return rowID_ > 0; }
   void SetRowID(u64 id) { rowID_ = id; }
-  u64 GetRowID() const { return rowID_; }
+  i64 GetRowID() const { return rowID_; }
 
  private:
   i64 rowID_;

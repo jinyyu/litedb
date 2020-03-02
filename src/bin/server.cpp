@@ -10,6 +10,7 @@
 #include <litedb/bin/server.h>
 #include <litedb/bin/session.h>
 #include <litedb/parser/keywords.h>
+#include <litedb/catalog/catalog.h>
 #include <mutex>
 #include <thread>
 #include <signal.h>
@@ -30,6 +31,7 @@ Server::Server(int port)
   setsockopt(serverFd_, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
   InitKeyword();
+  CatalogDB = Database::Open("catalog");
 }
 
 Server::~Server() {
@@ -110,6 +112,7 @@ void HandleStop(int) {
 }
 
 int Server::Main(const char* workspace, int port) {
+  chdir(workspace);
 
   ServerPtr s(new Server((db::u16) port));
   server = s;
@@ -119,6 +122,9 @@ int Server::Main(const char* workspace, int port) {
   server->Loop();
   server = nullptr;
   fprintf(stderr, "server stopped\n");
+
+  Database::Close(CatalogDB);
+
   return 0;
 }
 

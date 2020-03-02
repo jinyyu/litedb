@@ -4,30 +4,34 @@
 #include <litedb/parser/parser.h>
 #include <litedb/parser/analyze.h>
 #include <litedb/utils/portal.h>
-#include <litedb/parser/plannodes.h>
+#include <litedb/nodes/plannodes.h>
 #include <litedb//utils/env.h>
+#include <litedb/catalog/catalog.h>
 #include <assert.h>
 
 namespace db {
 
 thread_local Session* CurSession = nullptr;
 
-static List<Node>* AnalyzeAndRewrite(Node* parseTrees, const char* src);
-static List<Node>* PlanQueries(List<Node>* queryTrees);
+static List* AnalyzeAndRewrite(Node* parseTrees, const char* src);
+static List* PlanQueries(List* queryTrees);
 
-List<Node>* AnalyzeAndRewrite(Node* parseTrees, const char* src) {
+List* AnalyzeAndRewrite(Node* parseTrees, const char* src) {
   Query* query = ParseAnalyze(parseTrees, src);
 
-  List<Node>* ret = new List<Node>();
-  ret->Append((Node*) query);
+  DisplayParseNode((Node*) query);
+
+  List* ret = NULL;
+  ret = lappend(ret, (Node*) query);
   return ret;
 }
 
-List<Node>* PlanQueries(List<Node>* queryTrees) {
-  List<Node>* ret = new List<Node>();
+List* PlanQueries(List* queryTrees) {
+  List* ret = NULL;
+  ListCell* cell;
 
-  for (Node* node: queryTrees->list) {
-    Query* query = (Query*) node;
+  foreach(cell, queryTrees) {
+    Query* query = (Query*) lfirst(cell);
     assert(query->type == T_Query);
 
     PlannedStmt* stmt;
@@ -36,7 +40,7 @@ List<Node>* PlanQueries(List<Node>* queryTrees) {
       stmt = makeNode(PlannedStmt);
       stmt->commandType = CMD_CMD_UTILITY;
       stmt->utilityStmt = query->utilityStmt;
-      ret->Append((Node*) stmt);
+      ret = lappend(ret, (Node*) stmt);
     }
   }
   return ret;
@@ -73,6 +77,11 @@ void Session::Loop() {
 
   while (!forceClose) {
     try {
+      if (CurrentTransaction) {
+        CurrentTransaction->Abort();
+        CurrentTransaction = nullptr;
+      }
+
       SessionEnv = std::make_shared<Environment>();
 
       ReadyForQuery();
@@ -133,6 +142,11 @@ void Session::Loop() {
       if (e.level > ERROR) {
         forceClose = true;
         break;
+      }
+
+      if (CurrentTransaction) {
+        CurrentTransaction->Abort();
+        CurrentTransaction = nullptr;
       }
     }
   }
@@ -273,18 +287,28 @@ void Session::SendCommand(char c, const char* command, int len) {
 }
 
 void Session::ExecSimpleQuery(char* queryString, size_t queryLen) {
-  List<Node>* parseTrees = Parser::Parse(queryString, queryLen);
+  List* parseTrees = Parser::Parse(queryString, queryLen);
 
   if (parseTrees) {
-    for (Node* parseTree : parseTrees->list) {
-      List<Node>* querytree = AnalyzeAndRewrite(parseTree, queryString);
-      List<Node>* planTree = PlanQueries(querytree);
+
+    CurrentTransaction = CatalogDB->Begin();
+    ListCell* cell;
+
+    foreach(cell, parseTrees) {
+      Node* parseTree = (Node*) lfirst(cell);
+      List* queryTree = AnalyzeAndRewrite(parseTree, queryString);
+      List* planTree = PlanQueries(queryTree);
 
       Portal portal(this, planTree);
       portal.Start();
       portal.Run();
 
       SendCommand('C', "ok", strlen("ok") + 1);
+    }
+
+    if (CurrentTransaction) {
+      CurrentTransaction->Commit();
+      CurrentTransaction = nullptr;
     }
   }
 }

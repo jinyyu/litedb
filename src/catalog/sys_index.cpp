@@ -2,6 +2,8 @@
 #include <litedb/catalog/sys_class.h>
 #include <litedb/catalog/sys_attribute.h>
 #include <litedb/storage/relation.h>
+#include <litedb/storage/index.h>
+
 namespace db {
 
 TuplePtr SysIndex::ToTuple(const SysIndex& self) {
@@ -50,8 +52,8 @@ void SysIndex::GetIndexList(TransactionPtr txn, i64 indrelid, std::vector<SysInd
                 Anum_sys_index_indrelid,
                 BTEqualStrategyNumber,
                 INT8OID,
-                Slice((char*) &indrelid, sizeof(indrelid)));
-  TableScanDescPtr scan = TableBeginScan(tbl, &key, 1);
+                &indrelid);
+  TableScanDescPtr scan = TableBeginScan(tbl.get(), &key, 1);
   TuplePtr tuple;
   while ((tuple = TableGetNext(scan)) != nullptr) {
     i64 relid = tuple->GetBasicType<i64>(Anum_sys_index_indrelid - 1);
@@ -67,7 +69,7 @@ void SysIndex::GetIndexList(TransactionPtr txn, i64 indrelid, std::vector<SysInd
 
 bool SysIndex::GetIndexTuple(TransactionPtr txn, i64 indexrelid, SysIndex& index) {
   RelationPtr tbl = Relation::Create(txn, SysIndexRelationId);
-  Slice key((char*) &indexrelid, sizeof(indexrelid));
+  Slice key(&indexrelid);
   Slice value;
   if (!tbl->kvstore->Get(key, value)) {
     return false;
@@ -79,7 +81,7 @@ bool SysIndex::GetIndexTuple(TransactionPtr txn, i64 indexrelid, SysIndex& index
 }
 
 void SysIndex::CreateEntry(TransactionPtr txn, const SysIndex& self) {
-  RelationPtr rel = Relation::OpenTable(txn, SysIndexRelationId);
+  RelationPtr rel = Relation::Create(txn, SysIndexRelationId);
   TuplePtr tuple = SysIndex::ToTuple(self);
   rel->TableInsert(self.indexrelid, *tuple);
 }

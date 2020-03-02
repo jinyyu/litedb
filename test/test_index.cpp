@@ -12,9 +12,9 @@ static std::string test_db_dir = "test_index_dir";
 
 TEST(relation, index_scan) {
   TransactionPtr txn = CatalogDB->Begin();
-  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+  Relation* rel = Relation::OpenTable(txn, SysClassRelationId);
 
-  RelationPtr index = Relation::OpenIndex(txn, 1227);
+  Relation* index = Relation::OpenIndex(txn, 1227);
 
   IndexInfo info;
   memset(&info, 0, sizeof(info));
@@ -30,10 +30,10 @@ TEST(relation, index_scan) {
   index = Relation::OpenIndex(txn, 1227);
 
   ScanKey key;
-  NameData name;
-  NameDataSetStr(&name, SysClassRelationName);
+  Name name;
+  NameSetStr(&name, SysClassRelationName);
 
-  ScanKey::Init(&key, Anum_sys_class_relname, BTEqualStrategyNumber, NAMEOID, NameDataGetSlice(&name));
+  ScanKey::Init(&key, Anum_sys_class_relname, BTEqualStrategyNumber, NAMEOID, NameGetSlice(&name));
   IndexScanDescPtr desc = IndexBeginScan(rel, index, &key, 1);
   TuplePtr tuple;
   int matched = 0;
@@ -49,11 +49,11 @@ TEST(relation, index_scan) {
 
 TEST(relation, sys_scan) {
   TransactionPtr txn = CatalogDB->Begin();
-  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+  Relation* rel = Relation::OpenTable(txn, SysClassRelationId);
 
   ScanKey key;
   i64 id = SysClassRelationId;
-  ScanKey::Init(&key, Anum_sys_class_relid, BTEqualStrategyNumber, INT8OID, Slice((char*) &id, sizeof(id)));
+  ScanKey::Init(&key, Anum_sys_class_relid, BTEqualStrategyNumber, INT8OID, &id);
 
   SysScanDescPtr desc = SysTableBeginScan(txn, rel, 0, &key, 1);
   TuplePtr tuple;

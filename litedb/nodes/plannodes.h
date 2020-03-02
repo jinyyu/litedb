@@ -1,6 +1,6 @@
 #ifndef LITEDB_PARSER_PLANNODES_H_
 #define ITEDB_PARSER_PLANNODES_H_
-#include <litedb/parser/nodes.h>
+#include <litedb/nodes/parsenodes.h>
 
 namespace db {
 

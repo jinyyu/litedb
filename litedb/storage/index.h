@@ -10,11 +10,11 @@ namespace db {
 class IndexScanDesc;
 typedef std::shared_ptr<IndexScanDesc> IndexScanDescPtr;
 
-void IndexAmBuild(RelationPtr tableRel, RelationPtr index, IndexInfo* info);
+void IndexAmBuild(Relation* tableRel, Relation* index, IndexInfo* info);
 
-void IndexAmInsert(RelationPtr index, TuplePtr tuple, IndexInfo* info);
+void IndexAmInsert(Relation* index, TuplePtr tuple, IndexInfo* info);
 
-IndexScanDescPtr IndexBeginScan(RelationPtr tableRel, RelationPtr index,
+IndexScanDescPtr IndexBeginScan(Relation* tableRel, Relation* index,
                                 ScanKey* scanKey, int nkeys);
 
 TuplePtr IndexGetNext(IndexScanDescPtr desc);

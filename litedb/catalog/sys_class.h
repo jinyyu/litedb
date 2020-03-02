@@ -9,7 +9,7 @@ namespace db {
 
 struct SysClass {
   i64 relid;              /* the relation id*/
-  NameData relname;       /* class name */
+  Name relname;           /* class name */
   bool relhasindex;       /* true if has (or has had) any indexes */
   char relkind;           /* see RELKIND_xxx constants below */
   i16 relnatts;           /* number of user attributes */
@@ -24,7 +24,7 @@ struct SysClass {
                          i16 relnatts);
 
   static bool GetCatalog(TransactionPtr txn, i64 relid, SysClass* self);
-
+  static TuplePtr GetSysClass(TransactionPtr txn, const char* relname);
 };
 
 #define  RELKIND_RELATION     'r'    /* ordinary table */

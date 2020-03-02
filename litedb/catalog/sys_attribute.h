@@ -9,7 +9,7 @@ struct SysAttribute {
   i64 attid;              /*the attribute id*/
   i64 attrelid;           /*relation containing this attribute*/
   i32 atttypid;           /*the id of the instance*/
-  NameData attname;       /*name of attribute*/
+  Name attname;           /*name of attribute*/
   i16 attnum;             /*attnum is the "attribute number" for the attribute*/
 
   static void FromTuple(const Tuple& tuple, SysAttribute& self);
@@ -19,6 +19,8 @@ struct SysAttribute {
                           i32 atttypid,
                           const char* attname,
                           i16 attnum);
+
+  static void GetAttributeList(TransactionPtr txn, i64 attrelid, i16 relnatts, std::vector<SysAttribute>& atrrs);
 };
 
 #define SysAttributeRelationName "sys_attribute"

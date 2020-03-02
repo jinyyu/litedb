@@ -3,19 +3,19 @@
 #include <litedb/catalog/sys_type.h>
 #include <litedb/storage/relation.h>
 #include <litedb/utils/env.h>
+#include <litedb/utils/misc.h>
 
 namespace db {
 
 void SysClass::FromTuple(const Tuple& tuple, SysClass& self) {
-  int asdasd = tuple.columns();
-      assert(asdasd == Natts_sys_class);
+  assert(tuple.columns() == Natts_sys_class);
 
   assert(tuple.GetType(Anum_sys_class_relid) == INT8OID);
   self.relid = tuple.GetBasicType<i64>(Anum_sys_class_relid);
 
   assert(tuple.GetType(Anum_sys_class_relname) == NAMEOID);
   Slice relname = tuple.GetSlice(Anum_sys_class_relname);
-  NameDataSetStr(&self.relname, relname.data());
+  NameSetStr(&self.relname, relname.data());
 
   assert(tuple.GetType(Anum_sys_class_relhasindex) == BOOLOID);
   self.relhasindex = tuple.GetBasicType<bool>(Anum_sys_class_relhasindex);
@@ -25,20 +25,41 @@ void SysClass::FromTuple(const Tuple& tuple, SysClass& self) {
 
   assert(tuple.GetType(Anum_sys_class_relnatts) == INT2OID);
   self.relnatts = tuple.GetBasicType<i16>(Anum_sys_class_relnatts);
+
+  self.relid = tuple.GetRowID();
 }
 
 bool SysClass::GetCatalog(TransactionPtr txn, i64 relid, SysClass* self) {
   RelationPtr sys_class = Relation::Create(txn, SysClassRelationId);
-  Slice key((const char*) &relid, sizeof(relid));
+  Slice key(&relid);
   Slice data;
   if (!sys_class->kvstore->Get(key, data)) {
     return false;
   }
 
   Tuple tuple((char*) data.data(), (u32) data.size());
-  tuple.SetRowID(*(i64*)key.data());
+  tuple.SetRowID(*(i64*) key.data());
   SysClass::FromTuple(tuple, *self);
   return true;
+}
+
+TuplePtr SysClass::GetSysClass(TransactionPtr txn, const char* relname) {
+  TuplePtr ret;
+  TuplePtr tuple;
+  Name name;
+
+  Relation* rel = Relation::OpenTable(txn, SysClassRelationId);
+  ScanKey key;
+  NameSetStr(&name, relname);
+
+  ScanKey::Init(&key, Anum_sys_class_relname, BTEqualStrategyNumber, NAMEOID, Slice((char*) &name, sizeof(name)));
+  SysScanDescPtr desc = SysTableBeginScan(txn, rel, sys_class_relname_index, &key, 1);
+  if ((tuple = SysTableGetNext(desc)) != nullptr) {
+    ret = tuple->Copy();
+  }
+
+  SysTableEndScan(desc);
+  return ret;
 }
 
 TuplePtr SysClass::ToTuple(const SysClass& self) {
@@ -62,7 +83,7 @@ i64 SysClass::CreateEntry(TransactionPtr txn,
   SysClass entry;
   memset(&entry, 0, sizeof(entry));
 
-  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+  RelationPtr rel = Relation::Create(txn, SysClassRelationId);
 
   if (relid > 0) {
     entry.relid = relid;
@@ -70,17 +91,15 @@ i64 SysClass::CreateEntry(TransactionPtr txn,
     entry.relid = rel->TableNextID();
   }
 
-  NameDataSetStr(&entry.relname, relname);
+  NameSetStr(&entry.relname, relname);
   entry.relhasindex = relhasindex;
   entry.relkind = relkind;
   entry.relnatts = relnatts;
-
 
   TuplePtr tuple = SysClass::ToTuple(entry);
 
   rel->TableInsert(entry.relid, *tuple);
   return entry.relid;
 }
-
 
 }

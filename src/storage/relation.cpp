@@ -30,7 +30,7 @@ class TableScanDesc {
     }
   }
 
-  RelationPtr rel;    /* the relation of table */
+  Relation* rel;    /* the relation of table */
   Cursor* cursor;     /* the scan cursor */
   ScanKey* scanKey;   /* scan key */
   int nkeys;          /* number of scan key */
@@ -40,9 +40,9 @@ class TableScanDesc {
   TuplePtr lastTuple;
 };
 
-RelationPtr Relation::Create(TransactionPtr tran, u64 id) {
+RelationPtr Relation::Create(TransactionPtr txn, i64 id) {
   std::string name = std::to_string(id);
-  KVStore* table = tran->Open(name, MDB_CREATE);
+  KVStore* table = txn->Open(name, MDB_CREATE);
   KVStoreMdb* mdb = static_cast<KVStoreMdb*>(table);
   if (!mdb->SetCompare()) {
     mdb->SetCompare(u64_cmp);
@@ -53,37 +53,61 @@ RelationPtr Relation::Create(TransactionPtr tran, u64 id) {
   return rel;
 }
 
-RelationPtr Relation::OpenTable(TransactionPtr tran, u64 id) {
-  std::string name = std::to_string(id);
-  KVStore* table = tran->Open(name, 0);
-  KVStoreMdb* mdb = static_cast<KVStoreMdb*>(table);
-  if (!mdb->SetCompare()) {
-    mdb->SetCompare(u64_cmp);
-  }
-  RelationPtr rel(new Relation(table));
-  rel->rd_rel.relid = id;
-  rel->rd_rel.relkind = RELKIND_RELATION;
-
-  if (!SysClass::GetCatalog(tran, id, &rel->rd_rel)) {
+Relation* Relation::OpenTable(TransactionPtr txn, i64 id) {
+  Relation* rel;
+  rel = txn->GetOpenRelation(id);
+  if (rel) {
     return rel;
   }
 
+  std::string name = std::to_string(id);
+  KVStore* table = txn->Open(name, 0);
+  KVStoreMdb* mdb = static_cast<KVStoreMdb*>(table);
+  if (!mdb->SetCompare()) {
+    mdb->SetCompare(u64_cmp);
+  }
+  rel = new Relation(table);
+  rel->relid = id;
+  rel->rd_rel.relid = id;
+  rel->rd_rel.relkind = RELKIND_RELATION;
+
+  txn->InsertOpenRelation(id, rel);
+
+  if (!SysClass::GetCatalog(txn, id, &rel->rd_rel)) {
+    return rel;
+  }
+
+  assert(id == rel->rd_rel.relid);
+
   if (rel->rd_rel.relhasindex) {
-    SysIndex::GetIndexList(tran, id, rel->rd_index);
+    SysIndex::GetIndexList(txn, id, rel->rd_index); //获取Index列表
+  }
+
+  if (rel->rd_rel.relhasindex && rel->rd_index.empty()) {
+    SysAttribute::GetAttributeList(txn, id, rel->rd_rel.relnatts, rel->rd_attr); //sys_attribute加载该表信息
   }
   return rel;
 }
 
-RelationPtr Relation::OpenIndex(TransactionPtr tran, u64 id) {
+Relation* Relation::OpenIndex(TransactionPtr txn, i64 id) {
+  Relation* rel;
+  rel = txn->GetOpenRelation(id);
+  if (rel) {
+    return rel;
+  }
+
   std::string name = std::to_string(id);
-  KVStore* table = tran->Open(name, MDB_CREATE | MDB_DUPSORT);
+  KVStore* table = txn->Open(name, MDB_CREATE | MDB_DUPSORT);
   KVStoreMdb* mdb = static_cast<KVStoreMdb*>(table);
   if (!mdb->SetCompare()) {
     mdb->SetCompare(index_cmp);
   }
-  RelationPtr rel(new Relation(table));
+  rel = new Relation(table);
   rel->rd_rel.relid = id;
   rel->rd_rel.relkind = RELKIND_INDEX;
+
+  txn->InsertOpenRelation(id, rel);
+
   return rel;
 }
 
@@ -92,9 +116,9 @@ Relation::Relation(KVStore* table) :
   memset(&rd_rel, 0, sizeof(rd_rel));
 }
 
-void Relation::TableInsert(u64 id, const Tuple& tuple) {
+void Relation::TableInsert(i64 id, const Tuple& tuple) {
   assert(rd_rel.relkind == RELKIND_RELATION);
-  Slice key((char*) &id, sizeof(u64));
+  Slice key(&id);
   Slice value;
   tuple.GetTupleData(value);
   kvstore->Put(key, value, 0);
@@ -172,7 +196,7 @@ void RowidScanTableBeginScan(TableScanDescPtr desc) {
   }
 }
 
-TableScanDescPtr TableBeginScan(RelationPtr rel, ScanKey* scanKey, int nkeys) {
+TableScanDescPtr TableBeginScan(Relation* rel, ScanKey* scanKey, int nkeys) {
   assert(rel->rd_rel.relkind == RELKIND_RELATION);
   TableScanDescPtr desc(new TableScanDesc());
   desc->rel = rel;
@@ -320,14 +344,14 @@ void TableEndScan(TableScanDescPtr& scan) {
 
 class SysScanDesc {
  public:
-  RelationPtr tableRel;          /* catalog being scanned */
-  RelationPtr indexRel;          /* NULL if doing table scan */
+  Relation* tableRel;          /* catalog being scanned */
+  Relation* indexRel;          /* NULL if doing table scan */
   TableScanDescPtr relScan;       /* only valid in storage-scan case */
   IndexScanDescPtr indexScan;     /* only valid in index-scan case */
 };
 
 SysScanDescPtr SysTableBeginScan(TransactionPtr txn,
-                                 RelationPtr tableRel,
+                                 Relation* tableRel,
                                  i64 indexId,
                                  ScanKey* scanKey, int nkeys) {
   SysScanDescPtr scan(new SysScanDesc());
@@ -340,12 +364,30 @@ SysScanDescPtr SysTableBeginScan(TransactionPtr txn,
   }
 
   if (indexId) {
-    scan->indexRel = Relation::OpenIndex(txn, indexId);
-    SysIndex indexTup;
-    if (!SysIndex::GetIndexTuple(txn, indexId, indexTup)) {
-      elog(ERROR, "no such index %lu", indexId);
+    if (!tableRel->rd_rel.relhasindex) {
+      elog(ERROR, "relation has not index %d", tableRel->relid);
     }
 
+    SysIndex indexTup;
+
+    if (tableRel->rd_index.empty()) {
+      if (!SysIndex::GetIndexTuple(txn, indexId, indexTup)) {
+        elog(ERROR, "no such index %lu", indexId);
+      }
+    } else {
+      for (size_t i = 0; i < tableRel->rd_index.size(); ++i) {
+        SysIndex& sys_index = tableRel->rd_index[i];
+        if (sys_index.indexrelid == indexId) {
+          memcpy(&indexTup, &sys_index, sizeof(SysIndex));
+          break;
+        }
+
+      }
+    }
+
+    assert(indexTup.indrelid == tableRel->relid);
+
+    scan->indexRel = Relation::OpenIndex(txn, indexId);
     std::vector<ScanKey> indexKeys(nkeys);
 
     /* Change attribute numbers to be index column numbers. */

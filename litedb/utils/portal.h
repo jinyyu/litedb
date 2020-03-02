@@ -1,13 +1,13 @@
 #ifndef LITEDB_PORTAL_H_
 #define LITEDB_PORTAL_H_
-#include <litedb/parser/nodes.h>
+#include <litedb/nodes/parsenodes.h>
 
 namespace db {
 
 class Session;
 
 struct Portal {
-  explicit Portal(Session* session, List<Node>* planTrees)
+  explicit Portal(Session* session, List* planTrees)
       : session(session),
         planTrees(planTrees) {
   }
@@ -26,7 +26,7 @@ struct Portal {
   static const char* CreateCommandTag(Node* parseTree);
 
   Session* session;
-  List<Node>* planTrees;
+  List* planTrees;
   const char* commandTag;
 };
 

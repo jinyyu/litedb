@@ -7,6 +7,7 @@
 #include <litedb/storage/scan_key.h>
 #include <litedb/catalog/sys_index.h>
 #include <litedb/catalog/sys_class.h>
+#include <litedb/catalog/sys_attribute.h>
 
 namespace db {
 class Relation;
@@ -14,18 +15,18 @@ typedef std::shared_ptr<Relation> RelationPtr;
 
 class Relation {
  public:
-  static RelationPtr Create(TransactionPtr tran, u64 id);
+  static RelationPtr Create(TransactionPtr txn, i64 id);
 
-  static RelationPtr OpenTable(TransactionPtr tran, u64 id);
+  static Relation* OpenTable(TransactionPtr txn, i64 id);
 
-  static RelationPtr OpenIndex(TransactionPtr tran, u64 id);
+  static Relation* OpenIndex(TransactionPtr txn, i64 id);
 
   ~Relation() = default;
 
   /*
    * insert a tuple
    */
-  void TableInsert(u64 id, const Tuple& tuple);
+  void TableInsert(i64 id, const Tuple& tuple);
 
   /*
    * append a tuple
@@ -40,18 +41,19 @@ class Relation {
   KVStore* kvstore;
   SysClass rd_rel;                  /* RELATION tuple */
   std::vector<SysIndex> rd_index;   /* list of indexes on relation */
+  std::vector<SysAttribute> rd_attr; /* list of attribute on relation */
 };
 
 class TableScanDesc;
 typedef std::shared_ptr<TableScanDesc> TableScanDescPtr;
-TableScanDescPtr TableBeginScan(RelationPtr rel, ScanKey* scanKey, int nkeys);
+TableScanDescPtr TableBeginScan(Relation* rel, ScanKey* scanKey, int nkeys);
 TuplePtr TableGetNext(TableScanDescPtr scan);
 void TableEndScan(TableScanDescPtr& scan);
 
 class SysScanDesc;
 typedef std::shared_ptr<SysScanDesc> SysScanDescPtr;
 SysScanDescPtr SysTableBeginScan(TransactionPtr txn,
-                                 RelationPtr tableRel,
+                                 Relation* tableRel,
                                  i64 indexId,
                                  ScanKey* scanKey, int nkeys);
 TuplePtr SysTableGetNext(SysScanDescPtr scan);

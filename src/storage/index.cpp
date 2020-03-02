@@ -7,7 +7,7 @@
 
 namespace db {
 
-void IndexAmBuild(RelationPtr tableRel, RelationPtr index, IndexInfo* info) {
+void IndexAmBuild(Relation* tableRel, Relation* index, IndexInfo* info) {
   TableScanDescPtr scan = TableBeginScan(tableRel, nullptr, 0);
   TuplePtr tuple;
   while ((tuple = TableGetNext(scan)) != nullptr) {
@@ -16,7 +16,7 @@ void IndexAmBuild(RelationPtr tableRel, RelationPtr index, IndexInfo* info) {
   TableEndScan(scan);
 }
 
-void IndexAmInsert(RelationPtr index, TuplePtr tuple, IndexInfo* info) {
+void IndexAmInsert(Relation* index, TuplePtr tuple, IndexInfo* info) {
   assert(tuple->ContainsRowID());
   u64 rowID = tuple->GetRowID();
   Slice value;
@@ -100,17 +100,18 @@ class IndexScanDesc {
 
   void GetTableTuple() {
     assert(rowID);
-    Slice key((char*) &rowID, sizeof(rowID));
+    Slice key( &rowID);
     Slice value;
     bool ok = tableRel->kvstore->Get(key, value);
     if (!ok) {
       elog(ERROR, "no such tuple error %lu", rowID);
     }
     tuple = std::make_shared<Tuple>((char*) value.data(), value.size());
+    tuple->SetRowID(rowID);
   }
 
-  RelationPtr tableRel;
-  RelationPtr indexRel;
+  Relation* tableRel;
+  Relation* indexRel;
   int numberOfKeys;         /* number of index qualifier conditions */
   ScanKey* keyData;         /* array of index qualifier descriptors */
   Cursor* cursor;
@@ -125,7 +126,7 @@ class IndexScanDesc {
   bool firstIndexTuple;          /**/
 };
 
-IndexScanDescPtr IndexBeginScan(RelationPtr tableRel, RelationPtr index,
+IndexScanDescPtr IndexBeginScan(Relation* tableRel, Relation* index,
                                 ScanKey* scanKey, int nkeys) {
   assert(index->rd_rel.relkind == RELKIND_INDEX);
   assert(nkeys > 0);
@@ -218,7 +219,7 @@ TuplePtr IndexGetNext(IndexScanDescPtr desc) {
 
         for (int i = desc->commonKeys; i < desc->numberOfKeys; ++i) {
           TupleMeta meta;
-          desc->indexTuple->GetTupleMeta(i, meta);
+          desc->indexTuple->GetTupleMeta(i+1, meta); //index没有rowid
           Slice column(meta.data, meta.size);
 
           if (!ScanKey::PerformCompare(desc->keyData + i, column)) {

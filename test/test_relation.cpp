@@ -10,13 +10,13 @@ static std::string test_db_dir = "test_relation_dir";
 
 TEST(relation, table_scan) {
   TransactionPtr txn = CatalogDB->Begin();
-  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+  Relation* rel = Relation::OpenTable(txn, SysClassRelationId);
 
   ScanKey key;
-  u64 id = SysClassRelationId;
+  i64 id = SysClassRelationId;
   ScanKey::Init(&key,
                 Anum_sys_class_relid, BTEqualStrategyNumber,
-                INT8OID, Slice((char*) &id, sizeof(id)));
+                INT8OID, &id);
 
   int matched = 0;
   TableScanDescPtr scan = TableBeginScan(rel, &key, 1);
@@ -41,7 +41,7 @@ TEST(relation, table_scan) {
 
 TEST(relation, table_scan2) {
   TransactionPtr txn = CatalogDB->Begin();
-  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+  Relation* rel = Relation::OpenTable(txn, SysClassRelationId);
 
 
   int matched = 0;

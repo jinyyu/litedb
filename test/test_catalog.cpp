@@ -13,7 +13,7 @@ static std::string test_db_dir = "test_catalog_dir";
 
 TEST(relation, show_sys_index) {
   TransactionPtr txn = CatalogDB->Begin();
-  RelationPtr rel = Relation::OpenTable(txn, SysIndexRelationId);
+  Relation* rel = Relation::OpenTable(txn, SysIndexRelationId);
 
   SysScanDescPtr desc = SysTableBeginScan(txn, rel, 0, nullptr, 0);
   TuplePtr tuple;
@@ -33,7 +33,7 @@ TEST(relation, show_sys_index) {
 
 TEST(relation, show_sys_class) {
   TransactionPtr txn = CatalogDB->Begin();
-  RelationPtr rel = Relation::OpenTable(txn, SysClassRelationId);
+  Relation* rel = Relation::OpenTable(txn, SysClassRelationId);
 
   SysScanDescPtr desc = SysTableBeginScan(txn, rel, 0, nullptr, 0);
   TuplePtr tuple;
@@ -49,7 +49,7 @@ TEST(relation, show_sys_class) {
 
 TEST(relation, show_sys_attribute) {
   TransactionPtr txn = CatalogDB->Begin();
-  RelationPtr rel = Relation::OpenTable(txn, SysAttributeRelationId);
+  Relation* rel = Relation::OpenTable(txn, SysAttributeRelationId);
 
   SysScanDescPtr desc = SysTableBeginScan(txn, rel, 0, nullptr, 0);
   TuplePtr tuple;
@@ -61,6 +61,20 @@ TEST(relation, show_sys_attribute) {
             item.attid, item.attrelid, item.atttypid, item.attname.data, item.attnum);
   }
   SysTableEndScan(desc);
+}
+
+TEST(relation, show_sys_attribute2) {
+
+  fprintf(stderr, "================sys_class==================\n");
+
+  TransactionPtr txn = CatalogDB->Begin();
+  std::vector<SysAttribute> attrs;
+  SysAttribute::GetAttributeList(txn, SysClassRelationId, Natts_sys_class, attrs);
+
+  for (SysAttribute& attr : attrs) {
+    fprintf(stderr, "(attid=%lu, attrelid=%lu, atttypid=%d, attname=%s, attnum=%d\n",
+            attr.attid, attr.attrelid, attr.atttypid, attr.attname.data, attr.attnum);
+  }
 }
 
 int main(int argc, char* argv[]) {

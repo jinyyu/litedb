@@ -1,10 +1,24 @@
 %{
 #include <assert.h>
 #include <litedb/parser/parser.h>
-#include <litedb/parser/nodes.h>
+#include <litedb/nodes/parsenodes.h>
+#include <litedb/nodes/execnodes.h>
+#include <litedb/nodes/value.h>
 #include "gram.hpp"
 
 #define YYERROR_VERBOSE
+
+namespace db {
+
+static Node* makeIntConst(int i);
+static Node* makeStringConst(char* str);
+static Node* makeFloatConst(char* str);
+static Node* makeAndExpr(Node *lexpr, Node *rexpr);
+static Node* makeOrExpr(Node *lexpr, Node *rexpr);
+static Node *makeNotExpr(Node *expr);
+
+}
+
 using namespace db;
 
 %}
@@ -24,7 +38,10 @@ using namespace db;
     char*                str;
     const char*          keyword;
     db::Node*            node;
-    db::List<db::Node>*  list;
+    db::List*            list;
+    db::ResTarget*       target;
+    db::RangeVar*        range;
+    db::Typename*        typnam;
 }
 
 %token IDENT_P
@@ -34,45 +51,84 @@ using namespace db;
 %token EQUALS_GREATER LESS_EQUALS GREATER_EQUALS NOT_EQUALS
 
 %type <keyword> unreserved_keyword
-%type <str> name typename
-%type <list> stmtblock stmtmulti
-%type <list> column_def_list column_constraint_list table_constraint column_list
-%type <node> stmt CreateTableStmt column_constraint type constraint column_def expr value
-%type <boolean> OptTemp
-%type <ival> conflict_clause
-
-// Define operator precedence early so that this is the first occurance
-// of the operator tokens in the grammer.  Keeping the operators together
-// causes them to be assigned integer values that are close together,
-// which keeps parser tables smaller.
-//
-%left   OR
-%left   AND
-%right  NOT
-%left   EQ NE ISNULL NOTNULL IS LIKE GLOB BETWEEN IN
-%left   GT GE LT LE
-%left   BITAND BITOR LSHIFT RSHIFT
-%left   PLUS MINUS
-%left   STAR SLASH REM
-%left   CONCAT
-%right  UMINUS UPLUS BITNOT
+%type <str>     name opt_alias_clause
+%type <list>    stmtblock stmtmulti
+%type <list>    column_def_list column_constraint_list table_constraint column_list
+                target_list from_clause from_list
+%type <ival>    opt_type_modifiers
+%type <typnam>  Typename
+%type <node>    stmt CreateTableStmt column_constraint constraint column_def
+%type <node>    a_expr b_expr c_expr AexprConst columnref
+%type <boolean> OptTemp distinct_clause
+%type <node>    SelectStmt where_clause
+%type <target>  target_el
+%type <range>	table_ref
 
 %token <keyword>
-        ABORT_P ASC AUTOINCREMENT
+        ABORT_P ALL AND AS ASC AUTOINCREMENT
+
+        BETWEEN
+
         CHECK CONFLICT CONSTRAINT CREATE
-        DEFAULT DESC
+
+        DEFAULT DISTINCT DESC
+
         EXISTS
-        FAIL
-        IGNORE IF_P
+
+        FALSE_P FROM
+
+        IGNORE IF_P INT_P INTEGER IS ISNULL
+
         NOT NULL_P
+
         KEY
-        ON_P
+
+        ON_P OR
+
         PRIMARY
+
         REPLACE ROLLBACK
-        TABLE TEMP TEMPORARY
+
+        SELECT
+
+        TABLE TEMP TEMPORARY TEXT TRUE_P
+
         UNIQUE
 
-/* Grammar follows */
+        VARCHAR
+
+        WHERE
+
+
+/* Precedence: lowest to highest */
+%left		UNION
+%left		OR
+%left		AND
+%right		NOT
+%nonassoc	IS ISNULL NOTNULL	/* IS sets precedence for IS NULL, etc */
+%nonassoc	'<' '>' '=' LESS_EQUALS GREATER_EQUALS NOT_EQUALS
+%nonassoc	BETWEEN IN_P NOT_LA
+%nonassoc	IDENT NULL_P
+%left		'+' '-'
+%left		'*' '/' '%'
+%left		'^'
+/* Unary Operators */
+%right		UMINUS
+%left		'[' ']'
+%left		'(' ')'
+%left		TYPECAST
+%left		'.'
+/*
+ * These might seem to be low-precedence, but actually they are not part
+ * of the arithmetic hierarchy at all in their use as JOIN operators.
+ * We make them high-precedence to support their use as function names.
+ * They wouldn't be given a precedence at all, were it not that we need
+ * left-associativity among the JOIN rules themselves.
+ */
+%left		JOIN CROSS LEFT FULL RIGHT INNER_P NATURAL
+/* kluge to keep xml_whitespace_option from causing shift/reduce conflicts */
+%right		PRESERVE STRIP_P
+
 %%
 
 /*
@@ -80,47 +136,35 @@ using namespace db;
  */
 stmtblock:
     stmtmulti
-    {
-        parser->nodes = $1;
-    }
+        {
+            parser->nodes = $1;
+        }
     ;
 
 stmtmulti:
     stmtmulti ';' stmt
         {
-            if (!$1 && !$3) {
-                $$ = nullptr;
-            } else if ($1 && $3) {
-                $1->Append($3);
-                $$ = $1;
-            } else if ($1) {
-                assert(!$3);
-                $$ = $1;
+            if ($3 != NULL) {
+                $$ = lappend($1, $3);
             } else {
-                assert(!$1);
-                $$ = new List<Node>($3);
+                 $$ = $1;
             }
 		}
 	| stmt
 		{
 		    if ($1) {
-		        $$ = new List<Node>($1);
+		        $$ = list_make1($1);
 		    } else {
-		        $$ = nullptr;
+		        $$ = NULL;
 		    }
 	    }
 	;
 
 stmt:
-    CreateTableStmt
-        {
-            $$ = $1;
-        }
-    | /*empty*/
-        {
-            $$ = NULL;
-        }
-     ;
+    CreateTableStmt         { $$ = $1; }
+    | SelectStmt            { $$ = $1; }
+    | /*empty*/             { $$ = NULL; }
+    ;
 
 CreateTableStmt:
     CREATE OptTemp TABLE name '(' column_def_list ')'
@@ -151,38 +195,37 @@ OptTemp:
 column_def_list:
     column_def_list ',' column_def
         {
-            $1->Append($3);
-            $$ = $1;
+            $$ = lappend($1, $3);
         }
     | column_def
         {
-            $$ = new List<Node>($1);
+            $$ = list_make1($1);
         }
     ;
 
 column_def:
-    name type
+    name Typename
         {
             ColumnDef* n = makeNode(ColumnDef);
             n->columnName = $1;
-            n->typeName = (Typename*) $2;
+            n->typeName = $2;
             $$ = (Node*) n;
         }
-    | name type column_constraint_list
+    | name Typename column_constraint_list
         {
             ColumnDef* n = makeNode(ColumnDef);
             n->columnName = $1;
-            n->typeName = (Typename*) $2;
-            n->columnConstraints = $3;
+            n->typeName = $2;
+            n->constraints = $3;
             $$ = (Node*) n;
         }
-    | name type CONSTRAINT name column_constraint_list
+    | name Typename CONSTRAINT name column_constraint_list
         {
             ColumnDef* n = makeNode(ColumnDef);
             n->columnName = $1;
-            n->typeName = (Typename*) $2;
+            n->typeName = $2;
             n->constraintName = $4;
-            n->columnConstraints = $5;
+            n->constraints = $5;
             $$ = (Node*) n;
         }
     ;
@@ -190,12 +233,11 @@ column_def:
 column_constraint_list:
     column_constraint_list column_constraint
         {
-            $1->Append($2);
-            $$ = $1;
+            $$ = lappend($1, $2);
         }
     | column_constraint
         {
-            $$ = new List<Node>($1);
+            $$ = list_make1($1);
         }
     ;
 
@@ -206,24 +248,10 @@ column_constraint:
             n->constraint = CONSTRAINT_NOT_NULL,
             $$ = (Node*) n;
         }
-    | NOT NULL_P conflict_clause
-        {
-            ColumnConstraint* n = makeNode(ColumnConstraint);
-            n->constraint = CONSTRAINT_NOT_NULL,
-            n->conflictAlgorithm = (ConflictAlgorithm) $3;
-            $$ = (Node*) n;
-        }
     | PRIMARY KEY
         {
             ColumnConstraint* n = makeNode(ColumnConstraint);
             n->constraint = CONSTRAINT_PRIMARY_KEY,
-            $$ = (Node*) n;
-        }
-    | PRIMARY KEY conflict_clause
-        {
-            ColumnConstraint* n = makeNode(ColumnConstraint);
-            n->constraint = CONSTRAINT_PRIMARY_KEY,
-            n->conflictAlgorithm = (ConflictAlgorithm) $3;
             $$ = (Node*) n;
         }
     | UNIQUE
@@ -232,135 +260,34 @@ column_constraint:
             n->constraint = CONSTRAINT_UNIQUE,
             $$ = (Node*) n;
         }
-    | UNIQUE conflict_clause
-        {
-            ColumnConstraint* n = makeNode(ColumnConstraint);
-            n->constraint = CONSTRAINT_UNIQUE,
-            n->conflictAlgorithm = (ConflictAlgorithm) $2;
-            $$ = (Node*) n;
-        }
-    | CHECK expr
+    | CHECK a_expr
         {
             ColumnConstraint* n = makeNode(ColumnConstraint);
             n->constraint = CONSTRAINT_CHECK,
             $$ = (Node*) n;
         }
-    | CHECK expr conflict_clause
-        {
-            ColumnConstraint* n = makeNode(ColumnConstraint);
-            n->constraint = CONSTRAINT_CHECK,
-            n->conflictAlgorithm = (ConflictAlgorithm) $3;
-            $$ = (Node*) n;
-        }
-    | DEFAULT value
+    | DEFAULT b_expr
         {
             ColumnConstraint* n = makeNode(ColumnConstraint);
             n->constraint = CONSTRAINT_DEFAULT,
-            n->defaultValue = (Value*) $2;
+            n->defaultValue = (A_Expr*)$2;
             $$ = (Node*) n;
-        }
-    | DEFAULT value conflict_clause
-        {
-            ColumnConstraint* n = makeNode(ColumnConstraint);
-            n->constraint = CONSTRAINT_DEFAULT,
-            n->defaultValue = (Value*) $2;
-            n->conflictAlgorithm = (ConflictAlgorithm) $3;
-            $$ = (Node*) n;
-        }
-    ;
-
-type:
-    typename
-        {
-            Typename* n = makeNode(Typename);
-            n->name = $1;
-            $$ = (Node*) n;
-        }
-    | typename '(' ICONST ')'
-        {
-            Typename* n = makeNode(Typename);
-            n->name = $1;
-            n->leftPrecision = $3;
-            $$ = (Node*) n;
-        }
-    | typename '(' ICONST ',' ICONST ')'
-        {
-            Typename* n = makeNode(Typename);
-            n->name = $1;
-            n->leftPrecision = $3;
-            n->rightPrecision = $5;
-            $$ = (Node*) n;
-        }
-    ;
-
-value:
-    ICONST
-        {
-            Value* value = makeNode(Value);
-            value->isInt = true;
-            value->vInt = $1;
-            $$ = (Node*) value;
-        }
-    | SCONST
-        {
-            Value* value = makeNode(Value);
-            value->isStr = true;
-            value->str = $1;
-            $$ = (Node*) value;
-        }
-    | NULL_P
-        {
-            Value* value = makeNode(Value);
-            value->isNUll = true;
-            $$ = (Node*) value;
         }
     ;
 
 name:
-    IDENT
-        {
-            $$ = (char*) $1;
-        }
-    | unreserved_keyword
-        {
-            $$ = (char*) $1;
-        }
-    ;
-
-typename:
-    name    {  $$ = $1; }
-
-conflict_clause:
-    ON_P CONFLICT ROLLBACK
-        {
-            $$ = CONFLICT_ROLLBACK;
-        }
-    | ON_P CONFLICT ABORT_P
-        {
-            $$ = CONFLICT_ABORT;
-        }
-    | ON_P CONFLICT FAIL
-        {
-            $$ = CONFLICT_FAIL;
-        }
-    | ON_P CONFLICT IGNORE
-        {
-            $$ = CONFLICT_IGNORE;
-        }
-    | ON_P CONFLICT REPLACE
-        {
-            $$ = CONFLICT_REPLACE;
-        }
+    IDENT                   { $$ = (char*) $1; }
+    | unreserved_keyword    {   $$ = (char*) $1; }
     ;
 
 table_constraint:
     table_constraint ','  constraint
         {
-            $1->Append($3);
+            $$ = lappend($1, $3);
         }
     | constraint
         {
-            $$ = new List<Node>($1);
+            $$ = list_make1($1);
         }
     ;
 
@@ -372,14 +299,6 @@ constraint:
             n->columnList = $4;
             $$ = (Node*) n;
         }
-    | PRIMARY KEY '(' column_list ')' conflict_clause
-        {
-            TableConstraint* n = makeNode(TableConstraint);
-            n->constraint = CONSTRAINT_PRIMARY_KEY;
-            n->columnList = $4;
-            n->conflictAlgorithm = (ConflictAlgorithm) $6;
-            $$ = (Node*) n;
-        }
     | UNIQUE  '(' column_list ')'
         {
             TableConstraint* n = makeNode(TableConstraint);
@@ -387,27 +306,11 @@ constraint:
             n->columnList = $3;
             $$ = (Node*) n;
         }
-    | UNIQUE  '(' column_list ')' conflict_clause
-        {
-            TableConstraint* n = makeNode(TableConstraint);
-            n->constraint = CONSTRAINT_UNIQUE;
-            n->columnList = $3;
-            n->conflictAlgorithm = (ConflictAlgorithm) $5;
-            $$ = (Node*) n;
-        }
-    | CHECK expr
+    | CHECK a_expr
         {
             TableConstraint* n = makeNode(TableConstraint);
             n->constraint = CONSTRAINT_CHECK;
-            n->expr = (Expr*) $2;
-            $$ = (Node*) n;
-        }
-    | CHECK expr conflict_clause
-        {
-            TableConstraint* n = makeNode(TableConstraint);
-            n->constraint = CONSTRAINT_CHECK;
-            n->expr = (Expr*) $2;
-            n->conflictAlgorithm = (ConflictAlgorithm) $3;
+            n->expr = (A_Expr*) $2;
             $$ = (Node*) n;
         }
     ;
@@ -415,27 +318,356 @@ constraint:
 column_list:
     column_list ',' name
         {
-            Name* name = makeNode(Name);
-            name->name = $3;
-            $1->Append((Node*)name);
-            $$ = $1;
+            $$ = lappend($1, (Node*) makeString($3));
         }
     | name
         {
-            Name* name = makeNode(Name);
-            name->name = $1;
-            $$ = new List<Node>((Node*)name);
+            $$ = list_make1((Node*) makeString($1));
         }
     ;
 
-expr:
-    name { /*todo*/}
+Typename:
+    INT_P
+        {
+            $$ = makeNode(Typename);
+            $$->name = (char*) "int4";
+        }
+    | INTEGER
+        {
+            $$ = makeNode(Typename);
+            $$->name = (char*) "int4";
+        }
+    | TEXT
+        {
+             $$ = makeNode(Typename);
+             $$->name = (char*) "text";
+        }
+    | VARCHAR opt_type_modifiers
+        {
+            $$ = makeNode(Typename);
+            $$->name = (char*) "varchar";
+            $$->typeMod = $2;
+        }
+    ;
+
+opt_type_modifiers:
+    '(' ICONST ')'      { $$ = $2; }
+    | /*empty*/         { $$ = 0;  }
+
+a_expr:
+    c_expr      { $$ = $1; }
+    | '+' a_expr %prec UMINUS
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "+" , NULL, $2);
+        }
+    | '-' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "-" , NULL, $2);
+        }
+    | a_expr '+' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "+" , $1, $3);
+        }
+    | a_expr '-' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "-" , $1, $3);
+        }
+    | a_expr '*' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "*" , $1, $3);
+        }
+    | a_expr '/' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "/" , $1, $3);
+        }
+    | a_expr '<' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "<" , $1, $3);
+        }
+    | a_expr '>' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, ">" , $1, $3);
+        }
+    | a_expr '=' a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "=" , $1, $3);
+        }
+    | a_expr LESS_EQUALS a_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "<=" , $1, $3);
+        }
+    | a_expr GREATER_EQUALS a_expr
+        {
+             $$ = (Node*) makeA_Expr(AEXPR_OP, ">=" , $1, $3);
+        }
+    | a_expr NOT_EQUALS a_expr
+        {
+             $$ = (Node*) makeA_Expr(AEXPR_OP, "<>" , $1, $3);
+        }
+    | a_expr AND a_expr
+        {
+            $$ = makeAndExpr($1, $3);
+        }
+    | a_expr OR a_expr
+        {
+            $$ = makeOrExpr($1, $3);
+        }
+    | NOT a_expr
+        {
+            $$ = makeNotExpr($2);
+        }
+    | NOT_LA a_expr	%prec NOT
+        {
+            $$ = makeNotExpr($2);
+        }
+    | a_expr IS NULL_P	%prec IS
+        {
+			NullTest *n = makeNode(NullTest);
+			n->arg = (Expr *) $1;
+			n->nulltesttype = IS_NULL;
+			$$ = (Node *)n;
+        }
+    | a_expr ISNULL
+        {
+			NullTest *n = makeNode(NullTest);
+			n->arg = (Expr *) $1;
+			n->nulltesttype = IS_NULL;
+			$$ = (Node *)n;
+        }
+    | a_expr IS NOT NULL_P	%prec IS
+        {
+			NullTest *n = makeNode(NullTest);
+			n->arg = (Expr *) $1;
+			n->nulltesttype = IS_NOT_NULL;
+			$$ = (Node *)n;
+        }
+    | a_expr NOTNULL
+        {
+			NullTest *n = makeNode(NullTest);
+			n->arg = (Expr *) $1;
+			n->nulltesttype = IS_NOT_NULL;
+			$$ = (Node *)n;
+        }
+    | a_expr IS TRUE_P %prec IS
+        {
+			BooleanTest *b = makeNode(BooleanTest);
+			b->arg = (Expr *) $1;
+			b->booltesttype = IS_TRUE;
+			$$ = (Node *)b;
+        }
+    | a_expr IS NOT TRUE_P %prec IS
+        {
+			BooleanTest *b = makeNode(BooleanTest);
+			b->arg = (Expr *) $1;
+			b->booltesttype = IS_NOT_TRUE;
+			$$ = (Node *)b;
+        }
+    | a_expr IS FALSE_P	%prec IS
+        {
+			BooleanTest *b = makeNode(BooleanTest);
+			b->arg = (Expr *) $1;
+			b->booltesttype = IS_FALSE;
+			$$ = (Node *)b;
+        }
+    | a_expr IS NOT FALSE_P	%prec IS
+        {
+			BooleanTest *b = makeNode(BooleanTest);
+			b->arg = (Expr *) $1;
+			b->booltesttype = IS_NOT_FALSE;
+			$$ = (Node *)b;
+        }
+    | a_expr BETWEEN b_expr AND a_expr %prec BETWEEN
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_BETWEEN, "BETWEEN" , $1, (Node *) list_make2($3, $5));
+        }
+    | a_expr NOT_LA BETWEEN b_expr AND a_expr %prec NOT_LA
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_NOT_BETWEEN, "NOT BETWEEN" , $1, (Node *) list_make2($4, $6));
+        }
+    ;
+
+b_expr:
+    c_expr      { $$ = $1; }
+    | '+' b_expr %prec UMINUS
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "+" , NULL, $2);
+        }
+    | '-' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "-" , NULL, $2);
+        }
+    | b_expr '+' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "+" , $1, $3);
+        }
+    | b_expr '-' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "-" , $1, $3);
+        }
+    | b_expr '*' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "*" , $1, $3);
+        }
+    | b_expr '/' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "/" , $1, $3);
+        }
+    | b_expr '<' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "<" , $1, $3);
+        }
+    | b_expr '>' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, ">" , $1, $3);
+        }
+    | b_expr '=' b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "=" , $1, $3);
+        }
+    | b_expr LESS_EQUALS b_expr
+        {
+            $$ = (Node*) makeA_Expr(AEXPR_OP, "<=" , $1, $3);
+        }
+    | b_expr GREATER_EQUALS b_expr
+        {
+             $$ = (Node*) makeA_Expr(AEXPR_OP, ">=" , $1, $3);
+        }
+    | b_expr NOT_EQUALS b_expr
+        {
+             $$ = (Node*) makeA_Expr(AEXPR_OP, "<>" , $1, $3);
+        }
+    ;
+
+c_expr:
+    AexprConst          { $$ = $1; }
+    | columnref         { $$ = $1; }
+    | '(' a_expr ')'    { $$ = $2; }
+    ;
+
+columnref:
+    name
+        {
+            ColumnRef* ref = makeNode(ColumnRef);
+            ref->fields= list_make1((Node*) makeString($1));
+            $$ = (Node*) ref;
+        }
+    | name '.' name
+        {
+            ColumnRef* ref = makeNode(ColumnRef);
+            ref->fields= list_make2((Node*) makeString($1), (Node*) makeString($3));
+            $$ = (Node*) ref;
+        }
+    | name '.' '*'
+        {
+            ColumnRef* ref = makeNode(ColumnRef);
+            ref->fields= list_make2((Node*) makeString($1), (Node *) makeNode(A_Star));
+            $$ = (Node*) ref;
+        }
+    ;
+
+AexprConst:
+    ICONST      { $$ = makeIntConst($1); }
+    | SCONST    { $$ = makeStringConst($1); }
+    | FCONST    { $$ = makeFloatConst($1); }
+    ;
+
+SelectStmt:
+    SELECT distinct_clause target_list from_clause
+    where_clause
+        {
+            SelectStmt* stmt = (SelectStmt*) makeNode(SelectStmt);
+            stmt->distinct = $2;
+            stmt->targetList = $3;
+            stmt->fromClause = $4;
+            stmt->whereClause = $5;
+            $$ = (Node*) stmt;
+        }
+    ;
+
+distinct_clause:
+    DISTINCT    { $$ = true; }
+    | ALL       { $$ = false;  }
+    | /*empty*/ { $$ = false; }
+    ;
+
+target_list:
+    target_el
+        {
+            $$ = list_make1((Node*)$1);
+        }
+    | target_list ',' target_el
+        {
+            $$ = lappend($1, (Node*) $3);
+        }
+    ;
+
+target_el:
+    a_expr AS name
+        {
+			$$ = (ResTarget*) makeNode(ResTarget);
+			$$->name = $3;
+			$$->val = (Node *) $1;
+        }
+    | a_expr IDENT
+        {
+  			$$ = (ResTarget*) makeNode(ResTarget);
+  			$$->name = $2;
+  			$$->val = (Node *) $1;
+        }
+    | a_expr
+        {
+     		$$ = (ResTarget*) makeNode(ResTarget);
+     		$$->name = NULL;
+     		$$->val = (Node *) $1;
+        }
+    | '*'
+        {
+     		$$ = (ResTarget*) makeNode(ResTarget);
+     		$$->name = NULL;
+     		$$->val = (Node *) makeNode(A_Star);
+        }
+    ;
+
+from_clause:
+    FROM from_list  { $$ = $2; }
+    | /*empty*/     { $$ = NULL; }
+    ;
+
+from_list:
+    table_ref
+        {
+            $$ = list_make1((Node*)$1);
+        }
+    | from_list ',' table_ref
+        {
+            $$ = lappend($1, (Node*) $3);
+        }
+
+table_ref:
+    name opt_alias_clause
+        {
+            $$ = makeNode(RangeVar);
+            $$->relname = $1;
+            $$->alias = $2;
+        }
+    ;
+
+opt_alias_clause:
+    name        { $$ = $1; }
+    | AS name   { $$ = $2; }
+    | /*empty*/ { $$ = NULL; }
+    ;
+
+where_clause:
+    WHERE a_expr	    { $$ = $2; }
+    | /*EMPTY*/		{ $$ = NULL; }
+    ;
+
 
 unreserved_keyword:
     ABORT_P
     | CONFLICT
     | EXISTS
-    | FAIL
     | IF_P
     | IGNORE
     | KEY
@@ -443,9 +675,74 @@ unreserved_keyword:
     | ROLLBACK
     | TEMP
     | TEMPORARY
+    | ISNULL
+    | TEXT
     ;
 %%
+namespace db
+{
 
-void help() {
+Node* makeIntConst(int i) {
+  A_Const* n = makeNode(A_Const);
+  n->val = makeInteger(i);
+  return (Node*) n;
+}
+
+Node* makeStringConst(char* str) {
+  A_Const* n = makeNode(A_Const);
+  n->val = makeString(str);
+  return (Node*) n;
+}
+
+Node* makeFloatConst(char* str) {
+  A_Const* n = makeNode(A_Const);
+  n->val = makeFloat(str);
+  return (Node*) n;
+}
+
+Node* makeAndExpr(Node *lexpr, Node *rexpr)
+{
+	Node* lexp = lexpr;
+	/* Flatten "a AND b AND c ..." to a single BoolExpr on sight */
+	if (lexp->type ==  T_BoolExpr) {
+		BoolExpr *blexpr = (BoolExpr *) lexp;
+
+		if (blexpr->boolop == AND_EXPR)
+		{
+			blexpr->args = lappend(blexpr->args, rexpr);
+			return (Node *) blexpr;
+		}
+	}
+	BoolExpr* expr = makeNode(BoolExpr);
+	expr->boolop = AND_EXPR;
+	expr->args = list_make2(lexpr, rexpr);
+	return (Node*) expr;
+}
+
+Node* makeOrExpr(Node* lexpr, Node* rexpr) {
+	Node* lexp = lexpr;
+	/* Flatten "a OR b OR c ..." to a single BoolExpr on sight */
+	if (lexp->type ==  T_BoolExpr) {
+		BoolExpr *blexpr = (BoolExpr *) lexp;
+
+		if (blexpr->boolop == OR_EXPR)
+		{
+			blexpr->args = lappend(blexpr->args, rexpr);
+			return (Node *) blexpr;
+		}
+	}
+	BoolExpr* expr = makeNode(BoolExpr);
+	expr->boolop = OR_EXPR;
+	expr->args = list_make2(lexpr, rexpr);
+	return (Node*) expr;
+}
+
+Node* makeNotExpr(Node* expr) {
+    BoolExpr* bexpr = (BoolExpr*) makeNode(BoolExpr);
+    bexpr->boolop = NOT_EXPR;
+    bexpr->args = list_make1(expr);
+    return (Node*) bexpr;
+}
+
 
 }

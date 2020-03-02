@@ -1,5 +1,6 @@
 #include <litedb/storage/database.h>
-#include "litedb/storage/databasemdb.h"
+#include <litedb/storage/databasemdb.h>
+#include <litedb/storage/relation.h>
 #include <assert.h>
 #include <lmdb.h>
 
@@ -54,6 +55,10 @@ TransactionMdb::~TransactionMdb() {
     delete (it.second);
   }
 
+  for (auto it : openRel_) {
+    delete (it.second);
+  }
+
   if (txn_) {
     Abort();
   }
@@ -82,6 +87,16 @@ void TransactionMdb::Commit() {
 void TransactionMdb::Abort() {
   mdb_txn_abort(txn_);
   txn_ = nullptr;
+}
+
+void TransactionMdb::InsertOpenRelation(i64 relid, Relation* rel) {
+  auto it = openRel_.find(relid);
+  if (it != openRel_.end()) {
+    delete (it->second);
+    it->second = rel;
+  } else {
+    openRel_[relid] = rel;
+  }
 }
 
 KVStoreMdb::~KVStoreMdb() {
