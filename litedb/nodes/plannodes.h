@@ -4,9 +4,14 @@
 
 namespace db {
 
+struct Plan {
+
+};
+
 struct PlannedStmt {
   NodeTag type;
   CmdType commandType; /* select|insert|update|delete|utility */
+  Plan* planTree;       /* tree of Plan nodes */
   Node* utilityStmt;   /* non-null if this is utility stmt */
 };
 
