@@ -45,6 +45,7 @@ set(storage_src
     storage/tuple.cpp
     )
 set(utils_src
+    utils/bitmapset.cpp
     utils/compare.cpp
     utils/env.cpp
     utils/elog.cpp

@@ -30,6 +30,13 @@ void Environment::Drop(Object* obj) {
   delete (obj);
 }
 
+void* Environment::Realloc(void* ptr, size_t size) {
+  memories_.erase(ptr);
+  ptr = realloc(ptr, size);
+  memories_.insert(ptr);
+  return ptr;
+}
+
 void Environment::ReleaseMemory() {
   for (void* mem : memories_) {
     free(mem);

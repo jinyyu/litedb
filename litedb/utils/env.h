@@ -45,6 +45,8 @@ class Environment {
 
   void Drop(Object* obj);
 
+  void* Realloc(void* ptr, size_t size);
+
   void ReleaseMemory();
 
  private:
