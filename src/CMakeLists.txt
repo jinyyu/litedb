@@ -34,7 +34,9 @@ set(parser_src
     )
 
 set(plan_src
+    plan/createplan.cpp
     plan/planner.cpp
+    plan/relnode.cpp
     )
 
 set(storage_src
@@ -67,7 +69,7 @@ set(litedb_src
     ${plan_src}
     ${storage_src}
     ${utils_src}
-    )
+    ../litedb/plan/planmain.h)
 
 add_library(litedb++ ${litedb_src})
 target_link_libraries(litedb++ ${LIBS})

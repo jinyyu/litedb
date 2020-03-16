@@ -1,5 +1,5 @@
 #ifndef LITEDB_PARSER_PLANNODES_H_
-#define ITEDB_PARSER_PLANNODES_H_
+#define LITEDB_PARSER_PLANNODES_H_
 #include <litedb/nodes/parsenodes.h>
 
 namespace db {
@@ -17,4 +17,4 @@ struct PlannedStmt {
 
 }
 
-#endif
+#endif //LITEDB_PARSER_PLANNODES_H_
