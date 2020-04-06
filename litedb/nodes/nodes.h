@@ -44,6 +44,7 @@ enum NodeTag {
   T_TargetEntry,
   T_FromExpr,
 
+  T_PlannerInfo,
   T_PlannedStmt,
 };
 

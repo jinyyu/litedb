@@ -4,7 +4,7 @@
 #include <litedb/parser/parser.h>
 #include <litedb/parser/analyze.h>
 #include <litedb/utils/portal.h>
-#include <litedb/nodes/plannodes.h>
+#include <litedb/plan/planner.h>
 #include <litedb//utils/env.h>
 #include <litedb/catalog/catalog.h>
 #include <assert.h>
@@ -40,6 +40,10 @@ List* PlanQueries(List* queryTrees) {
       stmt = makeNode(PlannedStmt);
       stmt->commandType = CMD_CMD_UTILITY;
       stmt->utilityStmt = query->utilityStmt;
+    } else {
+      stmt = Planner(query);
+    }
+    if (stmt) {
       ret = lappend(ret, (Node*) stmt);
     }
   }

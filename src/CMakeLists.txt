@@ -6,62 +6,71 @@ ADD_FLEX_BISON_DEPENDENCY(scanner parser)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 set(bin_src
-        bin/initdb.cpp
-        bin/server.cpp
-        bin/session.cpp
-        )
+    bin/initdb.cpp
+    bin/server.cpp
+    bin/session.cpp
+    )
 set(catalog_src
-        catalog/catalog.cpp
-        catalog/sys_attribute.cpp
-        catalog/sys_class.cpp
-        catalog/sys_index.cpp
-        )
+    catalog/catalog.cpp
+    catalog/sys_attribute.cpp
+    catalog/sys_class.cpp
+    catalog/sys_index.cpp
+    )
 set(command_src
-        command/indexcmd.cpp)
+    command/indexcmd.cpp)
 
 set(node_src
-        nodes/execnodes.cpp
-        nodes/parsenodes.cpp
-        nodes/value.cpp
-        )
+    nodes/execnodes.cpp
+    nodes/parsenodes.cpp
+    nodes/value.cpp
+    )
 set(parser_src
-        parser/analyze.cpp
-        parser/keywords.cpp
-        parser/parse_clause.cpp
-        parser/parse_relation.cpp
-        parser/parse_target.cpp
-        parser/parser.cpp
-        )
+    parser/analyze.cpp
+    parser/keywords.cpp
+    parser/parse_clause.cpp
+    parser/parse_relation.cpp
+    parser/parse_target.cpp
+    parser/parser.cpp
+    )
+
+set(plan_src
+    plan/createplan.cpp
+    plan/planner.cpp
+    plan/relnode.cpp
+    plan/preptlist.cpp
+    )
 
 set(storage_src
-        storage/databasemdb.cpp
-        storage/index.cpp
-        storage/relation.cpp
-        storage/scan_key.cpp
-        storage/tuple.cpp
-        )
+    storage/databasemdb.cpp
+    storage/index.cpp
+    storage/relation.cpp
+    storage/scan_key.cpp
+    storage/tuple.cpp
+    )
 set(utils_src
-        utils/compare.cpp
-        utils/env.cpp
-        utils/elog.cpp
-        utils/list.cpp
-        utils/misc.cpp
-        utils/portal.cpp
-        utils/pq.cpp
-        utils/vector.cpp
-        )
+    utils/bitmapset.cpp
+    utils/compare.cpp
+    utils/env.cpp
+    utils/elog.cpp
+    utils/list.cpp
+    utils/misc.cpp
+    utils/portal.cpp
+    utils/pq.cpp
+    utils/vector.cpp
+    )
 
 set(litedb_src
-        ${BISON_parser_OUTPUTS}
-        ${FLEX_scanner_OUTPUTS}
-        ${bin_src}
-        ${catalog_src}
-        ${command_src}
-        ${node_src}
-        ${parser_src}
-        ${storage_src}
-        ${utils_src}
-        )
+    ${BISON_parser_OUTPUTS}
+    ${FLEX_scanner_OUTPUTS}
+    ${bin_src}
+    ${catalog_src}
+    ${command_src}
+    ${node_src}
+    ${parser_src}
+    ${plan_src}
+    ${storage_src}
+    ${utils_src}
+    ../litedb/plan/planmain.h)
 
 add_library(litedb++ ${litedb_src})
 target_link_libraries(litedb++ ${LIBS})

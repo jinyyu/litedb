@@ -8,6 +8,10 @@ enable_testing()
 
 find_package(GTest REQUIRED)
 
+add_executable(test_bitmapset test_bitmapset.cpp)
+target_link_libraries(test_bitmapset ${test_LIBS})
+gtest_add_tests(TARGET test_bitmapset)
+
 add_executable(test_tuple test_tuple.cpp)
 target_link_libraries(test_tuple ${test_LIBS})
 gtest_add_tests(TARGET test_tuple)
