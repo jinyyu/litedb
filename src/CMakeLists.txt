@@ -37,6 +37,7 @@ set(plan_src
     plan/createplan.cpp
     plan/planner.cpp
     plan/relnode.cpp
+    plan/preptlist.cpp
     )
 
 set(storage_src

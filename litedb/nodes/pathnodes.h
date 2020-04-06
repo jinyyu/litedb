@@ -33,9 +33,11 @@ typedef enum UpperRelationKind {
 struct PlannerInfo {
   NodeTag type;
   Query* parse;                     /* the Query being planned */
-  i32 query_level;                    /* 1 at the outermost Query */
+  i32 query_level;                  /* 1 at the outermost Query */
   PlannerInfo* parent_root;         /* NULL at outermost Query */
   Path* non_recursive_path;         /* a path for non-recursive term */
+
+  List* processed_tlist;            /* The fully-processed targetlist is kept here */
 
   List* upper_rels[UPPERREL_FINAL + 1]; /* upper-rel RelOptInfos */
 

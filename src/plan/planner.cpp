@@ -1,6 +1,7 @@
 #include <litedb/plan/planner.h>
 #include <litedb/plan/planmain.h>
 #include <litedb/nodes/nodes.h>
+#include <litedb/plan/prep.h>
 
 namespace db {
 
@@ -40,6 +41,10 @@ PlannerInfo* SubqueryPlanner(Query* parse, PlannerInfo* parent, bool hasRecursio
 }
 
 void grouping_planner(PlannerInfo* root) {
+  RelOptInfo *current_rel;
+  root->processed_tlist = preprocess_targetlist(root);
+
+  current_rel = query_planner(root);
 
 }
 
